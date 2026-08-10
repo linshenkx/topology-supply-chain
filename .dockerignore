@@ -1,0 +1,12 @@
+.git
+.next
+.wrangler
+.tmp
+dist
+node_modules
+outputs
+work
+*.log
+.env
+.env.*
+!.env.example

@@ -1,0 +1,145 @@
+.permission-bar {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 12px;
+  padding: 9px 14px;
+  border: 1px solid #dfe7d1;
+  border-radius: 10px;
+  background: #eef3e8;
+  color: #4d6258;
+  font-size: 10px;
+}
+
+.permission-bar span:first-child {
+  color: #1f634d;
+  font-weight: 700;
+}
+
+.permission-bar span:first-child i {
+  display: inline-grid;
+  place-items: center;
+  width: 17px;
+  height: 17px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background: #2f795f;
+  color: white;
+  font-style: normal;
+}
+
+.permission-bar b {
+  margin-left: auto;
+  padding: 5px 9px;
+  border-radius: 10px;
+  background: #fff3d7;
+  color: #8d641e;
+}
+
+mark.status-shortage { background: #f8e4dc; color: #b95542; }
+mark.status-shipping { background: #f7eed3; color: #917127; }
+mark.status-complete { background: #edf0ed; color: #718078; }
+
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: rgba(9, 29, 22, .62);
+  backdrop-filter: blur(4px);
+}
+
+.import-modal {
+  position: relative;
+  width: min(520px, 100%);
+  padding: 30px;
+  border-radius: 18px;
+  background: white;
+  box-shadow: 0 28px 80px rgba(8, 32, 23, .32);
+}
+
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  border: 0;
+  background: transparent;
+  color: #718078;
+  font-size: 24px;
+  cursor: pointer;
+}
+
+.modal-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 11px;
+  background: #dfeedd;
+  color: #22694f;
+  font-weight: 800;
+}
+
+.import-modal h2 { margin: 16px 0 7px; font-size: 21px; }
+.import-modal > p { margin: 0 0 18px; color: #718078; font-size: 12px; line-height: 1.7; }
+
+.dropzone {
+  display: grid;
+  place-items: center;
+  min-height: 142px;
+  padding: 20px;
+  border: 1.5px dashed #9cb8aa;
+  border-radius: 12px;
+  background: #f6f9f5;
+  color: #255f4b;
+  text-align: center;
+  cursor: pointer;
+}
+
+.dropzone input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.dropzone strong { font-size: 13px; }
+.dropzone small { margin-top: 8px; color: #85928b; font-size: 10px; }
+.import-rules { display: grid; gap: 7px; margin-top: 16px; color: #66766d; font-size: 10px; }
+.import-rules span::first-letter { color: #2d775d; }
+.import-result { margin-top: 16px; padding: 11px 13px; border-radius: 8px; font-size: 11px; }
+.import-result.success { background: #e4f1e9; color: #1f684e; }
+.import-result.error { background: #fbe6e1; color: #a44937; }
+
+.quality-form {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+
+.quality-form label {
+  position: relative;
+  display: grid;
+  gap: 6px;
+  color: #65736c;
+  font-size: 10px;
+}
+
+.quality-form input,
+.quality-form select {
+  width: 100%;
+  height: 38px;
+  padding: 0 11px;
+  border: 1px solid #dce3df;
+  border-radius: 8px;
+  background: #fbfcfa;
+  color: #24362d;
+  outline: none;
+}
+
+.quality-form input:focus,
+.quality-form select:focus { border-color: #347b61; }
+.quality-form label b { position: absolute; right: 11px; bottom: 12px; color: #7d8b83; }
+.save-rule { width: 100%; margin-top: 18px; padding: 11px; border: 0; border-radius: 9px; background: #1b6e54; color: white; font-weight: 700; cursor: pointer; }
+
+@media (max-width: 760px) {
+  .permission-bar span:nth-child(2) { display: none; }
+  .permission-bar { gap: 8px; }
+  .quality-form { grid-template-columns: 1fr; }
+}

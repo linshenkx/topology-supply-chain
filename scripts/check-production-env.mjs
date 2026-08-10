@@ -1,0 +1,61 @@
+const required = [
+  "APP_BASE_URL",
+  "SESSION_SECRET",
+  "JOB_TOKEN",
+  "DATABASE_URL",
+  "OSS_REGION",
+  "OSS_BUCKET",
+];
+
+const placeholder = /replace|example|configure|changeme|请填写|请生成|占位/i;
+const errors = [];
+for (const name of required) {
+  const value = process.env[name]?.trim();
+  if (!value) errors.push(`${name} 未配置`);
+  else if (placeholder.test(value)) errors.push(`${name} 仍是示例值`);
+}
+
+const roleName = process.env.OSS_ECS_RAM_ROLE?.trim();
+const accessKeyId = process.env.OSS_ACCESS_KEY_ID?.trim();
+const accessKeySecret = process.env.OSS_ACCESS_KEY_SECRET?.trim();
+if (!roleName && !(accessKeyId && accessKeySecret)) {
+  errors.push("必须配置OSS_ECS_RAM_ROLE，或同时配置OSS_ACCESS_KEY_ID与OSS_ACCESS_KEY_SECRET");
+}
+
+for (const [urlName, keyName] of [
+  ["SMS_WEBHOOK_URL", "SMS_WEBHOOK_API_KEY"],
+  ["EMAIL_WEBHOOK_URL", "EMAIL_WEBHOOK_API_KEY"],
+]) {
+  const url = process.env[urlName]?.trim();
+  const key = process.env[keyName]?.trim();
+  if (Boolean(url) !== Boolean(key)) {
+    errors.push(`${urlName}与${keyName}必须同时配置或同时留空`);
+  }
+}
+
+if (process.env.APP_BASE_URL !== "https://scm.topologygz.com") {
+  errors.push("APP_BASE_URL 必须为 https://scm.topologygz.com");
+}
+if ((process.env.SESSION_SECRET?.length ?? 0) < 32) {
+  errors.push("SESSION_SECRET 至少需要32个字符");
+}
+if ((process.env.JOB_TOKEN?.length ?? 0) < 32) {
+  errors.push("JOB_TOKEN 至少需要32个字符");
+}
+if (process.env.SESSION_SECRET && process.env.SESSION_SECRET === process.env.JOB_TOKEN) {
+  errors.push("SESSION_SECRET与JOB_TOKEN必须使用不同随机值");
+}
+if (process.env.DATABASE_URL && !process.env.DATABASE_URL.startsWith("mysql://")) {
+  errors.push("DATABASE_URL 必须使用mysql:// RDS MySQL连接串");
+}
+if (process.env.OSS_BUCKET && /[A-Z_]/.test(process.env.OSS_BUCKET)) {
+  errors.push("OSS_BUCKET名称只能使用小写字母、数字和连字符");
+}
+
+if (errors.length) {
+  console.error("生产环境配置检查失败：");
+  for (const error of errors) console.error(`- ${error}`);
+  process.exitCode = 1;
+} else {
+  console.log("生产环境配置检查通过，未输出任何密钥值。");
+}

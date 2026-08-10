@@ -1,0 +1,76 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1785254400000,
+      "tag": "0000_supply_chain",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1785315600000,
+      "tag": "0001_supplier_governance",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1785319200000,
+      "tag": "0002_purchase_plans",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1785322800000,
+      "tag": "0003_sku_bom_production",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1785326400000,
+      "tag": "0004_inventory_batches_stocktakes",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1785330000000,
+      "tag": "0005_shipping_collaboration",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1785333600000,
+      "tag": "0006_governance_ai",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1785340800000,
+      "tag": "0007_invoice_allocations",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1785344400000,
+      "tag": "0008_product_return_workflow",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1785348000000,
+      "tag": "0009_invoice_exceptions",
+      "breakpoints": true
+    }
+  ]
+}

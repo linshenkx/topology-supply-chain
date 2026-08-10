@@ -1,0 +1,47 @@
+services:
+  app:
+    container_name: topology-scm-app
+    build:
+      context: ../..
+      dockerfile: Dockerfile.aliyun
+      target: runner
+    image: topology-scm:${APP_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    env_file:
+      - .env.production
+    environment:
+      DEPLOY_TARGET: aliyun
+      NODE_ENV: production
+      PORT: "3000"
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "10"
+
+  migrator:
+    build:
+      context: ../..
+      dockerfile: Dockerfile.aliyun
+      target: migrator
+    image: topology-scm-migrator:${APP_IMAGE_TAG:-latest}
+    profiles: ["migration"]
+    env_file:
+      - .env.production
+    environment:
+      DEPLOY_TARGET: aliyun
+      NODE_ENV: production
+    command: ["pnpm", "db:migrate:mysql"]
