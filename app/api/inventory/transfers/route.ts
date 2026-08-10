@@ -1,11 +1,16 @@
-import { and, asc, eq, gt, inArray, sql } from "drizzle-orm";
+import { and, asc, eq, gt, gte, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { approvalRequests, inventoryBatches, inventoryMovements, inventoryTransfers, warehouses } from "../../../../db/schema";
-import { insertOne } from "../../../../db/insert-one";
+import { executeAffected, insertOne } from "../../../../db/insert-one";
 import { withDbTransaction } from "../../../../db/transaction";
-import { accessErrorResponse, isInternal, requireAccess, requireRole } from "../../../lib/authz";
+import { AccessError, accessErrorResponse, isInternal, requireAccess, requireRole } from "../../../lib/authz";
 import { writeAudit } from "../../../lib/audit";
 import { findInventoryFreeze } from "../../../lib/inventory-freeze";
+import {
+  INVENTORY_TRANSFER_TRANSITIONS,
+  mutationAffectedExactlyOnce,
+  planInventoryTransferDeductions,
+} from "../../../lib/inventory-transfer-guard";
 
 function transferNo() {
   return `TR${new Date().toISOString().replace(/\D/g, "").slice(2, 14)}${Math.floor(Math.random() * 900 + 100)}`;
@@ -72,17 +77,40 @@ export async function PATCH(request: Request) {
         sql`${inventoryBatches.expiryStatus} <> 'expired_frozen'`,
         eq(inventoryBatches.quarantineQuantity, 0),
       )).orderBy(asc(inventoryBatches.expiryDate), asc(inventoryBatches.inboundDate));
-      if (batches.reduce((sum, row) => sum + row.availableQuantity, 0) < transfer.quantity) return Response.json({ error: "可用库存不足，禁止负库存发出。" }, { status: 409 });
+      const deductionPlan = planInventoryTransferDeductions(batches, transfer.quantity);
+      if (deductionPlan.remaining !== 0) return Response.json({ error: "可用库存不足，禁止负库存发出。" }, { status: 409 });
       await withDbTransaction(db, async tx => {
+        const transition = INVENTORY_TRANSFER_TRANSITIONS.ship;
+        const claimed = await executeAffected(tx.update(inventoryTransfers).set({
+          status: transition.to,
+          shippedAt: now,
+          updatedAt: now,
+        }).where(and(
+          eq(inventoryTransfers.id, transfer.id),
+          eq(inventoryTransfers.status, transition.from),
+        )));
+        if (!mutationAffectedExactlyOnce(claimed)) {
+          throw new AccessError(409, "调拨单状态已发生变化，请刷新后重试。");
+        }
+
         let remaining = transfer.quantity;
-        for (const batch of batches) {
-          if (!remaining) break;
-          const deduct = Math.min(remaining, batch.availableQuantity);
-          await tx.update(inventoryBatches).set({ availableQuantity: sql`${inventoryBatches.availableQuantity} - ${deduct}`, updatedAt: now }).where(eq(inventoryBatches.id, batch.id));
-          remaining -= deduct;
+        for (const deduction of deductionPlan.deductions) {
+          const updated = await executeAffected(tx.update(inventoryBatches).set({
+            availableQuantity: sql`${inventoryBatches.availableQuantity} - ${deduction.quantity}`,
+            updatedAt: now,
+          }).where(and(
+            eq(inventoryBatches.id, deduction.batchId),
+            gte(inventoryBatches.availableQuantity, deduction.quantity),
+          )));
+          if (!mutationAffectedExactlyOnce(updated)) {
+            throw new AccessError(409, "库存发生并发变化，请刷新后重新提交调拨。");
+          }
+          remaining -= deduction.quantity;
+        }
+        if (remaining !== 0) {
+          throw new AccessError(409, "库存扣减未完整执行，请刷新后重新提交调拨。");
         }
         await tx.insert(inventoryMovements).values({ warehouseId: transfer.fromWarehouseId, sku: transfer.sku, type: "transfer_out", quantity: -transfer.quantity, createdBy: access.userId, occurredAt: now });
-        await tx.update(inventoryTransfers).set({ status: "shipped", shippedAt: now, updatedAt: now }).where(eq(inventoryTransfers.id, transfer.id));
       });
     } else {
       if (transfer.status !== "shipped") return Response.json({ error: "只有已发出的调拨单才能确认收货。" }, { status: 409 });
@@ -90,9 +118,21 @@ export async function PATCH(request: Request) {
       const freeze = await findInventoryFreeze({ warehouseId: transfer.toWarehouseId, sku: transfer.sku });
       if (freeze) return Response.json({ error: `盘点 ${freeze.stocktakeNo} 期间禁止调入库存。` }, { status: 409 });
       await withDbTransaction(db, async tx => {
+        const transition = INVENTORY_TRANSFER_TRANSITIONS.receive;
+        const claimed = await executeAffected(tx.update(inventoryTransfers).set({
+          status: transition.to,
+          receivedAt: now,
+          updatedAt: now,
+        }).where(and(
+          eq(inventoryTransfers.id, transfer.id),
+          eq(inventoryTransfers.status, transition.from),
+        )));
+        if (!mutationAffectedExactlyOnce(claimed)) {
+          throw new AccessError(409, "调拨单状态已发生变化，请刷新后重试。");
+        }
+
         await tx.insert(inventoryBatches).values({ batchNo: `${transfer.transferNo}-IN`, warehouseId: transfer.toWarehouseId, sku: transfer.sku, inboundDate: now.slice(0, 10), availableQuantity: transfer.quantity, ownership: "company" });
         await tx.insert(inventoryMovements).values({ warehouseId: transfer.toWarehouseId, sku: transfer.sku, type: "transfer_in", quantity: transfer.quantity, createdBy: access.userId, occurredAt: now });
-        await tx.update(inventoryTransfers).set({ status: "received", receivedAt: now, updatedAt: now }).where(eq(inventoryTransfers.id, transfer.id));
       });
     }
     await writeAudit(access, { action: body.action, module: "inventory", entityType: "inventory_transfer", entityId: transfer.id, request });
