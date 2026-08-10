@@ -511,7 +511,7 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
     try {
       const data = await apiJson("/api/auth/step-up/request", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action: `approval:${selected.id}` }),
+        body: JSON.stringify({ scope: `approval:${selected.id}` }),
       });
       setChallengeNo(data.challengeNo);
       setMaskedMobile(data.mobile || "");

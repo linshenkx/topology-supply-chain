@@ -30,14 +30,24 @@ export async function insertOne<T>(
 }
 
 type MutationBuilder = {
-  run?: () => PromiseLike<{ changes?: number; rowsAffected?: number }>;
+  run?: () => PromiseLike<{
+    changes?: number;
+    rowsAffected?: number;
+    meta?: { changes?: number; rowsAffected?: number };
+  }>;
   execute?: () => PromiseLike<unknown>;
 };
 
 export async function executeAffected(builder: MutationBuilder) {
   if (typeof builder.run === "function") {
     const result = await builder.run();
-    return Number(result.changes ?? result.rowsAffected ?? 0);
+    return Number(
+      result.changes
+      ?? result.rowsAffected
+      ?? result.meta?.changes
+      ?? result.meta?.rowsAffected
+      ?? 0,
+    );
   }
   if (typeof builder.execute === "function") {
     const result = await builder.execute();

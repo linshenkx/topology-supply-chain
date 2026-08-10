@@ -1,11 +1,13 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
-import { approvalRequests, authChallenges, corePriceAgreements, corePriceChangeRequests, deliveryBatches, executionOrders, factoryPaymentRequests, factoryPlanResponses, inventoryBatches, inventoryMovements, inventoryTransfers, invoiceExceptions, orderItems, paymentRecords, productionMaterialLines, productionReports, productBoms, purchaseOrders, purchasePlanItems, purchasePlans, reminderSchedules, skus, stocktakeAdjustments, stocktakeCounts, stocktakes, supplierSkus, suppliers, userRoles, warehouses } from "../../../db/schema";
-import { accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
+import { executeAffected } from "../../../db/insert-one";
+import { approvalRequests, corePriceAgreements, corePriceChangeRequests, deliveryBatches, executionOrders, factoryPaymentRequests, factoryPlanResponses, inventoryBatches, inventoryMovements, inventoryTransfers, invoiceExceptions, orderItems, paymentRecords, productionMaterialLines, productionReports, productBoms, purchaseOrders, purchasePlanItems, purchasePlans, reminderSchedules, skus, stocktakeAdjustments, stocktakeCounts, stocktakes, supplierSkus, suppliers, userRoles, warehouses } from "../../../db/schema";
+import { AccessError, accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { assertProductionWarehouse, finalizeProductionInventory } from "../../lib/production-finalization";
 import { createReminder } from "../../lib/reminders";
 import { withDbTransaction } from "../../../db/transaction";
+import { consumeVerifiedStepUp } from "../../lib/step-up";
 
 export async function GET(request: Request) {
   try {
@@ -24,8 +26,7 @@ export async function POST(request: Request) {
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "finance"]);
-    const body = await request.json() as { id?: number; decision?: "approved" | "rejected"; comment?: string; challengeNo?: string; smsVerified?: boolean };
-    body.smsVerified = false;
+    const body = await request.json() as { id?: number; decision?: "approved" | "rejected"; comment?: string; challengeNo?: string };
     if (!body.id || !["approved", "rejected"].includes(body.decision ?? "")) {
       return Response.json({ error: "审批单和审批决定不能为空。" }, { status: 400 });
     }
@@ -53,19 +54,6 @@ export async function POST(request: Request) {
     if (approval.workflowType === "stocktake_variance" && !access.roles.some((role) => ["admin", "supply_chain"].includes(role))) {
       return Response.json({ error: "盘点差异只能由供应链同事审核。" }, { status: 403 });
     }
-    if (approval.highRisk && body.challengeNo) {
-      const [challenge] = await db.select().from(authChallenges).where(and(
-        eq(authChallenges.challengeNo, body.challengeNo),
-        eq(authChallenges.userId, access.userId),
-        eq(authChallenges.purpose, "high_risk"),
-      )).limit(1);
-      const verifiedAt = challenge?.verifiedAt ? new Date(challenge.verifiedAt).getTime() : 0;
-      if (challenge && verifiedAt && Date.now() - verifiedAt <= 5 * 60_000 && new Date(challenge.expiresAt).getTime() >= Date.now()) {
-        await db.delete(authChallenges).where(eq(authChallenges.id, challenge.id));
-        body.smsVerified = true;
-      }
-    }
-    if (approval.highRisk && !body.smsVerified) return Response.json({ error: "高风险操作需要先完成手机验证码。" }, { status: 428 });
     const now = new Date().toISOString();
     const approvalUpdate = {
       status: body.decision!,
@@ -76,8 +64,25 @@ export async function POST(request: Request) {
       updatedAt: now,
     };
     const correctionApproval = approval.workflowType === "financial_record_correction" && body.decision === "approved";
+    const claimApproval = async (tx: typeof db) => {
+      if (approval.highRisk) {
+        await consumeVerifiedStepUp(tx, {
+          challengeNo: body.challengeNo,
+          userId: access.userId,
+          localPreview: false,
+          scope: `approval:${approval.id}`,
+        });
+      }
+      const claimed = await executeAffected(tx.update(approvalRequests)
+        .set(approvalUpdate)
+        .where(and(
+          eq(approvalRequests.id, approval.id),
+          eq(approvalRequests.status, "pending"),
+        )));
+      if (claimed !== 1) throw new AccessError(409, "该审批单已经处理。");
+    };
     if (!correctionApproval) {
-      await db.update(approvalRequests).set(approvalUpdate).where(eq(approvalRequests.id, approval.id));
+      await withDbTransaction(db, claimApproval);
     }
     if (approval.workflowType === "supplier_onboarding") {
       await db.update(suppliers).set({
@@ -410,7 +415,7 @@ export async function POST(request: Request) {
         invoiceExceptionId?: number | null;
       };
       await withDbTransaction(db, async tx => {
-        await tx.update(approvalRequests).set(approvalUpdate).where(eq(approvalRequests.id, approval.id));
+        await claimApproval(tx);
         await tx.insert(paymentRecords).values({
           paymentRequestId: original.paymentRequestId,
           amountMinor: -original.amountMinor,

@@ -38,12 +38,12 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
     finally { setBusy(false); }
   }
 
-  async function stepUp() {
-    const request = await json("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ deviceId:"finance-correction" }) });
-    const code = window.prompt(`验证码已发送至 ${request.mobile || "绑定手机"}，请输入6位验证码`);
-    if (!code) return false;
+  async function stepUp(paymentRecordId:number) {
+    const request = await json("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ scope:`finance:request_record_correction:${paymentRecordId}` }) });
+    const code = window.prompt(request.previewCode ? `本地预览验证码：${request.previewCode}` : `验证码已发送至 ${request.mobile || "绑定手机"}，请输入6位验证码`);
+    if (!code) return null;
     await json("/api/auth/step-up/verify", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ challengeNo:request.challengeNo, code }) });
-    return true;
+    return request.challengeNo as string;
   }
 
   async function invalidate(invoice:Invoice) {
@@ -89,8 +89,9 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
     const proposedBankReference = window.prompt("更正后的银行流水号", row.bankReference);
     if (!proposedPaymentRequestId || !amount || !proposedPaidAt || !proposedBankReference) return;
     try {
-      if (!await stepUp()) return;
-      await post({ action:"request_record_correction", paymentRecordId:row.id, reason, proposedPaymentRequestId, proposedAmountMinor:Math.round(amount*100), proposedPaidAt, proposedBankReference, smsVerified:true }, "更正申请已提交，等待另一位财务同事审批");
+      const challengeNo = await stepUp(row.id);
+      if (!challengeNo) return;
+      await post({ action:"request_record_correction", paymentRecordId:row.id, reason, proposedPaymentRequestId, proposedAmountMinor:Math.round(amount*100), proposedPaidAt, proposedBankReference, challengeNo }, "更正申请已提交，等待另一位财务同事审批");
     } catch (error) { toast(error instanceof Error ? error.message : "手机验证失败"); }
   }
 

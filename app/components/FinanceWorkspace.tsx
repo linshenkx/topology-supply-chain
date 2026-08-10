@@ -72,7 +72,8 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
   }
 
   async function requestSms() {
-    try { const result = await requestJson("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ deviceId:"finance-payment" }) }); setChallengeNo(result.challengeNo); toast(`验证码已发送至 ${result.mobile || "绑定手机"}`); }
+    if (!paying) return;
+    try { const result = await requestJson("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ scope:`finance:record_payment:${paying.id}` }) }); setChallengeNo(result.challengeNo); setSmsVerified(false); toast(result.previewCode ? `本地预览验证码：${result.previewCode}` : `验证码已发送至 ${result.mobile || "绑定手机"}`); }
     catch (error) { toast(error instanceof Error ? error.message : "验证码发送失败"); }
   }
   async function verifySms(code:string) {
@@ -82,7 +83,7 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
   async function recordPayment(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!paying || !smsVerified) { toast("请先完成手机验证码验证"); return; }
     const form = new FormData(event.currentTarget);
-    const ok = await post({ action:"record_payment", paymentRequestId:paying.id, amountMinor:Math.round(Number(form.get("amount"))*100), paidAt:form.get("paidAt"), bankReference:form.get("bankReference"), smsVerified:true }, "付款记录已保存");
+    const ok = await post({ action:"record_payment", paymentRequestId:paying.id, amountMinor:Math.round(Number(form.get("amount"))*100), paidAt:form.get("paidAt"), bankReference:form.get("bankReference"), challengeNo }, "付款记录已保存");
     if (ok) { setPaying(null); setChallengeNo(""); setSmsVerified(false); }
   }
 

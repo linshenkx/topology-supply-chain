@@ -22,6 +22,7 @@ import {
 } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { createReminder } from "../../lib/reminders";
+import { consumeVerifiedStepUp } from "../../lib/step-up";
 
 const REJECTION_REASONS = new Set([
   "amount_mismatch",
@@ -95,24 +96,29 @@ async function releaseInvoiceRisk(
   if (!invoiceExceptionId || !reason || !evidenceFileKey) {
     return Response.json({ error: "预警异常、解除原因和证明材料不能为空。" }, { status: 400 });
   }
-  if (body.smsVerified !== true) {
-    return Response.json({ error: "预警解除属于高风险操作，必须完成手机验证码。" }, { status: 428 });
+  const challengeNo = body.challengeNo;
+  const stepUpScope = `finance:release_invoice_risk:${invoiceExceptionId}`;
+  if (access.localPreview) {
+    await consumeVerifiedStepUp(null, { challengeNo, userId: access.userId, localPreview: true, scope: stepUpScope });
+    return Response.json({ success: true, preview: true });
   }
-  if (access.localPreview) return Response.json({ success: true, preview: true });
   const db = getDb();
   const [exception] = await db.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
   if (!exception || exception.status !== "risk_warning") {
     return Response.json({ error: "该异常当前不是可解除的工厂风险预警。" }, { status: 409 });
   }
   const now = new Date().toISOString();
-  await db.update(invoiceExceptions).set({
-    status: "awaiting_remediation",
-    riskReleasedBy: access.userId,
-    riskReleasedAt: now,
-    riskReleaseReason: reason,
-    riskReleaseEvidenceFileKey: evidenceFileKey,
-    updatedAt: now,
-  }).where(eq(invoiceExceptions.id, invoiceExceptionId));
+  await withDbTransaction(db, async tx => {
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
+    await tx.update(invoiceExceptions).set({
+      status: "awaiting_remediation",
+      riskReleasedBy: access.userId,
+      riskReleasedAt: now,
+      riskReleaseReason: reason,
+      riskReleaseEvidenceFileKey: evidenceFileKey,
+      updatedAt: now,
+    }).where(eq(invoiceExceptions.id, invoiceExceptionId));
+  });
   await writeAudit(access, {
     action: "release_warning",
     module: "finance",
@@ -291,30 +297,38 @@ async function requestRecordCorrection(
   if (!paymentRecordId || !reason || !proposedPaymentRequestId || proposedAmountMinor <= 0 || !proposedPaidAt || !proposedBankReference) {
     return Response.json({ error: "原记录、更正原因及更正后的请款单、金额、日期、流水号均不能为空。" }, { status: 400 });
   }
-  if (body.smsVerified !== true) return Response.json({ error: "付款或退款更正属于高风险操作，必须完成手机验证码。" }, { status: 428 });
-  if (access.localPreview) return Response.json({ approval: { id: 0 }, preview: true }, { status: 201 });
+  const challengeNo = body.challengeNo;
+  const stepUpScope = `finance:request_record_correction:${paymentRecordId}`;
+  if (access.localPreview) {
+    await consumeVerifiedStepUp(null, { challengeNo, userId: access.userId, localPreview: true, scope: stepUpScope });
+    return Response.json({ approval: { id: 0 }, preview: true }, { status: 201 });
+  }
   const db = getDb();
   const [original] = await db.select().from(paymentRecords).where(eq(paymentRecords.id, paymentRecordId)).limit(1);
   if (!original) return Response.json({ error: "原付款或退款记录不存在。" }, { status: 404 });
-  const approval = await insertOne<typeof approvalRequests.$inferSelect>(db.insert(approvalRequests).values({
-    requestNo: `AP-FINCORR-${Date.now()}`,
-    workflowType: "financial_record_correction",
-    entityType: "payment_record",
-    entityId: original.id,
-    summary: `更正财务记录 #${original.id}`,
-    payloadJson: JSON.stringify({
-      proposedPaymentRequestId,
-      proposedAmountMinor,
-      proposedPaidAt,
-      proposedBankReference,
-      originalRecordType: original.recordType,
-      invoiceExceptionId: original.invoiceExceptionId,
-      reason,
-    }),
-    highRisk: true,
-    requestedBy: access.userId,
-    smsVerifiedAt: new Date().toISOString(),
-  }), id => db.select().from(approvalRequests).where(eq(approvalRequests.id, id)).limit(1));
+  const now = new Date().toISOString();
+  const approval = await withDbTransaction(db, async tx => {
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
+    return insertOne<typeof approvalRequests.$inferSelect>(tx.insert(approvalRequests).values({
+      requestNo: `AP-FINCORR-${Date.now()}`,
+      workflowType: "financial_record_correction",
+      entityType: "payment_record",
+      entityId: original.id,
+      summary: `更正财务记录 #${original.id}`,
+      payloadJson: JSON.stringify({
+        proposedPaymentRequestId,
+        proposedAmountMinor,
+        proposedPaidAt,
+        proposedBankReference,
+        originalRecordType: original.recordType,
+        invoiceExceptionId: original.invoiceExceptionId,
+        reason,
+      }),
+      highRisk: true,
+      requestedBy: access.userId,
+      smsVerifiedAt: now,
+    }), id => tx.select().from(approvalRequests).where(eq(approvalRequests.id, id)).limit(1));
+  });
   await writeAudit(access, { action: "request_correction", module: "finance", entityType: "payment_record", entityId: original.id, before: original, after: { approvalId: approval.id, reason }, sensitiveView: true, request });
   return Response.json({ approval }, { status: 201 });
 }
@@ -495,10 +509,12 @@ async function recordPayment(
   if (!paymentRequestId || amountMinor <= 0 || !paidAt || !bankReference) {
     return Response.json({ error: "请款单、付款金额、付款日期和银行流水号不能为空。" }, { status: 400 });
   }
-  if (body.smsVerified !== true) {
-    return Response.json({ error: "付款登记属于高风险操作，必须完成手机验证码。" }, { status: 428 });
+  const challengeNo = body.challengeNo;
+  const stepUpScope = `finance:record_payment:${paymentRequestId}`;
+  if (access.localPreview) {
+    await consumeVerifiedStepUp(null, { challengeNo, userId: access.userId, localPreview: true, scope: stepUpScope });
+    return Response.json({ payment: { id: 0 }, preview: true }, { status: 201 });
   }
-  if (access.localPreview) return Response.json({ payment: { id: 0 }, preview: true }, { status: 201 });
   const db = getDb();
   const [paymentRequest] = await db.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
   if (!paymentRequest) return Response.json({ error: "请款单不存在。" }, { status: 404 });
@@ -515,6 +531,7 @@ async function recordPayment(
   }
   const totalPaid = paid + amountMinor;
   const payment = await withDbTransaction(db, async tx => {
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
     const created = await insertOne<typeof paymentRecords.$inferSelect>(tx.insert(paymentRecords).values({
       paymentRequestId,
       amountMinor,
