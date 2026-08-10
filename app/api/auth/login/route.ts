@@ -1,6 +1,8 @@
-import { and, eq, gt, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull, lt, sql } from "drizzle-orm";
 import { getDb } from "../../../../db";
+import { executeAffected } from "../../../../db/insert-one";
 import { authChallenges, authCredentials, trustedDevices, users } from "../../../../db/schema";
+import { withDbTransaction } from "../../../../db/transaction";
 import { isLocalPreviewRequest } from "../../../lib/access-boundary";
 import { hashPassword, hashSecret, randomDigits } from "../../../lib/crypto";
 import { runtimeEnv } from "../../../lib/runtime-env";
@@ -36,18 +38,41 @@ export async function POST(request: Request) {
 
   const passwordHash = await hashPassword(body.password, credential.passwordSalt);
   if (passwordHash !== credential.passwordHash) {
-    const attempts = credential.failedAttempts + 1;
-    await db.update(authCredentials).set({
-      failedAttempts: attempts,
-      lockedAt: attempts >= 5 ? new Date().toISOString() : null,
-      updatedAt: new Date().toISOString(),
-    }).where(eq(authCredentials.id, credential.id));
-    if (attempts >= 5) {
-      await db.update(users).set({
-        accountStatus: "locked",
-        updatedAt: new Date().toISOString(),
-      }).where(eq(users.id, user.id));
-    }
+    const attempts = await withDbTransaction(db, async tx => {
+      const attemptedAt = new Date().toISOString();
+      const incremented = await executeAffected(tx.update(authCredentials).set({
+        failedAttempts: sql`${authCredentials.failedAttempts} + 1`,
+        updatedAt: attemptedAt,
+      }).where(and(
+        eq(authCredentials.id, credential.id),
+        lt(authCredentials.failedAttempts, 5),
+      )));
+      const [latestCredential] = await tx.select({
+        failedAttempts: authCredentials.failedAttempts,
+      }).from(authCredentials).where(eq(authCredentials.id, credential.id)).limit(1);
+      if (!latestCredential) throw new Error("登录凭证已不存在。");
+      const latestAttempts = Math.min(latestCredential.failedAttempts, 5);
+      if (incremented !== 1 && latestAttempts < 5) {
+        throw new Error("登录失败次数更新未生效。");
+      }
+      if (latestAttempts >= 5) {
+        await tx.update(authCredentials).set({
+          lockedAt: attemptedAt,
+          updatedAt: attemptedAt,
+        }).where(and(
+          eq(authCredentials.id, credential.id),
+          isNull(authCredentials.lockedAt),
+        ));
+        await tx.update(users).set({
+          accountStatus: "locked",
+          updatedAt: attemptedAt,
+        }).where(and(
+          eq(users.id, user.id),
+          eq(users.accountStatus, user.accountStatus),
+        ));
+      }
+      return latestAttempts;
+    });
     return Response.json({
       error: attempts >= 5
         ? "连续失败5次，账号已锁定。"
@@ -55,11 +80,29 @@ export async function POST(request: Request) {
     }, { status: 401 });
   }
 
-  await db.update(authCredentials).set({
-    failedAttempts: 0,
-    lockedAt: null,
-    updatedAt: new Date().toISOString(),
-  }).where(eq(authCredentials.id, credential.id));
+  const credentialReset = await withDbTransaction(db, async tx => {
+    const resetAt = new Date().toISOString();
+    const reset = await executeAffected(tx.update(authCredentials).set({
+      failedAttempts: 0,
+      lockedAt: null,
+      updatedAt: resetAt,
+    }).where(and(
+      eq(authCredentials.id, credential.id),
+      eq(authCredentials.failedAttempts, credential.failedAttempts),
+      eq(authCredentials.updatedAt, credential.updatedAt),
+      isNull(authCredentials.lockedAt),
+      lt(authCredentials.failedAttempts, 5),
+    )));
+    if (reset !== 1) return false;
+    const [activeUser] = await tx.select({ id: users.id }).from(users).where(and(
+      eq(users.id, user.id),
+      eq(users.accountStatus, "active"),
+    )).limit(1);
+    return Boolean(activeUser);
+  });
+  if (!credentialReset) {
+    return Response.json({ error: "账号状态已变化，请重新登录。" }, { status: 423 });
+  }
 
   const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
     ?? request.headers.get("x-real-ip")
@@ -77,6 +120,13 @@ export async function POST(request: Request) {
     (!device.lastRegion || !region || device.lastRegion === region);
 
   if (trusted) {
+    const [activeUser] = await db.select({ id: users.id }).from(users).where(and(
+      eq(users.id, user.id),
+      eq(users.accountStatus, "active"),
+    )).limit(1);
+    if (!activeUser) {
+      return Response.json({ error: "账号当前不可用，请联系管理员。" }, { status: 423 });
+    }
     const session = await createSession({
       userId: user.id,
       deviceId: body.deviceId,
@@ -115,6 +165,13 @@ export async function POST(request: Request) {
 
   const code = randomDigits();
   const challengeNo = `OTP-${crypto.randomUUID()}`;
+  const [activeUser] = await db.select({ id: users.id }).from(users).where(and(
+    eq(users.id, user.id),
+    eq(users.accountStatus, "active"),
+  )).limit(1);
+  if (!activeUser) {
+    return Response.json({ error: "账号当前不可用，请联系管理员。" }, { status: 423 });
+  }
   await db.insert(authChallenges).values({
     challengeNo,
     userId: user.id,
