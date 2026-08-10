@@ -3,6 +3,8 @@ import { getDb } from "../../db";
 import { authSessions, userRoles, users } from "../../db/schema";
 import { hashSecret } from "./crypto";
 import { readCookie, SESSION_COOKIE } from "./sessions";
+import { runtimeEnv } from "./runtime-env";
+import { isLocalPreviewRequest } from "./access-boundary";
 
 export type AccessContext = {
   userId: number;
@@ -18,8 +20,12 @@ export type AccessContext = {
 const INTERNAL_ROLES = new Set(["supply_chain", "finance", "admin", "company_qc"]);
 
 export async function requireAccess(request: Request): Promise<AccessContext> {
-  const url = new URL(request.url);
-  const localPreview = ["localhost", "127.0.0.1"].includes(url.hostname);
+  const localPreview = isLocalPreviewRequest({
+    requestUrl: request.url,
+    appEnv: runtimeEnv("APP_ENV"),
+    deployTarget: runtimeEnv("DEPLOY_TARGET"),
+    nodeEnv: runtimeEnv("NODE_ENV"),
+  });
   const sessionToken = readCookie(request, SESSION_COOKIE);
   if (sessionToken) {
     const db = getDb();
@@ -35,9 +41,7 @@ export async function requireAccess(request: Request): Promise<AccessContext> {
       return buildContext(user, false);
     }
   }
-  const email = request.headers.get("oai-authenticated-user-email")?.trim().toLowerCase();
-
-  if (!email && localPreview) {
+  if (localPreview) {
     return {
       userId: 0,
       email: "preview@topologygz.com",
@@ -49,12 +53,7 @@ export async function requireAccess(request: Request): Promise<AccessContext> {
       localPreview: true,
     };
   }
-  if (!email) throw new AccessError(401, "请先登录后再访问系统。");
-
-  const db = getDb();
-  const [user] = await db.select().from(users).where(eq(users.email, email)).limit(1);
-  if (!user) throw new AccessError(403, "账号尚未被系统管理员启用。");
-  return buildContext(user, false);
+  throw new AccessError(401, "请先登录后再访问系统。");
 }
 
 async function buildContext(user: typeof users.$inferSelect, localPreview: boolean): Promise<AccessContext> {
