@@ -140,7 +140,7 @@ test("approval proof consumption and pending-state CAS share the claim transacti
   assert.match(route, /await withDbTransaction\(db, claimApproval\)/);
 
   const correctionTransaction = route.slice(
-    route.indexOf("await withDbTransaction(db, async tx =>", route.indexOf("financial_record_correction")),
+    route.indexOf("await withLockedFinancialRows(db", route.indexOf('approval.workflowType === "financial_record_correction"')),
   );
   assert.ok(correctionTransaction.indexOf("await claimApproval(tx)") >= 0);
   assert.ok(correctionTransaction.indexOf("await claimApproval(tx)") < correctionTransaction.indexOf("await tx.insert(paymentRecords)"));

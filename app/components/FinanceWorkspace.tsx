@@ -1,13 +1,14 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { isPayableLedgerRecord } from "../lib/payment-guard";
 import FinanceExceptionWorkspace from "./FinanceExceptionWorkspace";
 import "../finance.css";
 
 type PaymentRequest = { id:number; requestNo:string; factoryId:number; plannedPaymentDate:string; totalAmountMinor:number; invoiceCoveredAmountMinor:number; status:string };
 type Invoice = { id:number; invoiceNo:string; purchaseOrderId:number; amountTaxIncludedMinor:number; expectedAmountMinor:number; amountMatchesExpected:boolean; status:string; issuedAt:string };
 type Verification = { id:number; invoiceId:number; verifierRole:string; decision:string; rejectionReason?:string|null };
-type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string };
+type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string; invoiceExceptionId:number|null };
 type PurchaseOrder = { id:number; orderNo:string; totalTaxIncludedMinor:number };
 type FinanceData = { paymentRequests:PaymentRequest[]; invoices:Invoice[]; verifications:Verification[]; payments:Payment[]; purchaseOrders:PurchaseOrder[]; exceptions:Array<{id:number;invoiceId:number;status:string;exceptionType:string;affectedAmountMinor:number}> };
 
@@ -34,7 +35,7 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
   const refresh = useCallback(async () => setData(await requestJson("/api/finance")), []);
   useEffect(() => { refresh().catch(error => toast(error.message)); }, [refresh, toast]);
 
-  const paidByRequest = useMemo(() => data.payments.filter(row => row.recordType === "payment").reduce<Record<number,number>>((map,row) => { map[row.paymentRequestId] = (map[row.paymentRequestId] || 0) + row.amountMinor; return map; }, {}), [data.payments]);
+  const paidByRequest = useMemo(() => data.payments.filter(isPayableLedgerRecord).reduce<Record<number,number>>((map,row) => { map[row.paymentRequestId] = (map[row.paymentRequestId] || 0) + row.amountMinor; return map; }, {}), [data.payments]);
   const summary = useMemo(() => ({
     due: data.paymentRequests.filter(row => !["paid","cancelled"].includes(row.status)).reduce((sum,row) => sum + Math.max(0,row.totalAmountMinor-(paidByRequest[row.id]||0)),0),
     waitingInvoice: data.paymentRequests.filter(row => row.status === "waiting_invoice").length,

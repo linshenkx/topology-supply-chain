@@ -1,12 +1,14 @@
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { executeAffected } from "../../../db/insert-one";
+import { withLockedFinancialRows } from "../../../db/row-lock";
 import { approvalRequests, corePriceAgreements, corePriceChangeRequests, deliveryBatches, executionOrders, factoryPaymentRequests, factoryPlanResponses, inventoryBatches, inventoryMovements, inventoryTransfers, invoiceExceptions, orderItems, paymentRecords, productionMaterialLines, productionReports, productBoms, purchaseOrders, purchasePlanItems, purchasePlans, reminderSchedules, skus, stocktakeAdjustments, stocktakeCounts, stocktakes, supplierSkus, suppliers, userRoles, warehouses } from "../../../db/schema";
 import { AccessError, accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { assertProductionWarehouse, finalizeProductionInventory } from "../../lib/production-finalization";
 import { createReminder } from "../../lib/reminders";
 import { withDbTransaction } from "../../../db/transaction";
+import { evaluatePayableLedger, evaluateRefundCorrection } from "../../lib/payment-guard";
 import { consumeVerifiedStepUp } from "../../lib/step-up";
 
 export async function GET(request: Request) {
@@ -406,6 +408,13 @@ export async function POST(request: Request) {
     if (approval.workflowType === "financial_record_correction" && body.decision === "approved") {
       const [original] = await db.select().from(paymentRecords).where(eq(paymentRecords.id, approval.entityId)).limit(1);
       if (!original) return Response.json({ error: "待更正的原财务记录不存在。" }, { status: 404 });
+      if (!(["payment", "refund"] as string[]).includes(original.recordType)) {
+        return Response.json({ error: "只能更正原始付款或退款记录。" }, { status: 409 });
+      }
+      if ((original.recordType === "payment" && original.invoiceExceptionId !== null)
+        || (original.recordType === "refund" && !original.invoiceExceptionId)) {
+        return Response.json({ error: "原财务记录的付款/退款分类不一致。" }, { status: 409 });
+      }
       const payload = JSON.parse(approval.payloadJson) as {
         proposedPaymentRequestId: number;
         proposedAmountMinor: number;
@@ -414,16 +423,73 @@ export async function POST(request: Request) {
         originalRecordType: "payment" | "refund" | "reversal" | "correction";
         invoiceExceptionId?: number | null;
       };
-      await withDbTransaction(db, async tx => {
+      if (!Number.isSafeInteger(payload.proposedPaymentRequestId)
+        || payload.proposedPaymentRequestId <= 0
+        || !Number.isSafeInteger(payload.proposedAmountMinor)
+        || payload.proposedAmountMinor <= 0
+        || !payload.proposedPaidAt
+        || !payload.proposedBankReference?.trim()
+        || payload.originalRecordType !== original.recordType
+        || payload.invoiceExceptionId !== original.invoiceExceptionId) {
+        return Response.json({ error: "财务更正审批数据不完整或已损坏。" }, { status: 409 });
+      }
+      if (original.recordType === "refund" && !original.invoiceExceptionId) {
+        return Response.json({ error: "原退款记录缺少关联异常单。" }, { status: 409 });
+      }
+      const paymentRequestIds = [original.paymentRequestId, payload.proposedPaymentRequestId];
+      const invoiceExceptionIds = original.invoiceExceptionId ? [original.invoiceExceptionId] : [];
+      await withLockedFinancialRows(db, { paymentRequestIds, invoiceExceptionIds }, async tx => {
+        const [lockedOriginal] = await tx.select().from(paymentRecords).where(eq(paymentRecords.id, original.id)).limit(1);
+        if (!lockedOriginal || lockedOriginal.recordType !== original.recordType) {
+          throw new AccessError(409, "原财务记录已变化，无法继续更正。");
+        }
+        const [existingCorrection] = await tx.select({ id: paymentRecords.id }).from(paymentRecords)
+          .where(eq(paymentRecords.reversesPaymentRecordId, lockedOriginal.id)).limit(1);
+        if (existingCorrection) throw new AccessError(409, "该财务记录已经完成更正，不能重复冲正。");
+
+        const requestIds = Array.from(new Set(paymentRequestIds)).sort((left, right) => left - right);
+        const requestById = new Map<number, typeof factoryPaymentRequests.$inferSelect>();
+        for (const requestId of requestIds) {
+          const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, requestId)).limit(1);
+          if (!paymentRequest) throw new AccessError(404, "更正关联的请款单不存在。");
+          requestById.set(requestId, paymentRequest);
+        }
+        const proposedRequest = requestById.get(payload.proposedPaymentRequestId)!;
+        if (lockedOriginal.recordType === "payment"
+          && proposedRequest.invoiceCoveredAmountMinor < proposedRequest.totalAmountMinor) {
+          throw new AccessError(409, "更正目标请款单的发票覆盖金额不足。");
+        }
+        if (lockedOriginal.recordType === "payment"
+          && ["waiting_invoice", "invoice_exception_frozen", "failed", "cancelled"].includes(proposedRequest.status)) {
+          throw new AccessError(409, "更正目标请款单当前不可支付。");
+        }
+
+        let refundCorrection: ReturnType<typeof evaluateRefundCorrection> | null = null;
+        if (lockedOriginal.recordType === "refund") {
+          const [exception] = await tx.select().from(invoiceExceptions)
+            .where(eq(invoiceExceptions.id, lockedOriginal.invoiceExceptionId!)).limit(1);
+          if (!exception) throw new AccessError(404, "退款关联的发票异常单不存在。");
+          refundCorrection = evaluateRefundCorrection({
+            affectedAmountMinor: exception.affectedAmountMinor,
+            replacementCoveredAmountMinor: exception.replacementCoveredAmountMinor,
+            refundedAmountMinor: exception.refundedAmountMinor,
+            originalRefundAmountMinor: lockedOriginal.amountMinor,
+            proposedRefundAmountMinor: payload.proposedAmountMinor,
+          });
+          if (!refundCorrection.withinBounds) {
+            throw new AccessError(409, "更正后的退款与补票合计超出异常影响金额。");
+          }
+        }
+
         await claimApproval(tx);
         await tx.insert(paymentRecords).values({
-          paymentRequestId: original.paymentRequestId,
-          amountMinor: -original.amountMinor,
+          paymentRequestId: lockedOriginal.paymentRequestId,
+          amountMinor: -lockedOriginal.amountMinor,
           paidAt: now,
-          bankReference: `冲正:${original.bankReference}`,
+          bankReference: `冲正:${lockedOriginal.bankReference}`,
           recordType: "reversal",
-          reversesPaymentRecordId: original.id,
-          invoiceExceptionId: original.invoiceExceptionId,
+          reversesPaymentRecordId: lockedOriginal.id,
+          invoiceExceptionId: lockedOriginal.invoiceExceptionId,
           recordedBy: approval.requestedBy,
           reviewedBy: access.userId,
           reviewStatus: "approved",
@@ -434,35 +500,41 @@ export async function POST(request: Request) {
           paidAt: payload.proposedPaidAt,
           bankReference: payload.proposedBankReference,
           recordType: "correction",
-          reversesPaymentRecordId: original.id,
-          invoiceExceptionId: payload.invoiceExceptionId,
+          reversesPaymentRecordId: lockedOriginal.id,
+          invoiceExceptionId: lockedOriginal.invoiceExceptionId,
           recordedBy: approval.requestedBy,
           reviewedBy: access.userId,
           reviewStatus: "approved",
         });
-        if (original.recordType === "refund" && original.invoiceExceptionId) {
-          const [exception] = await tx.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, original.invoiceExceptionId)).limit(1);
-          if (exception) {
-            const correctedRefund = Math.max(0, exception.refundedAmountMinor - original.amountMinor + payload.proposedAmountMinor);
-            const resolved = correctedRefund + exception.replacementCoveredAmountMinor >= exception.affectedAmountMinor;
-            await tx.update(invoiceExceptions).set({
-              refundedAmountMinor: correctedRefund,
-              status: resolved ? "resolved" : "awaiting_remediation",
-              resolvedAt: resolved ? now : null,
-              updatedAt: now,
-            }).where(eq(invoiceExceptions.id, exception.id));
-          }
+        if (lockedOriginal.recordType === "refund" && lockedOriginal.invoiceExceptionId && refundCorrection) {
+          await tx.update(invoiceExceptions).set({
+            refundedAmountMinor: refundCorrection.correctedRefundAmountMinor,
+            status: refundCorrection.resolved ? "resolved" : "awaiting_remediation",
+            resolvedAt: refundCorrection.resolved ? now : null,
+            updatedAt: now,
+          }).where(eq(invoiceExceptions.id, lockedOriginal.invoiceExceptionId));
         }
-        for (const requestId of new Set([original.paymentRequestId, payload.proposedPaymentRequestId])) {
-          const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, requestId)).limit(1);
-          if (!paymentRequest) continue;
-          const ledger = await tx.select().from(paymentRecords).where(eq(paymentRecords.paymentRequestId, requestId));
-          const netPaid = ledger
-            .filter((row) => ["payment", "correction", "reversal"].includes(row.recordType))
-            .reduce((sum, row) => sum + row.amountMinor, 0);
+        for (const requestId of requestIds) {
+          const paymentRequest = requestById.get(requestId)!;
+          const ledger = await tx.select({
+            amountMinor: paymentRecords.amountMinor,
+            recordType: paymentRecords.recordType,
+            invoiceExceptionId: paymentRecords.invoiceExceptionId,
+          }).from(paymentRecords).where(eq(paymentRecords.paymentRequestId, requestId));
+          const ledgerState = evaluatePayableLedger({
+            totalAmountMinor: paymentRequest.totalAmountMinor,
+            ledgerRecords: ledger,
+          });
+          if (!ledgerState.withinBounds) {
+            throw new AccessError(409, "更正后请款单付款净额越界，已撤销本次更正。");
+          }
+          const proposedPaymentDate = lockedOriginal.recordType === "payment"
+            && requestId === payload.proposedPaymentRequestId
+            ? payload.proposedPaidAt
+            : paymentRequest.paidAt;
           await tx.update(factoryPaymentRequests).set({
-            status: netPaid >= paymentRequest.totalAmountMinor ? "paid" : netPaid > 0 ? "partially_paid" : "generated",
-            paidAt: netPaid >= paymentRequest.totalAmountMinor ? payload.proposedPaidAt : null,
+            status: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? "paid" : ledgerState.netPaidAmountMinor > 0 ? "partially_paid" : "generated",
+            paidAt: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? proposedPaymentDate : null,
             updatedAt: now,
           }).where(eq(factoryPaymentRequests.id, requestId));
         }

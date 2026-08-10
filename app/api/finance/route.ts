@@ -14,13 +14,16 @@ import {
   users,
 } from "../../../db/schema";
 import { insertOne } from "../../../db/insert-one";
+import { withLockedFinancialRows, withLockedInvoiceException, withLockedPaymentRequest } from "../../../db/row-lock";
 import { withDbTransaction } from "../../../db/transaction";
 import {
+  AccessError,
   accessErrorResponse,
   requireAccess,
   requireRole,
 } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
+import { evaluateExceptionRemediation, evaluatePayableLedger, evaluatePaymentCapacity } from "../../lib/payment-guard";
 import { createReminder } from "../../lib/reminders";
 import { consumeVerifiedStepUp } from "../../lib/step-up";
 
@@ -208,18 +211,26 @@ async function linkReplacementInvoice(
   }
   if (access.localPreview) return Response.json({ link: { id: 0 }, preview: true }, { status: 201 });
   const db = getDb();
-  const [exception] = await db.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
-  const [replacement] = await db.select().from(factoryInvoices).where(eq(factoryInvoices.id, replacementInvoiceId)).limit(1);
-  if (!exception || !replacement) return Response.json({ error: "补票异常或新发票不存在。" }, { status: 404 });
-  if (exception.status === "resolved") return Response.json({ error: "该异常已经关闭。" }, { status: 409 });
-  if (replacement.status !== "verified") return Response.json({ error: "补开的新发票必须经过供应链和财务重新双重核验。" }, { status: 409 });
-  const remaining = exception.affectedAmountMinor - exception.replacementCoveredAmountMinor - exception.refundedAmountMinor;
-  if (coveredAmountMinor > remaining || coveredAmountMinor > replacement.amountTaxIncludedMinor) {
-    return Response.json({ error: "补票金额超过异常待处理金额或新发票金额。" }, { status: 409 });
-  }
-  const replacementTotal = exception.replacementCoveredAmountMinor + coveredAmountMinor;
-  const resolved = replacementTotal + exception.refundedAmountMinor >= exception.affectedAmountMinor;
-  const link = await withDbTransaction(db, async tx => {
+  const result = await withLockedInvoiceException(db, invoiceExceptionId, async tx => {
+    const [exception] = await tx.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
+    const [replacement] = await tx.select().from(factoryInvoices).where(eq(factoryInvoices.id, replacementInvoiceId)).limit(1);
+    if (!exception || !replacement) throw new AccessError(404, "补票异常或新发票不存在。");
+    if (exception.status === "resolved") throw new AccessError(409, "该异常已经关闭。");
+    if (replacement.status !== "verified") {
+      throw new AccessError(409, "补开的新发票必须经过供应链和财务重新双重核验。");
+    }
+    if (coveredAmountMinor > replacement.amountTaxIncludedMinor) {
+      throw new AccessError(409, "补票金额超过新发票金额。");
+    }
+    const replacementTotal = exception.replacementCoveredAmountMinor + coveredAmountMinor;
+    const remediation = evaluateExceptionRemediation({
+      affectedAmountMinor: exception.affectedAmountMinor,
+      replacementCoveredAmountMinor: replacementTotal,
+      refundedAmountMinor: exception.refundedAmountMinor,
+    });
+    if (!remediation.withinBounds) {
+      throw new AccessError(409, "补票金额超过异常待处理金额。");
+    }
     const created = await insertOne<typeof replacementInvoiceLinks.$inferSelect>(tx.insert(replacementInvoiceLinks).values({
       invoiceExceptionId,
       replacementInvoiceId,
@@ -228,14 +239,14 @@ async function linkReplacementInvoice(
     }), id => tx.select().from(replacementInvoiceLinks).where(eq(replacementInvoiceLinks.id, id)).limit(1));
     await tx.update(invoiceExceptions).set({
       replacementCoveredAmountMinor: replacementTotal,
-      status: resolved ? "resolved" : exception.status,
-      resolvedAt: resolved ? new Date().toISOString() : null,
+      status: remediation.resolved ? "resolved" : exception.status,
+      resolvedAt: remediation.resolved ? new Date().toISOString() : null,
       updatedAt: new Date().toISOString(),
     }).where(eq(invoiceExceptions.id, invoiceExceptionId));
-    return created;
+    return { link: created, resolved: remediation.resolved };
   });
-  await writeAudit(access, { action: "link_replacement", module: "finance", entityType: "invoice_exception", entityId: invoiceExceptionId, after: link, sensitiveView: true, request });
-  return Response.json({ link, resolved }, { status: 201 });
+  await writeAudit(access, { action: "link_replacement", module: "finance", entityType: "invoice_exception", entityId: invoiceExceptionId, after: result.link, sensitiveView: true, request });
+  return Response.json(result, { status: 201 });
 }
 
 async function recordRefund(
@@ -254,13 +265,25 @@ async function recordRefund(
   }
   if (access.localPreview) return Response.json({ refund: { id: 0 }, preview: true }, { status: 201 });
   const db = getDb();
-  const [exception] = await db.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
-  if (!exception || exception.status === "resolved") return Response.json({ error: "补票退款异常不存在或已经关闭。" }, { status: 409 });
-  const remaining = exception.affectedAmountMinor - exception.replacementCoveredAmountMinor - exception.refundedAmountMinor;
-  if (amountMinor > remaining) return Response.json({ error: "退款金额超过异常待处理金额。" }, { status: 409 });
-  const refundedTotal = exception.refundedAmountMinor + amountMinor;
-  const resolved = refundedTotal + exception.replacementCoveredAmountMinor >= exception.affectedAmountMinor;
-  const refund = await withDbTransaction(db, async tx => {
+  const result = await withLockedFinancialRows(db, {
+    paymentRequestIds: [paymentRequestId],
+    invoiceExceptionIds: [invoiceExceptionId],
+  }, async tx => {
+    const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
+    const [exception] = await tx.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
+    if (!paymentRequest) throw new AccessError(404, "原请款单不存在。");
+    if (!exception || exception.status === "resolved") {
+      throw new AccessError(409, "补票退款异常不存在或已经关闭。");
+    }
+    const refundedTotal = exception.refundedAmountMinor + amountMinor;
+    const remediation = evaluateExceptionRemediation({
+      affectedAmountMinor: exception.affectedAmountMinor,
+      replacementCoveredAmountMinor: exception.replacementCoveredAmountMinor,
+      refundedAmountMinor: refundedTotal,
+    });
+    if (!remediation.withinBounds) {
+      throw new AccessError(409, "退款金额超过异常待处理金额。");
+    }
     const created = await insertOne<typeof paymentRecords.$inferSelect>(tx.insert(paymentRecords).values({
       paymentRequestId,
       amountMinor,
@@ -270,16 +293,28 @@ async function recordRefund(
       invoiceExceptionId,
       recordedBy: access.userId,
     }), id => tx.select().from(paymentRecords).where(eq(paymentRecords.id, id)).limit(1));
+    const payableLedger = await tx.select({
+      amountMinor: paymentRecords.amountMinor,
+      recordType: paymentRecords.recordType,
+      invoiceExceptionId: paymentRecords.invoiceExceptionId,
+    }).from(paymentRecords).where(eq(paymentRecords.paymentRequestId, paymentRequestId));
+    const ledgerState = evaluatePayableLedger({
+      totalAmountMinor: paymentRequest.totalAmountMinor,
+      ledgerRecords: payableLedger,
+    });
+    if (!ledgerState.withinBounds) {
+      throw new AccessError(409, "退款写入后请款单付款净额越界，已撤销本次退款。");
+    }
     await tx.update(invoiceExceptions).set({
       refundedAmountMinor: refundedTotal,
-      status: resolved ? "resolved" : exception.status,
-      resolvedAt: resolved ? new Date().toISOString() : null,
+      status: remediation.resolved ? "resolved" : exception.status,
+      resolvedAt: remediation.resolved ? new Date().toISOString() : null,
       updatedAt: new Date().toISOString(),
     }).where(eq(invoiceExceptions.id, invoiceExceptionId));
-    return created;
+    return { refund: created, resolved: remediation.resolved, remainingAmountMinor: remediation.remainingAmountMinor };
   });
-  await writeAudit(access, { action: "record_refund", module: "finance", entityType: "payment_record", entityId: refund.id, after: refund, sensitiveView: true, request });
-  return Response.json({ refund, resolved, remainingAmountMinor: remaining - amountMinor }, { status: 201 });
+  await writeAudit(access, { action: "record_refund", module: "finance", entityType: "payment_record", entityId: result.refund.id, after: result.refund, sensitiveView: true, request });
+  return Response.json(result, { status: 201 });
 }
 
 async function requestRecordCorrection(
@@ -306,6 +341,13 @@ async function requestRecordCorrection(
   const db = getDb();
   const [original] = await db.select().from(paymentRecords).where(eq(paymentRecords.id, paymentRecordId)).limit(1);
   if (!original) return Response.json({ error: "原付款或退款记录不存在。" }, { status: 404 });
+  if (!(["payment", "refund"] as string[]).includes(original.recordType)) {
+    return Response.json({ error: "只能更正原始付款或退款记录。" }, { status: 409 });
+  }
+  if ((original.recordType === "payment" && original.invoiceExceptionId !== null)
+    || (original.recordType === "refund" && !original.invoiceExceptionId)) {
+    return Response.json({ error: "原财务记录的付款/退款分类不一致。" }, { status: 409 });
+  }
   const now = new Date().toISOString();
   const approval = await withDbTransaction(db, async tx => {
     await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
@@ -516,21 +558,32 @@ async function recordPayment(
     return Response.json({ payment: { id: 0 }, preview: true }, { status: 201 });
   }
   const db = getDb();
-  const [paymentRequest] = await db.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
-  if (!paymentRequest) return Response.json({ error: "请款单不存在。" }, { status: 404 });
-  if (paymentRequest.invoiceCoveredAmountMinor < paymentRequest.totalAmountMinor) {
-    return Response.json({ error: "发票尚未完成双重核验或覆盖金额不足，禁止登记付款。" }, { status: 409 });
-  }
-  const existing = await db.select().from(paymentRecords).where(and(
-    eq(paymentRecords.paymentRequestId, paymentRequestId),
-    eq(paymentRecords.recordType, "payment"),
-  ));
-  const paid = existing.reduce((sum, row) => sum + row.amountMinor, 0);
-  if (paid + amountMinor > paymentRequest.totalAmountMinor) {
-    return Response.json({ error: "本次付款将超过请款金额，禁止登记。" }, { status: 409 });
-  }
-  const totalPaid = paid + amountMinor;
-  const payment = await withDbTransaction(db, async tx => {
+  const result = await withLockedPaymentRequest(db, paymentRequestId, async tx => {
+    const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
+    if (!paymentRequest) throw new AccessError(404, "请款单不存在。");
+    if (!(["generated", "submitted_to_finance", "partially_paid"] as string[]).includes(paymentRequest.status)) {
+      throw new AccessError(409, "请款单当前状态不允许登记付款。");
+    }
+    if (paymentRequest.invoiceCoveredAmountMinor < paymentRequest.totalAmountMinor) {
+      throw new AccessError(409, "发票尚未完成双重核验或覆盖金额不足，禁止登记付款。");
+    }
+    const ledger = await tx.select({
+      amountMinor: paymentRecords.amountMinor,
+      recordType: paymentRecords.recordType,
+      invoiceExceptionId: paymentRecords.invoiceExceptionId,
+    }).from(paymentRecords).where(eq(paymentRecords.paymentRequestId, paymentRequestId));
+    const capacity = evaluatePaymentCapacity({
+      totalAmountMinor: paymentRequest.totalAmountMinor,
+      ledgerRecords: ledger,
+      incomingAmountMinor: amountMinor,
+    });
+    if (!capacity.ledgerWithinBounds) {
+      throw new AccessError(409, "请款单付款账本净额异常，禁止继续付款。");
+    }
+    if (capacity.wouldExceed) {
+      throw new AccessError(409, "本次付款将超过请款金额，禁止登记。");
+    }
+
     await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
     const created = await insertOne<typeof paymentRecords.$inferSelect>(tx.insert(paymentRecords).values({
       paymentRequestId,
@@ -540,27 +593,39 @@ async function recordPayment(
       recordType: "payment",
       recordedBy: access.userId,
     }), id => tx.select().from(paymentRecords).where(eq(paymentRecords.id, id)).limit(1));
+    const updatedLedger = await tx.select({
+      amountMinor: paymentRecords.amountMinor,
+      recordType: paymentRecords.recordType,
+      invoiceExceptionId: paymentRecords.invoiceExceptionId,
+    }).from(paymentRecords).where(eq(paymentRecords.paymentRequestId, paymentRequestId));
+    const ledgerState = evaluatePayableLedger({
+      totalAmountMinor: paymentRequest.totalAmountMinor,
+      ledgerRecords: updatedLedger,
+    });
+    if (!ledgerState.withinBounds) {
+      throw new AccessError(409, "付款后账本净额越界，已撤销本次付款。");
+    }
     await tx.update(factoryPaymentRequests).set({
-      status: totalPaid >= paymentRequest.totalAmountMinor ? "paid" : "partially_paid",
-      paidAt: totalPaid >= paymentRequest.totalAmountMinor ? paidAt : null,
+      status: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? "paid" : "partially_paid",
+      paidAt: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? paidAt : null,
       paymentReference: bankReference,
       updatedAt: new Date().toISOString(),
     }).where(eq(factoryPaymentRequests.id, paymentRequestId));
-    return created;
+    return { payment: created, paymentRequest, ledgerState };
   });
   await writeAudit(access, {
     action: "record_payment",
     module: "finance",
     entityType: "payment_record",
-    entityId: payment.id,
-    businessNo: paymentRequest.requestNo,
-    after: payment,
+    entityId: result.payment.id,
+    businessNo: result.paymentRequest.requestNo,
+    after: result.payment,
     sensitiveView: true,
     request,
   });
   return Response.json({
-    payment,
-    paymentStatus: totalPaid >= paymentRequest.totalAmountMinor ? "paid" : "partially_paid",
-    remainingAmountMinor: paymentRequest.totalAmountMinor - totalPaid,
+    payment: result.payment,
+    paymentStatus: result.ledgerState.netPaidAmountMinor >= result.paymentRequest.totalAmountMinor ? "paid" : "partially_paid",
+    remainingAmountMinor: result.ledgerState.remainingAmountMinor,
   }, { status: 201 });
 }
