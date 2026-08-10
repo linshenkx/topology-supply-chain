@@ -1,4 +1,4 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { authChallenges, trustedDevices } from "../../../../db/schema";
 import { hashSecret } from "../../../lib/crypto";
@@ -8,8 +8,14 @@ export async function POST(request: Request) {
   const body = await request.json() as { challengeNo?: string; code?: string; deviceName?: string };
   if (!body.challengeNo || !body.code) return Response.json({ error: "验证码不能为空。" }, { status: 400 });
   const db = getDb();
-  const [challenge] = await db.select().from(authChallenges).where(and(eq(authChallenges.challengeNo, body.challengeNo), isNull(authChallenges.verifiedAt))).limit(1);
-  if (!challenge || new Date(challenge.expiresAt) <= new Date()) return Response.json({ error: "验证码已失效，请重新获取。" }, { status: 410 });
+  const nowIso = new Date().toISOString();
+  const [challenge] = await db.select().from(authChallenges).where(and(
+    eq(authChallenges.challengeNo, body.challengeNo),
+    eq(authChallenges.purpose, "login"),
+    isNull(authChallenges.verifiedAt),
+    gt(authChallenges.expiresAt, nowIso),
+  )).limit(1);
+  if (!challenge) return Response.json({ error: "验证码已失效，请重新获取。" }, { status: 410 });
   if (challenge.attempts >= 5) return Response.json({ error: "验证码错误次数过多，请重新登录。" }, { status: 423 });
   const valid = await hashSecret(`${challenge.challengeNo}:${body.code}`) === challenge.codeHash;
   if (!valid) {

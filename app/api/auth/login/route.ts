@@ -1,7 +1,9 @@
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, gt, isNull } from "drizzle-orm";
 import { getDb } from "../../../../db";
 import { authChallenges, authCredentials, trustedDevices, users } from "../../../../db/schema";
+import { isLocalPreviewRequest } from "../../../lib/access-boundary";
 import { hashPassword, hashSecret, randomDigits } from "../../../lib/crypto";
+import { runtimeEnv } from "../../../lib/runtime-env";
 import { createSession } from "../../../lib/sessions";
 import { isSmsConfigured, sendVerificationSms } from "../../../lib/sms";
 
@@ -64,13 +66,14 @@ export async function POST(request: Request) {
     ?? request.headers.get("cf-connecting-ip");
   const region = request.headers.get("cf-ipcountry")
     ?? request.headers.get("x-topology-region");
+  const nowIso = new Date().toISOString();
   const [device] = await db.select().from(trustedDevices).where(and(
     eq(trustedDevices.userId, user.id),
     eq(trustedDevices.deviceId, body.deviceId),
     isNull(trustedDevices.revokedAt),
+    gt(trustedDevices.trustedUntil, nowIso),
   )).limit(1);
   const trusted = device &&
-    new Date(device.trustedUntil) > new Date() &&
     (!device.lastRegion || !region || device.lastRegion === region);
 
   if (trusted) {
@@ -100,7 +103,12 @@ export async function POST(request: Request) {
   if (!user.mobile) {
     return Response.json({ error: "账号未绑定手机号，请联系管理员。" }, { status: 409 });
   }
-  const local = ["localhost", "127.0.0.1"].includes(new URL(request.url).hostname);
+  const local = isLocalPreviewRequest({
+    requestUrl: request.url,
+    appEnv: runtimeEnv("APP_ENV"),
+    deployTarget: runtimeEnv("DEPLOY_TARGET"),
+    nodeEnv: runtimeEnv("NODE_ENV"),
+  });
   if (!local && !isSmsConfigured()) {
     return Response.json({ error: "短信服务尚未配置。" }, { status: 503 });
   }
