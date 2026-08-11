@@ -7,7 +7,6 @@ export interface ProductionOrderItem {
 }
 
 export interface ProductionPurchaseOrder {
-  id: number;
   orderNo: string;
 }
 
@@ -23,8 +22,8 @@ export interface ProductionBom {
 }
 
 export interface ProductionBomComponent {
-  id: number;
   componentSku: string;
+  componentName: string | null;
 }
 
 export interface ProductionMaterialLine {
@@ -55,10 +54,10 @@ export interface ProductionOrder {
   status: string;
   plannedStartDate: string | null;
   plannedFinishDate: string | null;
-  item?: ProductionOrderItem;
+  item?: Omit<ProductionOrderItem, "id">;
   purchaseOrder?: ProductionPurchaseOrder;
-  factory?: ProductionFactory;
-  bom?: ProductionBom;
+  factory?: Pick<ProductionFactory, "name">;
+  bom?: Pick<ProductionBom, "version">;
   materials: ProductionMaterialLine[];
   reports: ProductionReport[];
 }
@@ -97,12 +96,21 @@ const orderItemSchema = {
   },
 } as const;
 
+const orderItemSummarySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["sku", "productName"],
+  properties: {
+    sku: { type: "string", minLength: 1 },
+    productName: { type: "string", minLength: 1 },
+  },
+} as const;
+
 const purchaseOrderSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "orderNo"],
+  required: ["orderNo"],
   properties: {
-    id: positiveInteger,
     orderNo: { type: "string", minLength: 1 },
   },
 } as const;
@@ -113,6 +121,15 @@ const factorySchema = {
   required: ["id", "name"],
   properties: {
     id: positiveInteger,
+    name: { type: "string", minLength: 1 },
+  },
+} as const;
+
+const factorySummarySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["name"],
+  properties: {
     name: { type: "string", minLength: 1 },
   },
 } as const;
@@ -128,13 +145,22 @@ const bomSchema = {
   },
 } as const;
 
+const bomSummarySchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["version"],
+  properties: {
+    version: { type: "string", minLength: 1 },
+  },
+} as const;
+
 const componentSchema = {
   type: "object",
   additionalProperties: false,
-  required: ["id", "componentSku"],
+  required: ["componentSku", "componentName"],
   properties: {
-    id: positiveInteger,
     componentSku: { type: "string", minLength: 1 },
+    componentName: nullableString,
   },
 } as const;
 
@@ -204,10 +230,10 @@ const productionOrderSchema = {
     status: { type: "string", minLength: 1 },
     plannedStartDate: nullableString,
     plannedFinishDate: nullableString,
-    item: orderItemSchema,
+    item: orderItemSummarySchema,
     purchaseOrder: purchaseOrderSchema,
-    factory: factorySchema,
-    bom: bomSchema,
+    factory: factorySummarySchema,
+    bom: bomSummarySchema,
     materials: { type: "array", maxItems: 2_000, items: materialSchema },
     reports: { type: "array", maxItems: 1_000, items: reportSchema },
   },

@@ -7,7 +7,6 @@ import {
   type ProductionFactory,
   type ProductionMaterialLine,
   type ProductionOrder,
-  type ProductionOrderItem,
   type ProductionOrderOption,
   type ProductionOrdersResponse,
   type ProductionPurchaseOrder,
@@ -65,6 +64,7 @@ const FACTORY_OPTION_ITEM_COLUMNS = `SELECT
   items.sku,
   items.product_name AS productName,
   items.item_type AS itemType,
+  plan_items.factory_id AS authorizedFactoryId,
   SUM(links.allocated_quantity) AS quantity
 FROM order_items AS items
 INNER JOIN purchase_plan_order_links AS links
@@ -110,8 +110,10 @@ FROM production_reports AS reports`;
 
 const COMPONENT_COLUMNS = `SELECT
   components.id,
-  components.component_sku AS componentSku
-FROM bom_components AS components`;
+  components.component_sku AS componentSku,
+  skus.name AS componentName
+FROM bom_components AS components
+LEFT JOIN skus ON skus.code = components.component_sku`;
 
 type ProductionAccessContext = Pick<
   AccessContext,
@@ -127,12 +129,16 @@ interface ProductionOrderRow extends Omit<
   orderItemId: number;
 }
 interface ProductionOrderItemRow {
+  authorizedFactoryId: number | null;
   id: number;
   itemType: "finished" | "auxiliary" | "component";
   productName: string;
   purchaseOrderId: number;
   quantity: number;
   sku: string;
+}
+interface ProductionPurchaseOrderRow extends ProductionPurchaseOrder {
+  id: number;
 }
 interface ProductionFactoryRow extends ProductionFactory {
   status: string;
@@ -144,6 +150,9 @@ interface ProductionBomRow extends ProductionBom {
 interface ProductionMaterialLineRow extends ProductionMaterialLine {
   bomComponentId: number;
   executionOrderId: number;
+}
+interface ProductionBomComponentRow extends ProductionBomComponent {
+  id: number;
 }
 interface ProductionReportRow extends ProductionReport {
   executionOrderId: number;
@@ -261,6 +270,10 @@ function order(row: DataRow): ProductionOrderRow {
 
 function orderItem(row: DataRow): ProductionOrderItemRow {
   return {
+    authorizedFactoryId:
+      row.authorizedFactoryId === undefined
+        ? null
+        : positiveInteger(row.authorizedFactoryId),
     id: positiveInteger(row.id),
     purchaseOrderId: positiveInteger(row.purchaseOrderId),
     sku: string(row.sku),
@@ -274,7 +287,7 @@ function orderItem(row: DataRow): ProductionOrderItemRow {
   };
 }
 
-function purchaseOrder(row: DataRow): ProductionPurchaseOrder {
+function purchaseOrder(row: DataRow): ProductionPurchaseOrderRow {
   return {
     id: positiveInteger(row.id),
     orderNo: string(row.orderNo),
@@ -322,10 +335,11 @@ function material(row: DataRow): ProductionMaterialLineRow {
   };
 }
 
-function component(row: DataRow): ProductionBomComponent {
+function component(row: DataRow): ProductionBomComponentRow {
   return {
     id: positiveInteger(row.id),
     componentSku: string(row.componentSku),
+    componentName: nullableString(row.componentName),
   };
 }
 
@@ -399,6 +413,20 @@ function ensureClosed<Value>(
   if (rows.some((row) => !ids.has(parentId(row)))) invalidData();
 }
 
+function ensureExact<Value>(
+  rows: readonly Value[],
+  ids: ReadonlySet<number>,
+  id: (row: Value) => number,
+): void {
+  const seen = new Set<number>();
+  for (const row of rows) {
+    const rowId = id(row);
+    if (!ids.has(rowId) || seen.has(rowId)) invalidData();
+    seen.add(rowId);
+  }
+  if (seen.size !== ids.size) invalidData();
+}
+
 async function readProductionOrders(
   database: QueryExecutor,
   scope: ProductionScope,
@@ -467,7 +495,8 @@ GROUP BY
   items.purchase_order_id,
   items.sku,
   items.product_name,
-  items.item_type
+  items.item_type,
+  plan_items.factory_id
 ORDER BY items.id ASC
 LIMIT ${ITEM_LIMIT}`
       : `${ITEM_COLUMNS}
@@ -520,40 +549,61 @@ LIMIT ${requiredBomIds.length}`,
     requiredBomIds.length,
     bom,
   );
-  const optionBomPromise = boundedQuery(
-    database,
-    `${BOM_COLUMNS}
-WHERE boms.approval_status = ? AND boms.active = ?
-ORDER BY boms.id ASC
-LIMIT ${BOM_LIMIT}`,
-    ["approved", 1],
-    BOM_LIMIT,
-    bom,
-  );
   const [
     requiredItems,
     optionItems,
     requiredFactories,
     optionFactories,
     requiredBoms,
-    optionBoms,
   ] = await Promise.all([
     requiredItemPromise,
     optionItemPromise,
     requiredFactoryPromise,
     optionFactoryPromise,
     requiredBomPromise,
-    optionBomPromise,
   ]);
-  ensureClosed(requiredItems, new Set(requiredItemIds), (row) => row.id);
-  ensureClosed(requiredFactories, new Set(requiredFactoryIds), (row) => row.id);
-  ensureClosed(requiredBoms, new Set(requiredBomIds), (row) => row.id);
+  ensureExact(requiredItems, new Set(requiredItemIds), (row) => row.id);
+  ensureExact(requiredFactories, new Set(requiredFactoryIds), (row) => row.id);
+  ensureExact(requiredBoms, new Set(requiredBomIds), (row) => row.id);
   if (
-    optionItems.some((row) => row.itemType !== "finished") ||
+    optionItems.some(
+      (row) =>
+        row.itemType !== "finished" ||
+        (scope.kind === "factory" &&
+          row.authorizedFactoryId !== scope.factoryId) ||
+        (scope.kind === "internal" && row.authorizedFactoryId !== null),
+    ) ||
     optionFactories.some((row) => row.status !== "active") ||
+    new Set(optionItems.map((row) => row.id)).size !== optionItems.length
+  ) {
+    return invalidData();
+  }
+
+  const optionSkus = Array.from(new Set(optionItems.map((row) => row.sku)));
+  const optionBoms =
+    optionSkus.length === 0
+      ? []
+      : await boundedQuery(
+          database,
+          `${BOM_COLUMNS}
+WHERE boms.approval_status = ?
+  AND boms.active = ?
+  AND boms.finished_sku IN (${placeholders(optionSkus.length, ITEM_LIMIT)})
+ORDER BY boms.id ASC
+LIMIT ${BOM_LIMIT}`,
+          ["approved", 1, ...optionSkus],
+          BOM_LIMIT,
+          bom,
+        );
+  const optionSkuSet = new Set(optionSkus);
+  if (
     optionBoms.some(
-      (row) => row.approvalStatus !== "approved" || !row.active,
-    )
+      (row) =>
+        row.approvalStatus !== "approved" ||
+        !row.active ||
+        !optionSkuSet.has(row.finishedSku),
+    ) ||
+    new Set(optionBoms.map((row) => row.id)).size !== optionBoms.length
   ) {
     return invalidData();
   }
@@ -572,13 +622,11 @@ WHERE purchases.id IN (${placeholders(purchaseIds.length, PURCHASE_ORDER_LIMIT)}
 ORDER BY purchases.id ASC
 LIMIT ${PURCHASE_ORDER_LIMIT}`,
     purchaseIds,
-    PURCHASE_ORDER_LIMIT,
+    purchaseIds.length,
     purchaseOrder,
   );
   const purchaseIdSet = new Set(purchaseIds);
-  if (purchases.some((row) => !purchaseIdSet.has(row.id))) {
-    return invalidData();
-  }
+  ensureExact(purchases, purchaseIdSet, (row) => row.id);
 
   const orderIds = orders.map((row) => row.id);
   const materials = await relatedRows(
@@ -625,7 +673,7 @@ LIMIT ${COMPONENT_LIMIT + 1}`,
     component,
   );
   const componentIdSet = new Set(componentIds);
-  if (components.some((row) => !componentIdSet.has(row.id))) invalidData();
+  ensureExact(components, componentIdSet, (row) => row.id);
 
   const itemById = new Map(
     [...optionItems, ...requiredItems].map((row) => [row.id, row]),
@@ -658,24 +706,19 @@ LIMIT ${COMPONENT_LIMIT + 1}`,
         ? {}
         : {
             item: {
-              id: item.id,
               sku: item.sku,
               productName: item.productName,
             },
           }),
-      ...(purchase === undefined ? {} : { purchaseOrder: purchase }),
+      ...(purchase === undefined
+        ? {}
+        : { purchaseOrder: { orderNo: purchase.orderNo } }),
       ...(factoryValue === undefined
         ? {}
-        : { factory: { id: factoryValue.id, name: factoryValue.name } }),
+        : { factory: { name: factoryValue.name } }),
       ...(bomValue === undefined
         ? {}
-        : {
-            bom: {
-              id: bomValue.id,
-              finishedSku: bomValue.finishedSku,
-              version: bomValue.version,
-            },
-          }),
+        : { bom: { version: bomValue.version } }),
       materials: materials
         .filter((row) => row.executionOrderId === value.id)
         .map((row) => {
@@ -689,7 +732,12 @@ LIMIT ${COMPONENT_LIMIT + 1}`,
             deviationStatus: row.deviationStatus,
             ...(componentValue === undefined
               ? {}
-              : { component: componentValue }),
+              : {
+                  component: {
+                    componentSku: componentValue.componentSku,
+                    componentName: componentValue.componentName,
+                  },
+                }),
           };
         }),
       reports: reports
@@ -708,7 +756,9 @@ LIMIT ${COMPONENT_LIMIT + 1}`,
       sku: item.sku,
       productName: item.productName,
       quantity: item.quantity,
-      ...(purchase === undefined ? {} : { purchaseOrder: purchase }),
+      ...(purchase === undefined
+        ? {}
+        : { purchaseOrder: { orderNo: purchase.orderNo } }),
     };
   });
 
