@@ -299,8 +299,8 @@ test("supplier profiles preserve role scopes and select only contract fields", a
         factoryId: 7,
         supplierId: 9,
       }),
-      expectedParams: [7],
-      expectedWhere: /WHERE managed_by_factory_id = \?/u,
+      expectedParams: [9, "active"],
+      expectedWhere: /WHERE id = \? AND status = \?/u,
     },
     {
       access: context({ roles: ["supplier_qc"], supplierId: 9 }),
@@ -335,20 +335,122 @@ test("supplier profiles preserve role scopes and select only contract fields", a
   }
 });
 
-test("unscoped authenticated roles receive empty supplier data without database access", async (t) => {
-  const database = fixtureDatabase();
+test("receiver and external roles with missing own bindings fail closed on all four GETs", async () => {
+  const deniedContexts = [
+    context({ roles: ["receiver"], factoryId: 7, supplierId: 9 }),
+    context({ roles: ["factory"], factoryId: null, supplierId: 9 }),
+    context({ roles: ["supplier_qc"], factoryId: 7, supplierId: null }),
+    context({ roles: ["factory", "supplier_qc"], factoryId: 7, supplierId: 0 }),
+  ];
+  const urls = [
+    "/api/v1/suppliers",
+    "/api/v1/supplier-skus",
+    "/api/v1/supplier-prices",
+    "/api/v1/supplier-performance?quarter=2026-Q3&tier=1",
+    "/api/v1/supplier-performance?quarter=2026-Q3&tier=1&format=xlsx",
+  ];
+
+  for (const access of deniedContexts) {
+    const database = fixtureDatabase();
+    const app = await createApp({ access, database });
+    try {
+      for (const url of urls) {
+        const response = await app.inject({ method: "GET", url });
+        assert.equal(response.statusCode, 403, `${access.roles.join("+")} ${url}`);
+        assertPrivateNoStore(response);
+        assert.equal(response.json().code, "FORBIDDEN");
+        assert.doesNotMatch(response.body, /Supplier access forbidden/u);
+      }
+      assert.equal(database.queries.length, 0);
+    } finally {
+      await app.close();
+    }
+  }
+});
+
+test("mixed factory and supplier roles use the union of both valid bindings", async (t) => {
+  const database = fixtureDatabase({
+    supplierProfiles: [supplierProfileRow(10), supplierProfileRow(9)],
+    supplierSummaries: [supplierSummaryRow(10), supplierSummaryRow(9)],
+    factories: [factoryRow(8), factoryRow(7)],
+    relations: [
+      relationRow(21, { factoryId: 8, supplierId: 9 }),
+      relationRow(20, { factoryId: 7, supplierId: 10 }),
+    ],
+    skus: [skuRow()],
+    agreements: [agreementRow(31, { supplierId: 10 }), agreementRow()],
+    performanceSuppliers: [
+      performanceSupplierRow(9),
+      performanceSupplierRow(10, { managedByFactoryId: 7 }),
+      performanceSupplierRow(11),
+    ],
+    reviews: [
+      reviewRow(9, 5, "Supplier-bound comment"),
+      reviewRow(10, 5, "Factory-bound comment"),
+      reviewRow(11, 5, "Foreign comment"),
+    ],
+  });
   const app = await createApp({
-    access: context({ roles: ["receiver"] }),
+    access: context({
+      roles: ["factory", "supplier_qc"],
+      factoryId: 7,
+      supplierId: 9,
+    }),
     database,
+    audit: async () => undefined,
   });
   t.after(() => app.close());
 
-  for (const url of ["/api/v1/suppliers", "/api/v1/supplier-skus"]) {
+  for (const url of [
+    "/api/v1/suppliers",
+    "/api/v1/supplier-skus",
+    "/api/v1/supplier-prices",
+  ]) {
     const response = await app.inject({ method: "GET", url });
-    assert.equal(response.statusCode, 200);
-    assertPrivateNoStore(response);
+    assert.equal(response.statusCode, 200, `${url}: ${response.body}`);
   }
-  assert.equal(database.queries.length, 0);
+  const performance = await app.inject({
+    method: "GET",
+    url: "/api/v1/supplier-performance?quarter=2026-Q3&tier=1",
+  });
+  assert.equal(performance.statusCode, 200, performance.body);
+
+  const profileQuery = database.queries.find(
+    ({ sql }) => sql.includes("unified_social_credit_code"),
+  );
+  assert.match(
+    profileQuery.sql,
+    /WHERE managed_by_factory_id = \? OR \(id = \? AND status = \?\)/u,
+  );
+  assert.deepEqual(profileQuery.params, [7, 9, "active"]);
+  const relationQueries = database.queries.filter(({ sql }) =>
+    sql.includes("FROM supplier_skus"),
+  );
+  assert.ok(
+    relationQueries.some(
+      ({ sql, params }) =>
+        /WHERE \(factory_id = \? OR supplier_id = \?\)/u.test(sql) &&
+        params.length === 2 &&
+        params[0] === 7 &&
+        params[1] === 9,
+    ),
+  );
+  assert.ok(
+    relationQueries.some(
+      ({ sql, params }) =>
+        /WHERE \(factory_id = \? OR supplier_id = \?\) AND status = \?/u.test(
+          sql,
+        ) &&
+        params.length === 3 &&
+        params[2] === "active",
+    ),
+  );
+  const rankings = performance.json().rankings;
+  assert.deepEqual(rankings.map(({ supplierId }) => supplierId), [9, 10, null]);
+  assert.equal(rankings[0].comments[0].comment, "Supplier-bound comment");
+  assert.equal(rankings[1].comments[0].comment, "Factory-bound comment");
+  assert.deepEqual(rankings[2].comments, []);
+  assert.doesNotMatch(performance.body, /Foreign comment|SUP-11|Supplier 11/u);
 });
 
 test("supplier SKU reference data is closed over supplier-visible relations", async (t) => {
@@ -740,6 +842,77 @@ test("performance delivery dates use Shanghai quarter semantics", async (t) => {
     evaluatedBatches: 2,
     onTimeBatches: 1,
   });
+  const deliveryQuery = database.queries.find(({ sql }) =>
+    sql.includes("FROM delivery_batches AS batches"),
+  );
+  assert.match(
+    deliveryQuery.sql,
+    /WHERE batches\.planned_ship_at >= \?[\s\S]*AND batches\.planned_ship_at < \?[\s\S]*AND suppliers\.tier = \?[\s\S]*AND items\.supplier_id IN \(\?\)[\s\S]*ORDER BY batches\.id DESC\s+LIMIT 20000$/u,
+  );
+  assert.deepEqual(deliveryQuery.params, [
+    "2026-07-01",
+    "2026-10-01",
+    "active",
+    1,
+    9,
+  ]);
+  const reviewQuery = database.queries.find(({ sql }) =>
+    sql.includes("FROM supplier_performance_reviews AS reviews"),
+  );
+  assert.match(
+    reviewQuery.sql,
+    /WHERE reviews\.quarter = \?[\s\S]*AND suppliers\.tier = \?[\s\S]*AND reviews\.supplier_id IN \(\?\)[\s\S]*ORDER BY reviews\.supplier_id ASC[\s\S]*LIMIT 5000$/u,
+  );
+  assert.deepEqual(reviewQuery.params, ["2026-Q3", "active", 1, 9]);
+});
+
+test("historical quarter and visible supplier filters precede delivery and review limits", async (t) => {
+  const historicalDelivery = {
+    supplierId: 9,
+    plannedShipAt: "2025-01-02T09:00:00+08:00",
+    shippedAt: "2025-01-02T18:00:00+08:00",
+  };
+  const database = fakeDatabase((sql, params) => {
+    if (sql.includes("FROM supplier_performance_reviews AS reviews")) return [];
+    if (sql.includes("FROM supplier_performance_weight_versions")) return [];
+    if (sql.includes("FROM delivery_batches AS batches")) {
+      return params[0] === "2025-01-01" && params[1] === "2025-04-01"
+        ? [historicalDelivery]
+        : Array.from({ length: 20_000 }, () => ({
+            supplierId: 9,
+            plannedShipAt: "2026-08-01T09:00:00+08:00",
+            shippedAt: "2026-08-01T18:00:00+08:00",
+          }));
+    }
+    if (sql.includes("FROM suppliers")) return [performanceSupplierRow(9)];
+    throw new Error(`Unexpected SQL: ${sql}`);
+  });
+  const app = await createApp({ database });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/v1/supplier-performance?quarter=2025-Q1&tier=1",
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.deepEqual(response.json().rankings[0].automaticMetricEvidence.delivery, {
+    evaluatedBatches: 1,
+    onTimeBatches: 1,
+  });
+
+  for (const query of database.queries.filter(
+    ({ sql }) =>
+      sql.includes("FROM delivery_batches AS batches") ||
+      sql.includes("FROM supplier_performance_reviews AS reviews"),
+  )) {
+    const whereIndex = query.sql.indexOf("WHERE ");
+    const supplierIndex = query.sql.indexOf("supplier_id IN");
+    const tierIndex = query.sql.indexOf("suppliers.tier = ?");
+    const limitIndex = query.sql.indexOf("LIMIT ");
+    assert.ok(whereIndex >= 0 && whereIndex < limitIndex, query.sql);
+    assert.ok(supplierIndex > whereIndex && supplierIndex < limitIndex, query.sql);
+    assert.ok(tierIndex > whereIndex && tierIndex < limitIndex, query.sql);
+  }
 });
 
 test("performance XLSX uses injected exporter and audit ports", async (t) => {
@@ -797,6 +970,48 @@ test("performance XLSX uses injected exporter and audit ports", async (t) => {
       },
     },
   ]);
+});
+
+test("performance XLSX receives the same role-bound anonymized rankings as JSON", async (t) => {
+  const database = fixtureDatabase({
+    performanceSuppliers: [performanceSupplierRow(9), performanceSupplierRow(10)],
+    reviews: [
+      reviewRow(9, 5, "Own export comment"),
+      reviewRow(10, 4, "Foreign export comment"),
+    ],
+  });
+  const exports = [];
+  const app = await createApp({
+    access: context({
+      roles: ["supplier_qc"],
+      supplierId: 9,
+      factoryId: 7,
+      email: "supplier@example.com",
+    }),
+    database,
+    exportPerformance: async (input) => {
+      exports.push(input);
+      return Uint8Array.from([80, 75, 3, 4]);
+    },
+    audit: async () => undefined,
+  });
+  t.after(() => app.close());
+
+  const response = await app.inject({
+    method: "GET",
+    url: "/api/v1/supplier-performance?quarter=2026-Q3&tier=1&format=xlsx",
+  });
+  assert.equal(response.statusCode, 200, response.body);
+  assert.equal(exports.length, 1);
+  assert.deepEqual(exports[0].rankings.map(({ supplierId }) => supplierId), [9, null]);
+  assert.equal(exports[0].rankings[0].comments[0].comment, "Own export comment");
+  assert.equal(exports[0].rankings[1].supplierCode, null);
+  assert.equal(exports[0].rankings[1].supplierName, null);
+  assert.deepEqual(exports[0].rankings[1].comments, []);
+  assert.doesNotMatch(
+    JSON.stringify(exports[0]),
+    /Foreign export comment|SUP-10|Supplier 10/u,
+  );
 });
 
 test("invalid performance parameters and malformed rows fail through sanitized boundaries", async () => {

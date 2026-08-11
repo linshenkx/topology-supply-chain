@@ -167,8 +167,8 @@ type SupplierAccessContext = Pick<
 >;
 type DataRow = Record<string, unknown>;
 type DataScope =
-  | { kind: "empty" }
   | { kind: "factory"; factoryId: number }
+  | { kind: "factory_supplier"; factoryId: number; supplierId: number }
   | { kind: "internal" }
   | { kind: "supplier"; supplierId: number };
 
@@ -223,6 +223,15 @@ export class SuppliersBadRequestError extends Error {
   constructor() {
     super("Invalid supplier request");
     this.name = "SuppliersBadRequestError";
+  }
+}
+
+export class SuppliersForbiddenError extends Error {
+  readonly statusCode = 403;
+
+  constructor() {
+    super("Supplier access forbidden");
+    this.name = "SuppliersForbiddenError";
   }
 }
 
@@ -350,15 +359,32 @@ function auditActor(context: SupplierAccessContext): SupplierAuditActor {
   };
 }
 
+function boundOrganizationId(value: number | null): number {
+  if (!isPositiveSafeInteger(value)) throw new SuppliersForbiddenError();
+  return value;
+}
+
 function dataScope(context: SupplierAccessContext): DataScope {
   if (isInternal(context)) return { kind: "internal" };
-  if (isPositiveSafeInteger(context.factoryId)) {
-    return { kind: "factory", factoryId: context.factoryId };
+
+  const hasFactoryRole = context.roles.includes("factory");
+  const hasSupplierRole = context.roles.includes("supplier_qc");
+  if (!hasFactoryRole && !hasSupplierRole) {
+    throw new SuppliersForbiddenError();
   }
-  if (isPositiveSafeInteger(context.supplierId)) {
-    return { kind: "supplier", supplierId: context.supplierId };
+
+  const factoryId = hasFactoryRole
+    ? boundOrganizationId(context.factoryId)
+    : undefined;
+  const supplierId = hasSupplierRole
+    ? boundOrganizationId(context.supplierId)
+    : undefined;
+  if (factoryId !== undefined && supplierId !== undefined) {
+    return { kind: "factory_supplier", factoryId, supplierId };
   }
-  return { kind: "empty" };
+  if (factoryId !== undefined) return { kind: "factory", factoryId };
+  if (supplierId !== undefined) return { kind: "supplier", supplierId };
+  throw new SuppliersForbiddenError();
 }
 
 function requireDatabase(options: SuppliersModuleOptions): QueryExecutor {
@@ -494,8 +520,6 @@ async function readSuppliers(
   database: QueryExecutor,
   scope: DataScope,
 ): Promise<SuppliersResponse> {
-  if (scope.kind === "empty") return { suppliers: [] };
-
   let supplierQuery: Promise<readonly DataRow[]>;
   let factoryQuery: Promise<readonly DataRow[]>;
   if (scope.kind === "internal") {
@@ -524,7 +548,7 @@ ORDER BY id DESC
 LIMIT 1`,
       [scope.factoryId],
     );
-  } else {
+  } else if (scope.kind === "supplier") {
     supplierQuery = database.query<DataRow>(
       `${SUPPLIER_PROFILE_COLUMNS}
 WHERE id = ? AND status = ?
@@ -533,6 +557,21 @@ LIMIT 1`,
       [scope.supplierId, "active"],
     );
     factoryQuery = Promise.resolve([]);
+  } else {
+    supplierQuery = database.query<DataRow>(
+      `${SUPPLIER_PROFILE_COLUMNS}
+WHERE managed_by_factory_id = ? OR (id = ? AND status = ?)
+ORDER BY updated_at DESC, id DESC
+LIMIT ${SUPPLIER_PROFILE_LIMIT}`,
+      [scope.factoryId, scope.supplierId, "active"],
+    );
+    factoryQuery = database.query<DataRow>(
+      `${FACTORY_COLUMNS}
+WHERE id = ?
+ORDER BY id DESC
+LIMIT 1`,
+      [scope.factoryId],
+    );
   }
 
   const [supplierRows, factoryRows] = await Promise.all([
@@ -553,7 +592,6 @@ async function readRelations(
   scope: DataScope,
   options: { activeOnly: boolean; limit: number },
 ): Promise<SupplierSkuRelation[]> {
-  if (scope.kind === "empty") return [];
   const statusClause = options.activeOnly ? "status = ?" : "";
   const statusParams = options.activeOnly ? ["active"] : [];
   let where = statusClause;
@@ -565,6 +603,11 @@ async function readRelations(
   } else if (scope.kind === "supplier") {
     where = ["supplier_id = ?", statusClause].filter(Boolean).join(" AND ");
     params = [scope.supplierId, ...statusParams];
+  } else if (scope.kind === "factory_supplier") {
+    where = [`(factory_id = ? OR supplier_id = ?)`, statusClause]
+      .filter(Boolean)
+      .join(" AND ");
+    params = [scope.factoryId, scope.supplierId, ...statusParams];
   }
 
   const rows = await database.query<DataRow>(
@@ -646,9 +689,6 @@ async function readSupplierSkus(
   database: QueryExecutor,
   scope: DataScope,
 ): Promise<SupplierSkusResponse> {
-  if (scope.kind === "empty") {
-    return { relations: [], suppliers: [], factories: [], skus: [] };
-  }
   const relations = await readRelations(database, scope, {
     activeOnly: false,
     limit: RELATION_LIMIT,
@@ -723,7 +763,7 @@ LIMIT ${SKU_LIMIT}`,
         ["active"],
       )
       .then((rows) => ensureBoundedRows(rows, SKU_LIMIT).map(sku));
-  } else {
+  } else if (scope.kind === "supplier") {
     const supplierIds = uniqueIntegers([
       scope.supplierId,
       ...relations.map((value) => value.supplierId),
@@ -737,6 +777,41 @@ LIMIT ${SKU_LIMIT}`,
       database,
       uniqueStrings(relations.map((value) => value.sku)),
     );
+  } else {
+    const supplierIds = uniqueIntegers([
+      scope.supplierId,
+      ...relations.map((value) => value.supplierId),
+    ]);
+    supplierQuery = database
+      .query<DataRow>(
+        `${SUPPLIER_SUMMARY_COLUMNS}
+WHERE managed_by_factory_id = ? OR id IN (${placeholders(
+          supplierIds.length,
+          RELATION_LIMIT + 1,
+        )})
+ORDER BY updated_at DESC, id DESC
+LIMIT ${SUPPLIER_LIMIT}`,
+        [scope.factoryId, ...supplierIds],
+      )
+      .then((rows) =>
+        ensureBoundedRows(rows, SUPPLIER_LIMIT).map(supplierSummary),
+      );
+    factoryQuery = readFactoriesByIds(
+      database,
+      uniqueIntegers([
+        scope.factoryId,
+        ...relations.map((value) => value.factoryId),
+      ]),
+    );
+    skuQuery = database
+      .query<DataRow>(
+        `${SKU_COLUMNS}
+WHERE status = ?
+ORDER BY updated_at DESC, id DESC
+LIMIT ${SKU_LIMIT}`,
+        ["active"],
+      )
+      .then((rows) => ensureBoundedRows(rows, SKU_LIMIT).map(sku));
   }
 
   const [suppliers, factories, skus] = await Promise.all([
@@ -908,7 +983,9 @@ LIMIT ${SUPPLIER_LIMIT}`,
     return ensureBoundedRows(rows, SUPPLIER_LIMIT).map(supplierSummary);
   }
   const ids = uniqueIntegers([
-    ...(scope.kind === "supplier" ? [scope.supplierId] : []),
+    ...(scope.kind === "supplier" || scope.kind === "factory_supplier"
+      ? [scope.supplierId]
+      : []),
     ...relations.map((value) => value.supplierId),
   ]).slice(0, SUPPLIER_LIMIT);
   return readSupplierSummariesByIds(database, ids);
@@ -958,16 +1035,6 @@ async function readSupplierPrices(
   database: QueryExecutor,
   scope: DataScope,
 ): Promise<SupplierPricesResponse> {
-  if (scope.kind === "empty") {
-    return {
-      agreements: [],
-      requests: [],
-      suppliers: [],
-      skus: [],
-      relations: [],
-      risks: [],
-    };
-  }
   let relations: SupplierSkuRelation[];
   let suppliers: SupplierSummary[];
   if (scope.kind === "internal") {
@@ -989,7 +1056,12 @@ async function readSupplierPrices(
       ? uniqueIntegers(suppliers.map((value) => value.id))
       : scope.kind === "factory"
         ? uniqueIntegers(relations.map((value) => value.supplierId))
-        : [scope.supplierId];
+        : scope.kind === "supplier"
+          ? [scope.supplierId]
+          : uniqueIntegers([
+              scope.supplierId,
+              ...relations.map((value) => value.supplierId),
+            ]);
   const [agreements, requests, demand] = await Promise.all([
     readAgreements(database, supplierIds),
     readPriceRequests(database, supplierIds),
@@ -1062,6 +1134,26 @@ function currentQuarter(now: Date): string {
   const today = localDate(now);
   if (today === null) return invalidData();
   return quarterFromDate(today) ?? invalidData();
+}
+
+function shanghaiQuarterBounds(quarter: string): {
+  endExclusive: string;
+  startInclusive: string;
+} {
+  const match = /^(\d{4})-Q([1-4])$/u.exec(quarter);
+  if (match === null) return invalidData();
+  const year = Number(match[1]);
+  const quarterNumber = Number(match[2]);
+  if (!Number.isSafeInteger(year) || !Number.isSafeInteger(quarterNumber)) {
+    return invalidData();
+  }
+  const startMonth = (quarterNumber - 1) * 3 + 1;
+  const endYear = quarterNumber === 4 ? year + 1 : year;
+  const endMonth = quarterNumber === 4 ? 1 : startMonth + 3;
+  return {
+    startInclusive: `${String(year).padStart(4, "0")}-${String(startMonth).padStart(2, "0")}-01`,
+    endExclusive: `${String(endYear).padStart(4, "0")}-${String(endMonth).padStart(2, "0")}-01`,
+  };
 }
 
 interface PerformanceSupplierRow {
@@ -1167,6 +1259,7 @@ function average(values: readonly number[]): number | null {
 
 function performanceResponse(
   context: SupplierAccessContext,
+  scope: DataScope,
   quarter: string,
   supplierRows: readonly PerformanceSupplierRow[],
   reviewRows: readonly PerformanceReviewRow[],
@@ -1250,10 +1343,11 @@ function performanceResponse(
           ) / 10
         : null;
     const reveal =
-      isInternal(context) ||
-      context.supplierId === supplier.id ||
-      (isPositiveSafeInteger(context.factoryId) &&
-        supplier.managedByFactoryId === context.factoryId);
+      scope.kind === "internal" ||
+      ((scope.kind === "supplier" || scope.kind === "factory_supplier") &&
+        scope.supplierId === supplier.id) ||
+      ((scope.kind === "factory" || scope.kind === "factory_supplier") &&
+        supplier.managedByFactoryId === scope.factoryId);
     const comments: SupplierPerformanceComment[] = reveal
       ? own
           .filter((row) => row.comment.trim().length > 0)
@@ -1318,6 +1412,7 @@ function performanceResponse(
 async function readPerformance(
   database: QueryExecutor,
   context: SupplierAccessContext,
+  scope: DataScope,
   quarter: string,
   tier: number | null,
   today: string,
@@ -1338,19 +1433,6 @@ ORDER BY updated_at DESC, id DESC
 LIMIT ${SUPPLIER_LIMIT}`,
     supplierParams,
   );
-  const reviewRowsPromise = database.query<DataRow>(
-    `SELECT
-  supplier_id AS supplierId,
-  review_type AS reviewType,
-  score,
-  tags_json AS tagsJson,
-  comment
-FROM supplier_performance_reviews
-WHERE quarter = ?
-ORDER BY supplier_id ASC, review_type ASC, id ASC
-LIMIT ${REVIEW_LIMIT}`,
-    [quarter],
-  );
   const weightRowsPromise = database.query<DataRow>(
     `SELECT
   tier,
@@ -1366,8 +1448,51 @@ ORDER BY effective_from DESC, id DESC
 LIMIT ${WEIGHT_LIMIT}`,
     ["active", today],
   );
-  const deliveryRowsPromise = database.query<DataRow>(
-    `SELECT
+  const [supplierRows, weightRows] = await Promise.all([
+    supplierRowsPromise,
+    weightRowsPromise,
+  ]);
+  const suppliers = ensureBoundedRows(supplierRows, SUPPLIER_LIMIT).map(
+    performanceSupplier,
+  );
+  const visibleSupplierIds = uniqueIntegers(
+    suppliers.map((value) => value.id),
+  );
+  const tierClause = tier === null ? "" : "\n  AND suppliers.tier = ?";
+  const sharedScopeParams: readonly (number | string)[] = [
+    "active",
+    ...(tier === null ? [] : [tier]),
+    ...visibleSupplierIds,
+  ];
+  const reviewRowsPromise: Promise<readonly DataRow[]> =
+    visibleSupplierIds.length === 0
+      ? Promise.resolve([])
+      : database.query<DataRow>(
+          `SELECT
+  reviews.supplier_id AS supplierId,
+  reviews.review_type AS reviewType,
+  reviews.score,
+  reviews.tags_json AS tagsJson,
+  reviews.comment
+FROM supplier_performance_reviews AS reviews
+INNER JOIN suppliers AS suppliers ON suppliers.id = reviews.supplier_id
+WHERE reviews.quarter = ?
+  AND suppliers.status = ?
+  AND suppliers.tier IN (1, 2, 3)${tierClause}
+  AND reviews.supplier_id IN (${placeholders(
+    visibleSupplierIds.length,
+    SUPPLIER_LIMIT,
+  )})
+ORDER BY reviews.supplier_id ASC, reviews.review_type ASC, reviews.id ASC
+LIMIT ${REVIEW_LIMIT}`,
+          [quarter, ...sharedScopeParams],
+        );
+  const { startInclusive, endExclusive } = shanghaiQuarterBounds(quarter);
+  const deliveryRowsPromise: Promise<readonly DataRow[]> =
+    visibleSupplierIds.length === 0
+      ? Promise.resolve([])
+      : database.query<DataRow>(
+          `SELECT
   items.supplier_id AS supplierId,
   batches.planned_ship_at AS plannedShipAt,
   batches.shipped_at AS shippedAt
@@ -1376,25 +1501,31 @@ INNER JOIN execution_orders AS executions
   ON executions.id = batches.execution_order_id
 INNER JOIN order_items AS items
   ON items.id = executions.order_item_id
+INNER JOIN suppliers AS suppliers
+  ON suppliers.id = items.supplier_id
+WHERE batches.planned_ship_at >= ?
+  AND batches.planned_ship_at < ?
+  AND suppliers.status = ?
+  AND suppliers.tier IN (1, 2, 3)${tierClause}
+  AND items.supplier_id IN (${placeholders(
+    visibleSupplierIds.length,
+    SUPPLIER_LIMIT,
+  )})
 ORDER BY batches.id DESC
 LIMIT ${DELIVERY_LIMIT}`,
-  );
-  const [supplierRows, reviewRows, weightRows, deliveryRows] =
-    await Promise.all([
-      supplierRowsPromise,
-      reviewRowsPromise,
-      weightRowsPromise,
-      deliveryRowsPromise,
-    ]);
-  const suppliers = ensureBoundedRows(supplierRows, SUPPLIER_LIMIT).map(
-    performanceSupplier,
-  );
-  const visibleSupplierIds = new Set(suppliers.map((value) => value.id));
+          [startInclusive, endExclusive, ...sharedScopeParams],
+        );
+  const [reviewRows, deliveryRows] = await Promise.all([
+    reviewRowsPromise,
+    deliveryRowsPromise,
+  ]);
+  const visibleSupplierIdSet = new Set(visibleSupplierIds);
   const reviews = ensureBoundedRows(reviewRows, REVIEW_LIMIT)
     .map(performanceReview)
-    .filter((value) => visibleSupplierIds.has(value.supplierId));
+    .filter((value) => visibleSupplierIdSet.has(value.supplierId));
   return performanceResponse(
     context,
+    scope,
     quarter,
     suppliers,
     reviews,
@@ -1526,7 +1657,6 @@ export async function registerSuppliersModule(
       const access = await options.authenticate(request);
       if (access.localPreview) return { suppliers: [], preview: true };
       const scope = dataScope(access);
-      if (scope.kind === "empty") return { suppliers: [] };
       return readSuppliers(requireDatabase(options), scope);
     },
   );
@@ -1545,9 +1675,6 @@ export async function registerSuppliersModule(
       const access = await options.authenticate(request);
       if (access.localPreview) return { relations: [], preview: true };
       const scope = dataScope(access);
-      if (scope.kind === "empty") {
-        return { relations: [], suppliers: [], factories: [], skus: [] };
-      }
       return readSupplierSkus(requireDatabase(options), scope);
     },
   );
@@ -1577,17 +1704,7 @@ export async function registerSuppliersModule(
       }
       const scope = dataScope(access);
       if (options.audit === undefined) throw new SuppliersUnavailableError();
-      const result =
-        scope.kind === "empty"
-          ? {
-              agreements: [],
-              requests: [],
-              suppliers: [],
-              skus: [],
-              relations: [],
-              risks: [],
-            }
-          : await readSupplierPrices(requireDatabase(options), scope);
+      const result = await readSupplierPrices(requireDatabase(options), scope);
       try {
         await options.audit(
           {
@@ -1645,10 +1762,16 @@ export async function registerSuppliersModule(
     async (request, reply) => {
       const access = await options.authenticate(request);
       const now = nowDate(options);
-      const query = performanceQuery(request.query, now, request.raw.url ?? "");
       if (access.localPreview) {
+        const query = performanceQuery(
+          request.query,
+          now,
+          request.raw.url ?? "",
+        );
         return previewPerformance(access, query.quarter);
       }
+      const scope = dataScope(access);
+      const query = performanceQuery(request.query, now, request.raw.url ?? "");
       if (
         query.format === "xlsx" &&
         (options.exportPerformance === undefined || options.audit === undefined)
@@ -1660,6 +1783,7 @@ export async function registerSuppliersModule(
       const result = await readPerformance(
         requireDatabase(options),
         access,
+        scope,
         query.quarter,
         query.tier,
         today,
