@@ -117,10 +117,10 @@ const integerSchema = { type: "integer" } as const;
 const nonNegativeIntegerSchema = { type: "integer", minimum: 0 } as const;
 const nonEmptyStringSchema = { type: "string", minLength: 1 } as const;
 const nullablePositiveIntegerSchema = {
-  anyOf: [positiveIntegerSchema, { type: "null" }],
+  anyOf: [{ type: "null" }, positiveIntegerSchema],
 } as const;
 const nullableStringSchema = {
-  anyOf: [{ type: "string" }, { type: "null" }],
+  anyOf: [{ type: "null" }, { type: "string" }],
 } as const;
 
 export const financeResponseSchema = {

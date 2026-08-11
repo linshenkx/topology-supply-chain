@@ -48,8 +48,8 @@ export const sessionResponseSchema = {
           items: { type: "string", minLength: 1 },
           uniqueItems: true,
         },
-        factoryId: { anyOf: [{ type: "integer", minimum: 1 }, { type: "null" }] },
-        supplierId: { anyOf: [{ type: "integer", minimum: 1 }, { type: "null" }] },
+        factoryId: { anyOf: [{ type: "null" }, { type: "integer", minimum: 1 }] },
+        supplierId: { anyOf: [{ type: "null" }, { type: "integer", minimum: 1 }] },
       },
     },
     security: {

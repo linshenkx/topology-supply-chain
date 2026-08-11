@@ -159,6 +159,8 @@ test("full-access roles receive bounded data with stable order and lifecycle sem
       ]);
       assert.deepEqual(body.conversions.map((row) => row.skuId), [2, 1]);
       assert.deepEqual(body.components.map((row) => row.bomId), [20, 24]);
+      assert.equal(body.skus[0].stockUnit, null);
+      assert.equal(body.boms[0].effectiveTo, null);
 
       assert.equal(database.queries.length, 4);
       assert.match(

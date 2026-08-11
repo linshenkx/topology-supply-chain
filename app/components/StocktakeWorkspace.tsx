@@ -20,7 +20,7 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
   const [create, setCreate] = useState({ warehouseId: "", scope: "full_warehouse", dueDate: "", assignedFactoryId: "", targets: "" });
 
   async function load() {
-    const response = await fetch("/api/stocktakes", { cache: "no-store" });
+    const response = await fetch("/api/v1/stocktakes", { cache: "no-store" });
     const body = await response.json();
     if (!response.ok) throw new Error(body.error ?? "盘点数据加载失败");
     setData(body);

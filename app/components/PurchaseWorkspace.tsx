@@ -51,9 +51,9 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     setLoading(true);
     try {
       const [planResponse, orderResponse, sessionResponse] = await Promise.all([
-        fetch("/api/purchase-plans", { cache: "no-store" }),
-        fetch("/api/purchase-orders", { cache: "no-store" }),
-        fetch("/api/session", { cache: "no-store" }),
+        fetch("/api/v1/purchase-plans", { cache: "no-store" }),
+        fetch("/api/v1/purchase-orders", { cache: "no-store" }),
+        fetch("/api/v1/session", { cache: "no-store" }),
       ]);
       const [planData, orderData, sessionData] = await Promise.all([planResponse.json(), orderResponse.json(), sessionResponse.json()]);
       if (!planResponse.ok) throw new Error(planData.error ?? "采购计划加载失败");

@@ -18,7 +18,7 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
 
   const load = useCallback(async () => {
     setLoading(true);
-    const response = await fetch("/api/production-orders", { cache: "no-store" });
+    const response = await fetch("/api/v1/production-orders", { cache: "no-store" });
     const body = await response.json();
     if (response.ok) setData(body); else toast(body.error ?? "生产数据加载失败");
     setLoading(false);

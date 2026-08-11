@@ -186,6 +186,9 @@ test("full access receives bounded orders, details, plan links, and the latest a
   assertPrivateNoStore(response);
   const body = response.json();
   assert.deepEqual(body.orders.map((order) => order.id), [2, 1]);
+  assert.equal(body.orders[0].sourceFileKey, null);
+  assert.equal(body.orders[0].paymentTermId, null);
+  assert.equal(body.orders[0].items[0].supplierId, null);
   assert.equal(body.orders[0].items[0].planLinks[0].planItem.factoryId, 8);
   assert.equal(body.orders[1].items[0].planLinks[0].allocatedQuantity, 10);
   assert.equal(body.orders[1].confirmationDueAt, "2026-08-12T00:00:00.000Z");

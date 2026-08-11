@@ -74,7 +74,7 @@ export interface MasterDataResponse {
 }
 
 const nullableStringSchema = {
-  anyOf: [{ type: "string" }, { type: "null" }],
+  anyOf: [{ type: "null" }, { type: "string" }],
 } as const;
 
 const positiveIntegerSchema = { type: "integer", minimum: 1 } as const;
@@ -107,11 +107,11 @@ export const masterDataResponseSchema = {
           name: { type: "string", minLength: 1 },
           itemType: {
             anyOf: [
+              { type: "null" },
               {
                 type: "string",
                 enum: ["finished", "auxiliary", "component"],
               },
-              { type: "null" },
             ],
           },
           stockUnit: nullableStringSchema,

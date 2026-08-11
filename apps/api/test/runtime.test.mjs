@@ -36,13 +36,57 @@ function fakeDatabase({ pingError } = {}) {
   };
 }
 
-test("local runtime exposes session and master data preview without MySQL", async (t) => {
+test("local runtime exposes migrated read previews without MySQL", async (t) => {
   const app = await buildRuntimeApp({ environment: development, logger: false });
   t.after(() => app.close());
 
-  const [session, masterData, readiness] = await Promise.all([
+  const [
+    session,
+    masterData,
+    finance,
+    approvals,
+    inventory,
+    stocktakes,
+    shipments,
+    warehouses,
+    purchasePlans,
+    purchaseOrders,
+    importDiff,
+    users,
+    auditLogs,
+    notifications,
+    files,
+    productionOrders,
+    qualityInspections,
+    returns,
+    suppliers,
+    supplierSkus,
+    supplierPrices,
+    supplierPerformance,
+    readiness,
+  ] = await Promise.all([
     app.inject({ method: "GET", url: "/api/v1/session" }),
     app.inject({ method: "GET", url: "/api/v1/master-data" }),
+    app.inject({ method: "GET", url: "/api/v1/finance" }),
+    app.inject({ method: "GET", url: "/api/v1/approvals" }),
+    app.inject({ method: "GET", url: "/api/v1/inventory" }),
+    app.inject({ method: "GET", url: "/api/v1/stocktakes" }),
+    app.inject({ method: "GET", url: "/api/v1/shipments" }),
+    app.inject({ method: "GET", url: "/api/v1/warehouses" }),
+    app.inject({ method: "GET", url: "/api/v1/purchase-plans" }),
+    app.inject({ method: "GET", url: "/api/v1/purchase-orders" }),
+    app.inject({ method: "GET", url: "/api/v1/imports/diff?batchId=1" }),
+    app.inject({ method: "GET", url: "/api/v1/users" }),
+    app.inject({ method: "GET", url: "/api/v1/audit-logs" }),
+    app.inject({ method: "GET", url: "/api/v1/notifications" }),
+    app.inject({ method: "GET", url: "/api/v1/files?id=1" }),
+    app.inject({ method: "GET", url: "/api/v1/production-orders" }),
+    app.inject({ method: "GET", url: "/api/v1/quality-inspections" }),
+    app.inject({ method: "GET", url: "/api/v1/returns" }),
+    app.inject({ method: "GET", url: "/api/v1/suppliers" }),
+    app.inject({ method: "GET", url: "/api/v1/supplier-skus" }),
+    app.inject({ method: "GET", url: "/api/v1/supplier-prices" }),
+    app.inject({ method: "GET", url: "/api/v1/supplier-performance" }),
     app.inject({ method: "GET", url: "/api/v1/health/ready" }),
   ]);
 
@@ -50,6 +94,39 @@ test("local runtime exposes session and master data preview without MySQL", asyn
   assert.equal(session.json().localPreview, true);
   assert.equal(masterData.statusCode, 200);
   assert.equal(masterData.json().preview, true);
+  assert.equal(finance.statusCode, 200);
+  assert.equal(finance.json().preview, true);
+  assert.equal(approvals.statusCode, 200);
+  assert.equal(approvals.json().preview, true);
+  for (const response of [
+    inventory,
+    stocktakes,
+    shipments,
+    warehouses,
+    purchasePlans,
+    purchaseOrders,
+    importDiff,
+    users,
+    notifications,
+    productionOrders,
+    qualityInspections,
+    returns,
+    suppliers,
+    supplierSkus,
+    supplierPrices,
+    supplierPerformance,
+  ]) {
+    assert.equal(response.statusCode, 200);
+    assert.equal(response.json().preview, true);
+  }
+  assert.equal(auditLogs.statusCode, 200);
+  assert.deepEqual(auditLogs.json(), {
+    logs: [],
+    total: 0,
+    page: 1,
+    pageSize: 20,
+  });
+  assert.equal(files.statusCode, 404);
   assert.deepEqual(readiness.json().checks, []);
 });
 

@@ -23,7 +23,7 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch("/api/inventory", { cache: "no-store" });
+      const response = await fetch("/api/v1/inventory", { cache: "no-store" });
       const body = await response.json();
       if (!response.ok) throw new Error(body.error ?? "库存数据加载失败");
       setData(body);

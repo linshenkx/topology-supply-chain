@@ -90,6 +90,10 @@ test("shipment enrichment closes evidence, receipts, and logistics exceptions ov
   assert.equal(response.statusCode, 200);
   const body = response.json();
   assert.equal(body.shipments[0].execution.factoryId, 9);
+  assert.equal(body.shipments[0].execution.bomId, null);
+  assert.equal(body.shipments[0].execution.dueDate, null);
+  assert.equal(body.shipments[0].item.supplierId, null);
+  assert.equal(body.shipments[0].shippedAt, null);
   assert.equal(body.shipments[0].item.id, 21);
   assert.deepEqual(body.shipments[0].evidence.map((row) => row.id), [101]);
   assert.deepEqual(body.shipments[1].receipts.map((row) => row.id), [201]);
@@ -123,6 +127,9 @@ test("shipments preview and forbidden roles avoid data, while broken relations f
     const response = await malformed.inject({ method: "GET", url: "/api/v1/shipments" });
     assert.equal(response.statusCode, 503);
     assert.equal(response.json().message, "Internal Server Error");
-    assert.doesNotMatch(response.body, /execution|SELECT|11/u);
+    assert.doesNotMatch(
+      response.body,
+      /EX-11|execution_order_id|execution_no|SELECT/u,
+    );
   } finally { await malformed.close(); }
 });

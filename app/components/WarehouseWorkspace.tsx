@@ -17,7 +17,7 @@ export default function WarehouseWorkspace({ toast }: Props) {
   const [merge, setMerge] = useState({ sourceId: "", targetId: "", reason: "" });
 
   const load = useCallback(async () => {
-    const response = await fetch("/api/warehouses", { cache: "no-store" });
+    const response = await fetch("/api/v1/warehouses", { cache: "no-store" });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || "仓库数据加载失败");
     setWarehouses(data.warehouses || []); setFactories(data.factories || []);

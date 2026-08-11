@@ -156,6 +156,9 @@ test("full access preserves plan versions, multi-factory items, and latest respo
   assertPrivateNoStore(response);
   const body = response.json();
   assert.deepEqual(body.plans.map((plan) => plan.version), [2, 1]);
+  assert.equal(body.plans[0].sourceFileKey, null);
+  assert.equal(body.plans[0].confirmedAt, null);
+  assert.equal(body.plans[0].responses[0].proposedArrivalDate, null);
   assert.deepEqual(body.plans[0].items.map((item) => item.factoryId), [7, 8]);
   assert.equal(body.plans[0].items[0].factoryName, "Factory Seven");
   assert.equal(body.plans[0].items[1].factoryName, "工厂#8");

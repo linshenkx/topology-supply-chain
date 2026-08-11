@@ -33,10 +33,10 @@ export interface ImportDiffResponse {
 
 const jsonValueSchema = {
   anyOf: [
+    { type: "null" },
     { type: "boolean" },
     { type: "number" },
     { type: "string" },
-    { type: "null" },
     { type: "array" },
     { type: "object", additionalProperties: true },
   ],

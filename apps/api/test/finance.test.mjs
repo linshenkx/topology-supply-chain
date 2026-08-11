@@ -209,6 +209,8 @@ test("internal roles receive the bounded frontend-compatible finance envelope", 
         "purchaseOrders",
       ]);
       assert.equal(body.payments[0].bankReference, "BANK-REFERENCE-31");
+      assert.equal(body.payments[0].invoiceExceptionId, null);
+      assert.equal(body.verifications[0].rejectionReason, null);
       assert.equal(body.invoices[0].fileKey, undefined);
       assert.equal(body.paymentRequests[0].paymentNote, undefined);
       assert.equal(body.payments[0].recordedBy, undefined);

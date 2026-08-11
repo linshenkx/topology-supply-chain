@@ -23,7 +23,7 @@ async function json(url:string, init?:RequestInit) {
 export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:string)=>void }) {
   const [data, setData] = useState<Data>({ invoices:[], exceptions:[], payments:[], paymentRequests:[], replacementLinks:[] });
   const [busy, setBusy] = useState(false);
-  const refresh = useCallback(async () => setData(await json("/api/finance")), []);
+  const refresh = useCallback(async () => setData(await json("/api/v1/finance")), []);
   useEffect(() => { refresh().catch(error => toast(error.message)); }, [refresh, toast]);
 
   const invoiceById = useMemo(() => Object.fromEntries(data.invoices.map(row => [row.id, row])), [data.invoices]);

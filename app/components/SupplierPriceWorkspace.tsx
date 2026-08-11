@@ -20,7 +20,7 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
   const [form, setForm] = useState({ supplierId: "", sku: "", included: "", excluded: "", taxRate: "13", effectiveFrom: new Date().toISOString().slice(0, 10), reason: "", evidenceFileKey: "" });
   const supplierMap = useMemo(() => new Map(data.suppliers.map(x => [x.id, x])), [data.suppliers]);
   const load = async () => {
-    const response = await fetch("/api/supplier-prices", { cache: "no-store" });
+    const response = await fetch("/api/v1/supplier-prices", { cache: "no-store" });
     const result = await response.json();
     if (!response.ok) throw new Error(result.error || "价格数据加载失败");
     setData(result);

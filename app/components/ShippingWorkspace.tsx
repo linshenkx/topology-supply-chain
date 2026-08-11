@@ -45,7 +45,7 @@ export default function ShippingWorkspace({ toast }: { toast: (message: string) 
   const [action, setAction] = useState<{ type: "ship" | "receive" | "inspect" | "propose"; id: number } | null>(null);
 
   const refresh = useCallback(async () => {
-    const [shipmentData, returnData] = await Promise.all([jsonRequest("/api/shipments"), jsonRequest("/api/returns")]);
+    const [shipmentData, returnData] = await Promise.all([jsonRequest("/api/v1/shipments"), jsonRequest("/api/v1/returns")]);
     setShipments(shipmentData.shipments ?? []);
     setReturns(returnData.returns ?? []);
   }, []);

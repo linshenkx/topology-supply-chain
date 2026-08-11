@@ -404,7 +404,7 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
   const refresh = async () => {
     setLoading(true);
     try {
-      const data = await apiJson("/api/users");
+      const data = await apiJson("/api/v1/users");
       setUsers(data.users ?? []);
     } catch (error) {
       toast(error instanceof Error ? error.message : "用户列表加载失败");
@@ -497,7 +497,7 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
 
   const refresh = async () => {
     setLoading(true);
-    try { const data = await apiJson("/api/approvals"); setItems(data.approvals ?? []); }
+    try { const data = await apiJson("/api/v1/approvals"); setItems(data.approvals ?? []); }
     catch (error) { toast(error instanceof Error ? error.message : "审批列表加载失败"); }
     finally { setLoading(false); }
   };
@@ -646,7 +646,7 @@ export default function Home() {
   const visible = useMemo(() => filter === "全部" ? orders : orders.filter(o => o.status === filter), [filter]);
   const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2400); };
   useEffect(() => {
-    fetch("/api/session")
+    fetch("/api/v1/session")
       .then(response => response.ok ? response.json() : Promise.reject(new Error("unauthenticated")))
       .then(payload => {
         if (!payload?.user) return;

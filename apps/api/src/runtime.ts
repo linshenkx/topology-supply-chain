@@ -6,12 +6,42 @@ import {
   type DatabaseClient,
   type DatabaseEnvironment,
 } from "./infrastructure/database.js";
+import { createAuditWriter } from "./infrastructure/audit.js";
+import { createAuditXlsxExporter } from "./infrastructure/audit-xlsx.js";
+import { createOssFileStorage } from "./infrastructure/oss-storage.js";
+import { createSupplierPerformanceXlsxExporter } from "./infrastructure/supplier-performance-xlsx.js";
+import { registerApprovalsModule } from "./modules/approvals/index.js";
+import {
+  registerAuditLogsModule,
+  type AuditLogExportPort,
+} from "./modules/audit-logs/index.js";
 import {
   authenticateRequest,
   registerAuthModule,
   type AuthEnvironment,
 } from "./modules/auth/index.js";
+import { registerFinanceModule } from "./modules/finance/index.js";
+import {
+  registerFilesModule,
+  type FileStoragePort,
+} from "./modules/files/index.js";
+import { registerImportsModule } from "./modules/imports/index.js";
+import { registerInventoryModule } from "./modules/inventory/index.js";
 import { registerMasterDataModule } from "./modules/master-data/index.js";
+import { registerNotificationsModule } from "./modules/notifications/index.js";
+import { registerPurchaseOrdersModule } from "./modules/purchase-orders/index.js";
+import { registerPurchasePlansModule } from "./modules/purchase-plans/index.js";
+import { registerProductionOrdersModule } from "./modules/production-orders/index.js";
+import { registerQualityInspectionsModule } from "./modules/quality-inspections/index.js";
+import { registerReturnsModule } from "./modules/returns/index.js";
+import { registerShipmentsModule } from "./modules/shipments/index.js";
+import { registerStocktakesModule } from "./modules/stocktakes/index.js";
+import {
+  registerSuppliersModule,
+  type SupplierPerformanceExportPort,
+} from "./modules/suppliers/index.js";
+import { registerUsersModule } from "./modules/users/index.js";
+import { registerWarehousesModule } from "./modules/warehouses/index.js";
 import {
   buildApp,
   type BuildAppOptions,
@@ -28,8 +58,11 @@ export interface BuildRuntimeAppOptions
   database?: DatabaseClient;
   databaseFactory?: (environment: DatabaseEnvironment) => DatabaseClient;
   databasePingTimeoutMs?: number;
+  auditExporter?: AuditLogExportPort;
   environment?: DatabaseEnvironment;
+  fileStorage?: FileStoragePort;
   now?: () => Date;
+  supplierPerformanceExporter?: SupplierPerformanceExportPort;
 }
 
 function normalized(value: string | undefined): string | undefined {
@@ -137,12 +170,119 @@ export async function buildRuntimeApp(
       environment: resolvedAuthEnvironment,
       ...(options.now === undefined ? {} : { now: options.now }),
     };
+    const authenticate = (request: Parameters<typeof authenticateRequest>[1]) =>
+      authenticateRequest(database, request, authOptions);
+    const audit = createAuditWriter({
+      ...(database === undefined ? {} : { database }),
+      ...(options.now === undefined ? {} : { now: options.now }),
+    });
+    const auditExporter = options.auditExporter ?? createAuditXlsxExporter();
+    const fileStorage =
+      options.fileStorage ?? createOssFileStorage({ env: environment });
+    const supplierPerformanceExporter =
+      options.supplierPerformanceExporter ??
+      createSupplierPerformanceXlsxExporter();
+
     await registerAuthModule(app, authOptions);
     await registerMasterDataModule(app, {
       ...(database === undefined ? {} : { database }),
-      authenticate: (request) =>
-        authenticateRequest(database, request, authOptions),
+      authenticate,
       ...(options.now === undefined ? {} : { now: options.now }),
+    });
+    await registerFinanceModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+    });
+    await registerApprovalsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+    });
+    await registerInventoryModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+    });
+    await registerStocktakesModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerShipmentsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerWarehousesModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerPurchasePlansModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerPurchaseOrdersModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerImportsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerProductionOrdersModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit: (event) => audit(event),
+    });
+    await registerQualityInspectionsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerReturnsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerSuppliersModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit: (event, actor, request) =>
+        audit({
+          access: { localPreview: false, userId: actor.userId },
+          action: event.action,
+          module: event.module,
+          entityType: event.entityType,
+          entityId: event.entityId,
+          exported: event.exported === true,
+          sensitiveView: event.sensitiveView,
+          request,
+          ...(event.count === undefined
+            ? {}
+            : { after: { count: event.count } }),
+        }),
+      exportPerformance: supplierPerformanceExporter,
+      ...(options.now === undefined ? {} : { now: options.now }),
+    });
+    await registerUsersModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+      ...(options.now === undefined ? {} : { now: options.now }),
+    });
+    await registerAuditLogsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+      exporter: auditExporter,
+      ...(options.now === undefined ? {} : { now: options.now }),
+    });
+    await registerNotificationsModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+    });
+    await registerFilesModule(app, {
+      ...(database === undefined ? {} : { database }),
+      authenticate,
+      audit,
+      storage: fileStorage,
     });
 
     return app;

@@ -25,7 +25,7 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
   const [relation, setRelation] = useState({ factoryId: "", supplierId: "", sku: "", isPrimary: false, priority: "1", minimumOrderQuantity: "1", packagingMultiple: "1", purchaseUnit: "", leadTimeDays: "", dailyCapacity: "", monthlyCapacity: "", effectiveFrom: today });
 
   const load = async () => {
-    const [supplierResponse, relationResponse] = await Promise.all([fetch("/api/suppliers"), fetch("/api/supplier-skus")]);
+    const [supplierResponse, relationResponse] = await Promise.all([fetch("/api/v1/suppliers"), fetch("/api/v1/supplier-skus")]);
     if (supplierResponse.ok) { const data = await supplierResponse.json(); setSuppliers(data.suppliers ?? []); setFactories(data.factories ?? []); }
     if (relationResponse.ok) { const data = await relationResponse.json(); setRelations(data.relations ?? []); setSkus(data.skus ?? []); if (!factories.length && data.factories) setFactories(data.factories); }
   };

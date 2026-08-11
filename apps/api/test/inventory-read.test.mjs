@@ -74,6 +74,9 @@ test("factory inventory is warehouse-scoped, preserves ownership visibility, and
   assertPrivate(response);
   const body = response.json();
   assert.equal(body.batches[0].ownership, "company");
+  assert.equal(body.batches[0].productionDate, null);
+  assert.equal(body.batches[0].expiryDate, null);
+  assert.equal(body.transfers[0].approvedBy, null);
   assert.deepEqual(body.warehouses.map((row) => row.id), [1, 2]);
   assert.equal(body.reservations[0].status, "active");
   assert.match(database.queries[0].sql, /WHERE factory_id = \?/u);

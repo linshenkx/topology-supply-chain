@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import test from "node:test";
+
+const repositoryRoot = new URL("../../..", import.meta.url);
+
+async function source(path) {
+  return readFile(new URL(path, repositoryRoot), "utf8");
+}
+
+test("finance and approval reads use v1 while mutations remain on legacy routes", async () => {
+  const [page, finance, exceptions] = await Promise.all([
+    source("app/page.tsx"),
+    source("app/components/FinanceWorkspace.tsx"),
+    source("app/components/FinanceExceptionWorkspace.tsx"),
+  ]);
+
+  assert.match(page, /apiJson\("\/api\/v1\/approvals"\)/u);
+  assert.match(
+    page,
+    /apiJson\("\/api\/approvals", \{[\s\S]*?method: "POST"/u,
+  );
+  assert.match(finance, /requestJson\("\/api\/v1\/finance"\)/u);
+  assert.match(
+    finance,
+    /requestJson\("\/api\/finance", \{ method:"POST"/u,
+  );
+  assert.match(exceptions, /json\("\/api\/v1\/finance"\)/u);
+  assert.match(
+    exceptions,
+    /json\("\/api\/finance", \{ method:"POST"/u,
+  );
+});
+
+test("inventory and logistics reads use v1 while mutations remain on legacy routes", async () => {
+  const [inventory, stocktakes, warehouses, shipping] = await Promise.all([
+    source("app/components/InventoryWorkspace.tsx"),
+    source("app/components/StocktakeWorkspace.tsx"),
+    source("app/components/WarehouseWorkspace.tsx"),
+    source("app/components/ShippingWorkspace.tsx"),
+  ]);
+
+  assert.match(inventory, /fetch\("\/api\/v1\/inventory"/u);
+  assert.match(inventory, /fetch\("\/api\/inventory", \{ method: "POST"/u);
+  assert.match(stocktakes, /fetch\("\/api\/v1\/stocktakes"/u);
+  assert.match(stocktakes, /fetch\("\/api\/stocktakes", \{ method: "POST"/u);
+  assert.match(warehouses, /fetch\("\/api\/v1\/warehouses"/u);
+  assert.match(warehouses, /fetch\("\/api\/warehouses", \{ method: "POST"/u);
+  assert.match(shipping, /jsonRequest\("\/api\/v1\/shipments"\)/u);
+  assert.match(shipping, /post\("\/api\/shipments"/u);
+  assert.match(shipping, /jsonRequest\("\/api\/v1\/returns"\)/u);
+  assert.match(shipping, /post\("\/api\/returns"/u);
+});
+
+test("production and supplier reads use v1 while mutations remain on legacy routes", async () => {
+  const [production, suppliers, prices, performance] = await Promise.all([
+    source("app/components/ProductionWorkspace.tsx"),
+    source("app/components/SupplierWorkspace.tsx"),
+    source("app/components/SupplierPriceWorkspace.tsx"),
+    source("app/components/SupplierPerformanceWorkspace.tsx"),
+  ]);
+
+  assert.match(production, /fetch\("\/api\/v1\/production-orders"/u);
+  assert.match(production, /fetch\("\/api\/production-orders", \{ method/u);
+  assert.match(suppliers, /fetch\("\/api\/v1\/suppliers"\)/u);
+  assert.match(suppliers, /fetch\("\/api\/v1\/supplier-skus"\)/u);
+  assert.match(suppliers, /fetch\(isSupplier \? "\/api\/suppliers" : "\/api\/supplier-skus", \{ method: "POST"/u);
+  assert.match(prices, /fetch\("\/api\/v1\/supplier-prices"/u);
+  assert.match(prices, /fetch\("\/api\/supplier-prices", \{ method: "POST"/u);
+  assert.match(performance, /fetch\(`\/api\/v1\/supplier-performance\?/u);
+  assert.match(performance, /window\.location\.href = `\/api\/v1\/supplier-performance\?/u);
+  assert.match(performance, /fetch\("\/api\/supplier-performance", \{ method: "POST"/u);
+});
+
+test("session and purchase reads use v1 while purchase mutations remain legacy", async () => {
+  const [page, purchase] = await Promise.all([
+    source("app/page.tsx"),
+    source("app/components/PurchaseWorkspace.tsx"),
+  ]);
+
+  assert.match(page, /fetch\("\/api\/v1\/session"\)/u);
+  assert.match(purchase, /fetch\("\/api\/v1\/purchase-plans"/u);
+  assert.match(purchase, /fetch\("\/api\/v1\/purchase-orders"/u);
+  assert.match(purchase, /fetch\("\/api\/v1\/session"/u);
+  assert.match(purchase, /fetch\("\/api\/purchase-plans", \{ method: "PATCH"/u);
+  assert.match(purchase, /fetch\("\/api\/purchase-orders", \{/u);
+  assert.doesNotMatch(purchase, /fetch\("\/api\/v1\/purchase-plans", \{ method:/u);
+  assert.doesNotMatch(purchase, /fetch\("\/api\/v1\/purchase-orders", \{ method:/u);
+});
+
+test("account and audit reads use v1 while user mutations and file uploads remain legacy", async () => {
+  const [page, audit, finance, shipping] = await Promise.all([
+    source("app/page.tsx"),
+    source("app/components/AuditWorkspace.tsx"),
+    source("app/components/FinanceWorkspace.tsx"),
+    source("app/components/ShippingWorkspace.tsx"),
+  ]);
+
+  assert.match(page, /apiJson\("\/api\/v1\/users"\)/u);
+  assert.match(page, /apiJson\("\/api\/users", \{/u);
+  assert.match(audit, /fetch\(`\/api\/v1\/audit-logs\?/u);
+  assert.doesNotMatch(audit, /fetch\(`\/api\/audit-logs\?/u);
+  assert.match(finance, /requestJson\("\/api\/files", \{ method:"POST"/u);
+  assert.match(shipping, /jsonRequest\("\/api\/files", \{ method: "POST"/u);
+  assert.doesNotMatch(finance, /\/api\/v1\/files[^\n]*method:"POST"/u);
+  assert.doesNotMatch(shipping, /\/api\/v1\/files[^\n]*method: "POST"/u);
+});

@@ -83,10 +83,10 @@ export interface InventoryResponse {
 const positiveInteger = { type: "integer", minimum: 1 } as const;
 const nonNegativeInteger = { type: "integer", minimum: 0 } as const;
 const nullablePositiveInteger = {
-  anyOf: [positiveInteger, { type: "null" }],
+  anyOf: [{ type: "null" }, positiveInteger],
 } as const;
 const nullableString = {
-  anyOf: [{ type: "string" }, { type: "null" }],
+  anyOf: [{ type: "null" }, { type: "string" }],
 } as const;
 const timestamps = {
   createdAt: { type: "string", minLength: 1 },

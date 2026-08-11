@@ -24,7 +24,7 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
 
   const load = async () => {
-    const response = await fetch(`/api/supplier-performance?quarter=${encodeURIComponent(quarter)}&tier=${tier}`);
+    const response = await fetch(`/api/v1/supplier-performance?quarter=${encodeURIComponent(quarter)}&tier=${tier}`);
     const result = await response.json();
     if (!response.ok) return toast(result.error || "绩效数据加载失败");
     setData(result);
@@ -55,7 +55,7 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
   };
 
   return <section className="performance-workspace">
-    <div className="performance-head"><div><span className="eyebrow">SUPPLIER PERFORMANCE</span><h2>供应商绩效与匿名排名</h2><p>按供应商层级独立排名；没有业务来源的数据不会生成虚假分数。</p></div><div className="performance-actions">{data?.canConfigure && <button onClick={() => setWeightsOpen(true)}>配置权重</button>}{data?.canReview && <button onClick={() => setReviewOpen(true)}>季度评价</button>}<button className="primary" onClick={() => { window.location.href = `/api/supplier-performance?quarter=${encodeURIComponent(quarter)}&tier=${tier}&format=xlsx`; }}>导出带水印 Excel</button></div></div>
+    <div className="performance-head"><div><span className="eyebrow">SUPPLIER PERFORMANCE</span><h2>供应商绩效与匿名排名</h2><p>按供应商层级独立排名；没有业务来源的数据不会生成虚假分数。</p></div><div className="performance-actions">{data?.canConfigure && <button onClick={() => setWeightsOpen(true)}>配置权重</button>}{data?.canReview && <button onClick={() => setReviewOpen(true)}>季度评价</button>}<button className="primary" onClick={() => { window.location.href = `/api/v1/supplier-performance?quarter=${encodeURIComponent(quarter)}&tier=${tier}&format=xlsx`; }}>导出带水印 Excel</button></div></div>
     <div className="performance-toolbar"><div className="tier-tabs">{[1, 2, 3].map(value => <button key={value} className={tier === value ? "active" : ""} onClick={() => setTier(value)}>第 {value} 层</button>)}</div><label>评价季度<input value={quarter} onChange={e => setQuarter(e.target.value)} placeholder="2026-Q3" /></label></div>
     <div className="performance-note">自动指标将在订单、质检和异常数据形成后参与计算；当前综合分只按已有评价维度重新归一化。</div>
     <div className="performance-table"><div className="row header"><span>排名 / 供应商</span><span>综合分</span>{(Object.keys(metricLabels) as MetricKey[]).map(key => <span key={key}>{metricLabels[key]}</span>)}</div>{data?.rankings.map(item => <div className="row" key={item.supplierId}><span><b>#{item.rank}　{item.displayName}</b><small>{item.comments.slice(0, 2).map(x => x.comment).filter(Boolean).join("；") || "暂无改进建议"}</small></span><span className="score">{item.score === null ? "待评价" : item.score.toFixed(1)}</span>{(Object.keys(metricLabels) as MetricKey[]).map(key => <span key={key}>{item.metrics[key] === null ? <em>待形成</em> : `${item.metrics[key]?.toFixed(1)}%`}</span>)}</div>)}</div>

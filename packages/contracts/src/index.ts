@@ -167,7 +167,6 @@ export {
   type ProductionOrdersResponse,
   type ProductionPurchaseOrder,
   type ProductionReport,
-  type ProductionSku,
 } from "./production-orders.js";
 export {
   qualityInspectionsResponseSchema,

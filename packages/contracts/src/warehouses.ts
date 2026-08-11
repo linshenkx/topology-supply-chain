@@ -38,7 +38,7 @@ export interface WarehousesResponse {
 
 const positiveInteger = { type: "integer", minimum: 1 } as const;
 const nonNegativeInteger = { type: "integer", minimum: 0 } as const;
-const nullablePositiveInteger = { anyOf: [positiveInteger, { type: "null" }] } as const;
+const nullablePositiveInteger = { anyOf: [{ type: "null" }, positiveInteger] } as const;
 const timestamps = { createdAt: { type: "string", minLength: 1 }, updatedAt: { type: "string", minLength: 1 } } as const;
 
 const factorySchema = {

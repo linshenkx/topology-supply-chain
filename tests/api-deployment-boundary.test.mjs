@@ -143,8 +143,33 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
     "DEPLOY_TARGET",
     "HOST",
     "NODE_ENV",
+    "OSS_ACCESS_KEY_ID",
+    "OSS_ACCESS_KEY_SECRET",
+    "OSS_BUCKET",
+    "OSS_ECS_RAM_ROLE",
+    "OSS_INTERNAL_ENDPOINT",
+    "OSS_REGION",
     "PORT",
   ]);
+  for (const forbiddenEnvironmentKey of [
+    "SESSION_SECRET",
+    "JOB_TOKEN",
+    "SMS_WEBHOOK_URL",
+    "SMS_WEBHOOK_API_KEY",
+    "SMS_ECS_RAM_ROLE",
+    "SMS_REGION_ID",
+    "ALIYUN_SMS_SIGN_NAME",
+    "ALIYUN_SMS_TEMPLATE_CODE",
+    "EMAIL_WEBHOOK_URL",
+    "EMAIL_WEBHOOK_API_KEY",
+    "OPENAI_API_KEY",
+  ]) {
+    assert.doesNotMatch(
+      api,
+      new RegExp(`^\\s+${forbiddenEnvironmentKey}:`, "m"),
+      `API must not receive ${forbiddenEnvironmentKey}`,
+    );
+  }
   assert.match(api, /init: true/);
   assert.match(api, /no-new-privileges:true/);
   assert.match(api, /cap_drop:\n\s+- ALL/);
