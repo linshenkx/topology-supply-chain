@@ -1,4 +1,6 @@
-import { buildApp } from "./app.js";
+import type { FastifyInstance } from "fastify";
+
+import { buildRuntimeApp } from "./runtime.js";
 import { safeErrorName } from "./safe-logging.js";
 
 const defaultHost = "0.0.0.0";
@@ -17,7 +19,7 @@ function readPort(rawPort: string | undefined): number {
   return port;
 }
 
-const app = await buildApp();
+let app: FastifyInstance | undefined;
 let shutdownStarted = false;
 
 async function shutdown(signal: NodeJS.Signals): Promise<void> {
@@ -26,6 +28,9 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   }
 
   shutdownStarted = true;
+  if (app === undefined) {
+    return;
+  }
   app.log.info({ signal }, "Graceful shutdown started");
 
   try {
@@ -43,22 +48,35 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   }
 }
 
-for (const signal of ["SIGTERM", "SIGINT"] as const) {
-  process.once(signal, () => {
-    void shutdown(signal);
-  });
-}
-
 try {
+  app = await buildRuntimeApp();
+  for (const signal of ["SIGTERM", "SIGINT"] as const) {
+    process.once(signal, () => {
+      void shutdown(signal);
+    });
+  }
   await app.listen({
     host: process.env.HOST?.trim() || defaultHost,
     port: readPort(process.env.PORT),
   });
 } catch (error) {
-  app.log.fatal(
-    { event: "api_startup_failed", errorName: safeErrorName(error) },
-    "API startup failed",
-  );
+  if (app !== undefined) {
+    app.log.fatal(
+      { event: "api_startup_failed", errorName: safeErrorName(error) },
+      "API startup failed",
+    );
+  } else {
+    process.stderr.write(
+      `${JSON.stringify({
+        level: "fatal",
+        event: "api_startup_failed",
+        errorName: safeErrorName(error),
+        message: "API startup failed",
+      })}\n`,
+    );
+  }
   process.exitCode = 1;
-  await app.close();
+  if (app !== undefined) {
+    await app.close();
+  }
 }

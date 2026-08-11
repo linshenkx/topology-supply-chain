@@ -133,6 +133,13 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
   assert.doesNotMatch(api, /^\s+<<:/m);
   assert.deepEqual(composeMappingKeys(api, "environment"), [
     "APP_ENV",
+    "DATABASE_URL",
+    "DB_CONNECT_TIMEOUT_MS",
+    "DB_PING_TIMEOUT_MS",
+    "DB_POOL_SIZE",
+    "DB_QUERY_TIMEOUT_MS",
+    "DB_SSL",
+    "DB_SSL_REJECT_UNAUTHORIZED",
     "DEPLOY_TARGET",
     "HOST",
     "NODE_ENV",
@@ -178,6 +185,10 @@ test("nginx forwards correlation and origin metadata but clears identity asserti
 });
 
 test("deploy uses one release tag for the Web, API, and migrator images", () => {
+  assert.match(
+    deployScript,
+    /export COMPOSE_ENV_FILES="\$\{DEPLOY_DIR\}\/\.env\.production"/,
+  );
   assert.match(deployScript, /export RELEASE_TAG=/);
   assert.match(deployScript, /export APP_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
   assert.match(deployScript, /export API_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
@@ -230,6 +241,10 @@ test("deploy has bounded, independent Web and API readiness gates", () => {
 });
 
 test("rollback switches both images to one target tag without touching schema", () => {
+  assert.match(
+    rollbackScript,
+    /export COMPOSE_ENV_FILES="\$\{DEPLOY_DIR\}\/\.env\.production"/,
+  );
   assert.match(rollbackScript, /export RELEASE_TAG="\$1"/);
   assert.match(rollbackScript, /export APP_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
   assert.match(rollbackScript, /export API_IMAGE_TAG="\$\{RELEASE_TAG\}"/);

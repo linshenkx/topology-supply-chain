@@ -8,6 +8,12 @@ fi
 
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${DEPLOY_DIR}"
+if [[ ! -f ".env.production" ]]; then
+  echo "缺少 deploy/aliyun/.env.production，无法为回滚后的 API 注入数据库配置。"
+  exit 1
+fi
+
+export COMPOSE_ENV_FILES="${DEPLOY_DIR}/.env.production"
 export RELEASE_TAG="$1"
 export APP_IMAGE_TAG="${RELEASE_TAG}"
 export API_IMAGE_TAG="${RELEASE_TAG}"

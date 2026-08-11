@@ -95,4 +95,5 @@ curl -fsS --connect-timeout 2 --max-time 5 https://scm.topologygz.com/api/v1/hea
 任一步失败都不得宣告发布成功；其中配置安装、校验与reload需要服务器权限，不由应用发布脚本擅自执行。
 
 生产Web只监听`127.0.0.1:3000`，独立API只监听`127.0.0.1:3001`；两者均只通过Nginx的80和443端口提供公网入口。
+独立API不继承整份`.env.production`；Compose只向其注入MySQL连接及连接池、TLS、超时配置，OSS、短信、邮件和OpenAI密钥继续保持隔离。
 RDS使用内网地址，OSS保持私有并使用RAM最小权限账号。

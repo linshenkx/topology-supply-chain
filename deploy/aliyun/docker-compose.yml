@@ -43,6 +43,13 @@ services:
     init: true
     environment:
       APP_ENV: production
+      DATABASE_URL: "${DATABASE_URL:-}"
+      DB_CONNECT_TIMEOUT_MS: "${DB_CONNECT_TIMEOUT_MS:-5000}"
+      DB_PING_TIMEOUT_MS: "${DB_PING_TIMEOUT_MS:-2000}"
+      DB_POOL_SIZE: "${DB_POOL_SIZE:-10}"
+      DB_QUERY_TIMEOUT_MS: "${DB_QUERY_TIMEOUT_MS:-5000}"
+      DB_SSL: "${DB_SSL:-enabled}"
+      DB_SSL_REJECT_UNAUTHORIZED: "${DB_SSL_REJECT_UNAUTHORIZED:-true}"
       DEPLOY_TARGET: aliyun
       NODE_ENV: production
       HOST: 0.0.0.0

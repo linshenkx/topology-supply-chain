@@ -1,19 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 type Toast = (message: string) => void;
 type Sku = { id: number; code: string; name: string; itemType: string; stockUnit: string; status: string; verificationStatus: string };
 type Bom = { id: number; finishedSku: string; version: string; effectiveFrom: string; effectiveTo: string | null; approvalStatus: string; overlapAllowed: boolean; overlapReason?: string | null; lifecycleStatus?: string; active?: boolean };
 type Component = { id: number; bomId: number; componentSku: string; itemType?: string; quantityPerFinished: number; isCore: boolean; issueToleranceBps?: number; consumptionToleranceBps?: number; lossToleranceBps?: number };
 type BomLine = { componentSku: string; quantityPerFinished: string; isCore: boolean; issueTolerance: string; consumptionTolerance: string; lossTolerance: string };
+type MasterDataPayload = { skus: Sku[]; boms: Bom[]; components: Component[] };
 
 const itemTypeText: Record<string, string> = { finished: "成品", auxiliary: "辅料", component: "配件" };
 const lifecycleText: Record<string, string> = { inactive: "已停用", draft: "草稿", pending: "待审批", rejected: "已拒绝", future: "待生效", expired: "已失效", effective: "生效中" };
 const blankLine = (): BomLine => ({ componentSku: "", quantityPerFinished: "1", isCore: false, issueTolerance: "0", consumptionTolerance: "0", lossTolerance: "0" });
 
+async function requestMasterData(signal?: AbortSignal): Promise<MasterDataPayload> {
+  const response = await fetch("/api/v1/master-data", { signal });
+  if (!response.ok) throw new Error("Master data request failed");
+  return await response.json() as MasterDataPayload;
+}
+
 export default function MasterDataWorkspace({ toast }: { toast: Toast }) {
-  const [data, setData] = useState<{ skus: Sku[]; boms: Bom[]; components: Component[] }>({ skus: [], boms: [], components: [] });
+  const [data, setData] = useState<MasterDataPayload>({ skus: [], boms: [], components: [] });
   const [tab, setTab] = useState<"sku" | "bom">("sku");
   const [open, setOpen] = useState<"sku" | "bom" | null>(null);
   const [busy, setBusy] = useState(false);
@@ -21,9 +28,27 @@ export default function MasterDataWorkspace({ toast }: { toast: Toast }) {
   const [compareIds, setCompareIds] = useState<number[]>([]);
   const [sku, setSku] = useState({ code: "", name: "", itemType: "finished", stockUnit: "", purchaseUnit: "", purchaseUnitQuantity: "1", stockUnitQuantity: "1", effectiveFrom: new Date().toISOString().slice(0, 10), overproductionTolerance: "0", purchaseOverTolerance: "0", purchaseUnderTolerance: "0" });
   const [bom, setBom] = useState({ finishedSku: "", version: "V1", effectiveFrom: new Date().toISOString().slice(0, 10), effectiveTo: "", overlapAllowed: false, overlapReason: "", components: [blankLine()] });
+  const toastRef = useRef(toast);
 
-  const load = async () => { const response = await fetch("/api/master-data"); if (response.ok) setData(await response.json()); };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    toastRef.current = toast;
+  }, [toast]);
+
+  const load = async () => {
+    try {
+      setData(await requestMasterData());
+    } catch {
+      toastRef.current("主数据加载失败，请稍后重试");
+    }
+  };
+  useEffect(() => {
+    const controller = new AbortController();
+    void requestMasterData(controller.signal).then(
+      payload => { if (!controller.signal.aborted) setData(payload); },
+      () => { if (!controller.signal.aborted) toastRef.current("主数据加载失败，请稍后重试"); },
+    );
+    return () => controller.abort();
+  }, []);
   const finished = useMemo(() => data.skus.filter(x => x.itemType === "finished" && x.status === "active"), [data.skus]);
   const materials = useMemo(() => data.skus.filter(x => ["auxiliary", "component"].includes(x.itemType) && x.status === "active"), [data.skus]);
   const selectedBoms = compareIds.map(id => data.boms.find(x => x.id === id)).filter(Boolean) as Bom[];

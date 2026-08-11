@@ -9,6 +9,7 @@ if [[ ! -f ".env.production" ]]; then
   exit 1
 fi
 
+export COMPOSE_ENV_FILES="${DEPLOY_DIR}/.env.production"
 export RELEASE_TAG="${RELEASE_TAG:-${APP_IMAGE_TAG:-$(date -u +%Y%m%d%H%M%S)}}"
 export APP_IMAGE_TAG="${RELEASE_TAG}"
 export API_IMAGE_TAG="${RELEASE_TAG}"
