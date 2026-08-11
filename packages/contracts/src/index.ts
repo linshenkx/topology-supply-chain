@@ -54,3 +54,42 @@ export {
   type ApprovalStatus,
   type ApprovalsResponse,
 } from "./approvals.js";
+export {
+  inventoryResponseSchema,
+  inventorySchemaId,
+  type InventoryBatch,
+  type InventoryQuery,
+  type InventoryReservation,
+  type InventoryResponse,
+  type InventoryTransfer,
+  type InventoryWarehouse,
+} from "./inventory.js";
+export {
+  stocktakesResponseSchema,
+  stocktakesSchemaId,
+  type Stocktake,
+  type StocktakeCount,
+  type StocktakeFactory,
+  type StocktakesResponse,
+  type StocktakeTarget,
+  type StocktakeWarehouse,
+} from "./stocktakes.js";
+export {
+  shipmentsResponseSchema,
+  shipmentsSchemaId,
+  type Shipment,
+  type ShipmentEvidence,
+  type ShipmentException,
+  type ShipmentExecution,
+  type ShipmentOrderItem,
+  type ShipmentReceipt,
+  type ShipmentsResponse,
+} from "./shipments.js";
+export {
+  warehousesResponseSchema,
+  warehousesSchemaId,
+  type Warehouse,
+  type WarehouseBlockers,
+  type WarehouseFactory,
+  type WarehousesResponse,
+} from "./warehouses.js";
