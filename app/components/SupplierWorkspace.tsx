@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import SupplierPriceWorkspace from "./SupplierPriceWorkspace";
 import SupplierPerformanceWorkspace from "./SupplierPerformanceWorkspace";
+import { writeSupplier, writeSupplierSku } from "../lib/r2-mutation-client";
 
 type Toast = (message: string) => void;
 type Factory = { id: number; code: string; name: string; status: string };
@@ -44,9 +45,9 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
         ...relation, factoryId: Number(relation.factoryId), supplierId: Number(relation.supplierId), priority: Number(relation.priority), minimumOrderQuantity: Number(relation.minimumOrderQuantity), packagingMultiple: Number(relation.packagingMultiple),
         leadTimeDays: relation.leadTimeDays ? Number(relation.leadTimeDays) : null, dailyCapacity: relation.dailyCapacity ? Number(relation.dailyCapacity) : null, monthlyCapacity: relation.monthlyCapacity ? Number(relation.monthlyCapacity) : null,
       };
-      const response = await fetch(isSupplier ? "/api/suppliers" : "/api/supplier-skus", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "提交失败");
+      const result = isSupplier
+        ? await writeSupplier<{ approvalRequired: boolean }>(payload)
+        : await writeSupplierSku<{ approvalRequired: boolean }>(payload);
       toast(result.approvalRequired ? "已提交，等待另一位供应链同事审批" : "已生效并记录操作日志");
       setOpen(false); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "提交失败"); } finally { setBusy(false); }

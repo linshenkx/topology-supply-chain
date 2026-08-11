@@ -52,40 +52,46 @@ test("inventory and logistics reads use v1 while mutations remain on legacy rout
   assert.match(shipping, /post\("\/api\/returns"/u);
 });
 
-test("production and supplier reads use v1 while mutations remain on legacy routes", async () => {
-  const [production, suppliers, prices, performance] = await Promise.all([
+test("production stays legacy while R2 supplier mutations use the typed v1 adapter", async () => {
+  const [production, suppliers, prices, performance, r2Client] = await Promise.all([
     source("app/components/ProductionWorkspace.tsx"),
     source("app/components/SupplierWorkspace.tsx"),
     source("app/components/SupplierPriceWorkspace.tsx"),
     source("app/components/SupplierPerformanceWorkspace.tsx"),
+    source("app/lib/r2-mutation-client.ts"),
   ]);
 
   assert.match(production, /fetch\("\/api\/v1\/production-orders"/u);
   assert.match(production, /fetch\("\/api\/production-orders", \{ method/u);
   assert.match(suppliers, /fetch\("\/api\/v1\/suppliers"\)/u);
   assert.match(suppliers, /fetch\("\/api\/v1\/supplier-skus"\)/u);
-  assert.match(suppliers, /fetch\(isSupplier \? "\/api\/suppliers" : "\/api\/supplier-skus", \{ method: "POST"/u);
+  assert.match(suppliers, /writeSupplier/u);
+  assert.match(suppliers, /writeSupplierSku/u);
   assert.match(prices, /fetch\("\/api\/v1\/supplier-prices"/u);
-  assert.match(prices, /fetch\("\/api\/supplier-prices", \{ method: "POST"/u);
+  assert.match(prices, /writeSupplierPrice/u);
   assert.match(performance, /fetch\(`\/api\/v1\/supplier-performance\?/u);
   assert.match(performance, /window\.location\.href = `\/api\/v1\/supplier-performance\?/u);
-  assert.match(performance, /fetch\("\/api\/supplier-performance", \{ method: "POST"/u);
+  assert.match(performance, /writeSupplierPerformance/u);
+  assert.doesNotMatch([suppliers, prices, performance].join("\n"), /fetch\([`"]\/api\/(?:suppliers|supplier-skus|supplier-prices|supplier-performance)/u);
+  assert.match(r2Client, /"\/api\/v1\/supplier-prices"/u);
 });
 
-test("session and purchase reads use v1 while purchase mutations remain legacy", async () => {
-  const [page, purchase] = await Promise.all([
+test("session, purchase reads, and purchase mutations use v1", async () => {
+  const [page, purchase, r2Client] = await Promise.all([
     source("app/page.tsx"),
     source("app/components/PurchaseWorkspace.tsx"),
+    source("app/lib/r2-mutation-client.ts"),
   ]);
 
   assert.match(page, /fetch\("\/api\/v1\/session"\)/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-plans"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-orders"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/session"/u);
-  assert.match(purchase, /fetch\("\/api\/purchase-plans", \{ method: "PATCH"/u);
-  assert.match(purchase, /fetch\("\/api\/purchase-orders", \{/u);
-  assert.doesNotMatch(purchase, /fetch\("\/api\/v1\/purchase-plans", \{ method:/u);
-  assert.doesNotMatch(purchase, /fetch\("\/api\/v1\/purchase-orders", \{ method:/u);
+  assert.match(purchase, /updatePurchasePlan/u);
+  assert.match(purchase, /updatePurchaseOrder/u);
+  assert.doesNotMatch(purchase, /fetch\([`"]\/api\/(?:purchase-plans|purchase-orders)/u);
+  assert.match(r2Client, /"\/api\/v1\/purchase-plans"/u);
+  assert.match(r2Client, /"\/api\/v1\/purchase-orders"/u);
 });
 
 test("platform user mutations and file uploads use the typed v1 mutation seam", async () => {

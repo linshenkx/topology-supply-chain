@@ -19,6 +19,7 @@ const STAGE4_READ_PATHS = new Set<string>([
   "/api/v1/stocktakes",
   "/api/v1/supplier-performance",
   "/api/v1/supplier-prices",
+  "/api/v1/supplier-prices/version",
   "/api/v1/supplier-skus",
   "/api/v1/suppliers",
   "/api/v1/users",
@@ -34,6 +35,10 @@ const WRITE_PATHS = new Set<string>([
   "/api/v1/auth/login", "/api/v1/auth/verify", "/api/v1/auth/logout",
   "/api/v1/auth/step-up/request", "/api/v1/auth/step-up/verify",
   "/api/v1/users", "/api/v1/files", "/api/v1/notifications/read",
+  "/api/v1/imports/preview", "/api/v1/imports/stage", "/api/v1/imports/commit",
+  "/api/v1/master-data", "/api/v1/suppliers", "/api/v1/supplier-skus",
+  "/api/v1/supplier-prices", "/api/v1/supplier-performance",
+  "/api/v1/purchase-plans", "/api/v1/purchase-orders",
 ]);
 
 /**

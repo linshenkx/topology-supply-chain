@@ -434,7 +434,7 @@ test("missing database and malformed child closure fail through the sanitized bo
   }
 });
 
-test("frontend migrates only GET and reports non-2xx or network failures", async () => {
+test("frontend uses the v1 master-data mutation adapter and reports read failures", async () => {
   const source = await readFile(
     new URL("../../../app/components/MasterDataWorkspace.tsx", import.meta.url),
     "utf8",
@@ -456,14 +456,8 @@ test("frontend migrates only GET and reports non-2xx or network failures", async
   assert.match(loadSource, /toastRef\.current\("主数据加载失败，请稍后重试"\)/u);
   assert.match(source, /new AbortController\(\)/u);
   assert.match(source, /requestMasterData\(controller\.signal\)/u);
-  assert.match(
-    source,
-    /fetch\("\/api\/master-data", \{ method: "POST"/u,
-  );
-  assert.doesNotMatch(
-    source,
-    /fetch\("\/api\/v1\/master-data", \{ method: "POST"/u,
-  );
+  assert.match(source, /writeMasterData/u);
+  assert.doesNotMatch(source, /fetch\("\/api\/master-data", \{ method: "POST"/u);
 });
 
 test("Next development bridge is GET-only and refuses production", () => {

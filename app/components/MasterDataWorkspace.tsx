@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { writeMasterData } from "../lib/r2-mutation-client";
 
 type Toast = (message: string) => void;
 type Sku = { id: number; code: string; name: string; itemType: string; stockUnit: string; status: string; verificationStatus: string };
@@ -53,12 +54,10 @@ export default function MasterDataWorkspace({ toast }: { toast: Toast }) {
   const materials = useMemo(() => data.skus.filter(x => ["auxiliary", "component"].includes(x.itemType) && x.status === "active"), [data.skus]);
   const selectedBoms = compareIds.map(id => data.boms.find(x => x.id === id)).filter(Boolean) as Bom[];
 
-  const submit = async (payload: unknown) => {
+  const submit = async (payload: Record<string, unknown>) => {
     setBusy(true);
     try {
-      const response = await fetch("/api/master-data", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "提交失败");
+      await writeMasterData(payload);
       toast(open === "bom" ? "BOM 版本已提交，等待另一位供应链同事审批" : "SKU 已提交，等待另一位供应链同事审批");
       setOpen(null);
       await load();

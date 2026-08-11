@@ -1,6 +1,11 @@
 "use client";
 
-type PlatformMutationPath =
+import {
+  R2_COMMAND_BY_MUTATION,
+  type R2MutationPath,
+} from "./r2-mutation-contract";
+
+type CorePlatformMutationPath =
   | "/api/v1/auth/login"
   | "/api/v1/auth/verify"
   | "/api/v1/auth/logout"
@@ -9,6 +14,8 @@ type PlatformMutationPath =
   | "/api/v1/users"
   | "/api/v1/files"
   | "/api/v1/notifications/read";
+
+export type PlatformMutationPath = CorePlatformMutationPath | R2MutationPath;
 
 type MutationMethod = "POST" | "PATCH" | "DELETE";
 
@@ -36,7 +43,7 @@ export class MutationError extends Error {
   }
 }
 
-const COMMAND_BY_PATH: Readonly<Record<PlatformMutationPath, string>> = {
+const COMMAND_BY_PATH: Readonly<Record<CorePlatformMutationPath, string>> = {
   "/api/v1/auth/login": "auth.login",
   "/api/v1/auth/verify": "auth.verify",
   "/api/v1/auth/logout": "auth.logout",
@@ -48,10 +55,12 @@ const COMMAND_BY_PATH: Readonly<Record<PlatformMutationPath, string>> = {
 };
 
 function commandName(path: PlatformMutationPath, method: MutationMethod): string {
+  const r2 = R2_COMMAND_BY_MUTATION[`${method} ${path}` as keyof typeof R2_COMMAND_BY_MUTATION];
+  if (r2 !== undefined) return r2;
   if (path === "/api/v1/users") {
     return method === "POST" ? "users.assign-role" : method === "PATCH" ? "users.unlock" : "users.revoke-role";
   }
-  return COMMAND_BY_PATH[path];
+  return COMMAND_BY_PATH[path as CorePlatformMutationPath];
 }
 
 function canonical(value: unknown): string {
@@ -164,12 +173,12 @@ export async function mutateJson<Result, Body extends Record<string, unknown>>(
   path: PlatformMutationPath,
   method: MutationMethod,
   body: Body,
-  options: { csrf?: boolean; idempotencyKey?: string } = {},
+  options: { csrf?: boolean; digestBody?: Record<string, unknown>; idempotencyKey?: string } = {},
 ): Promise<Result> {
   const pending = await pendingKey(path, method, body);
   const idempotencyKey = options.idempotencyKey ?? pending.key;
   if (options.idempotencyKey !== undefined) sessionStorage.setItem(pending.id, idempotencyKey);
-  const requestDigest = await sha256(canonical({ command: commandName(path, method), payload: body }));
+  const requestDigest = await sha256(canonical({ command: commandName(path, method), payload: options.digestBody ?? body }));
   try {
     const response = await fetch(path, {
       method,

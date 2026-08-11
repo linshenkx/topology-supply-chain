@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { updatePurchaseOrder, updatePurchasePlan } from "../lib/r2-mutation-client";
 
 type PlanItem = {
   id: number; expectedArrivalDate: string; factoryId: number; factoryName: string;
@@ -9,10 +10,12 @@ type PlanItem = {
 };
 type Plan = {
   id: number; planNo: string; version: number; status: string; confirmationDueAt?: string | null;
+  updatedAt: string;
   items: PlanItem[]; responses?: Array<{ factoryId: number; decision: string; status: string }>;
 };
 type PurchaseOrder = {
   id: number; orderNo: string; orderDate?: string | null; status: string; totalTaxIncludedMinor: number;
+  updatedAt: string;
   confirmationDueAt?: string | null;
   items: Array<{ id: number; sku: string; productName: string; quantity: number; dueDate?: string | null; planLinks?: Array<{ allocatedQuantity: number; planItem?: PlanItem }> }>;
 };
@@ -83,9 +86,7 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     if (submitting) return;
     setSubmitting(true);
     try {
-      const response = await fetch("/api/purchase-plans", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: plan.id, action: "finalize_ordering" }) });
-      const data = await response.json();
-      if (!response.ok) return toast(data.error ?? "结案核对失败");
+      const data = await updatePurchasePlan<{ approvalRequired: boolean }>({ id: plan.id, action: "finalize_ordering", expectedUpdatedAt: plan.updatedAt });
       toast(data.approvalRequired ? "未足计划采购已提交双人审批。" : "采购计划已在安全偏差范围内完成下单。");
       await load();
     } finally { setSubmitting(false); }
@@ -95,12 +96,7 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     if (!confirming || submitting) return;
     setSubmitting(true);
     try {
-      const response = await fetch("/api/purchase-plans", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: confirming.id, ...form }),
-      });
-      const data = await response.json();
-      if (!response.ok) return toast(data.error ?? "提交失败");
+      await updatePurchasePlan({ id: confirming.id, expectedUpdatedAt: confirming.updatedAt, ...form });
       toast(form.decision === "confirmed" ? "采购计划已确认。" : "异议已提交供应链审批。");
       setConfirming(null);
       setForm({ decision: "confirmed", expectedStartDate: "", expectedFinishDate: "", proposedArrivalDate: "", reason: "" });
@@ -114,12 +110,7 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     if (!confirmingOrder || submitting) return;
     setSubmitting(true);
     try {
-      const response = await fetch("/api/purchase-orders", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: confirmingOrder.id, ...orderForm }),
-      });
-      const data = await response.json();
-      if (!response.ok) return toast(data.error ?? "提交失败");
+      await updatePurchaseOrder({ id: confirmingOrder.id, expectedUpdatedAt: confirmingOrder.updatedAt, ...orderForm });
       toast(orderForm.decision === "confirmed" ? "采购单已确认，可以按期交货。" : "建议交货日期已提交供应链审批。");
       setConfirmingOrder(null);
       setOrderForm({ decision: "confirmed", proposedDueDate: "", reason: "" });

@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { uploadPlatformFile } from "../lib/mutation-client";
+import { writeSupplierPrice, writeSupplierPriceWithStepUp } from "../lib/r2-mutation-client";
 
 type Toast = (message: string) => void;
 type Supplier = { id: number; name: string; code: string; tier: number };
@@ -44,8 +45,23 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
   const submit = async () => {
     setBusy(true);
     try {
-      const response = await fetch("/api/supplier-prices", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ supplierId: Number(form.supplierId), sku: form.sku, taxIncludedMinor: Math.round(Number(form.included) * 100), taxExcludedMinor: Math.round(Number(form.excluded) * 100), taxRateBps: Math.round(Number(form.taxRate) * 100), effectiveFrom: form.effectiveFrom, reason: form.reason, evidenceFileKey: form.evidenceFileKey }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error || "提交失败");
+      const payload = { supplierId: Number(form.supplierId), sku: form.sku, taxIncludedMinor: Math.round(Number(form.included) * 100), taxExcludedMinor: Math.round(Number(form.excluded) * 100), taxRateBps: Math.round(Number(form.taxRate) * 100), effectiveFrom: form.effectiveFrom, reason: form.reason, evidenceFileKey: form.evidenceFileKey };
+      const [sessionResponse, versionResponse] = await Promise.all([
+        fetch("/api/v1/session", { cache: "no-store" }),
+        fetch(`/api/v1/supplier-prices/version?supplierId=${payload.supplierId}&sku=${encodeURIComponent(payload.sku)}`, { cache: "no-store" }),
+      ]);
+      const session = sessionResponse.ok ? await sessionResponse.json() as { user?: { factoryId?: number | null; roles?: string[] } } : {};
+      const supplier = data.suppliers.find(item => item.id === payload.supplierId);
+      const relation = data.relations.find(item => item.supplierId === payload.supplierId && item.sku === payload.sku);
+      const directFactory = supplier?.tier === 3 && session.user?.roles?.includes("factory") && session.user.factoryId === relation?.factoryId;
+      let result: { approvalRequired: boolean };
+      if (directFactory) {
+        if (!versionResponse.ok) throw new Error("价格版本读取失败，请刷新后重试");
+        const version = await versionResponse.json() as { objectVersion: number };
+        result = await writeSupplierPriceWithStepUp(payload, version.objectVersion, async destination => window.prompt(`验证码已发送至 ${destination}，请输入 6 位验证码：`));
+      } else {
+        result = await writeSupplierPrice<{ approvalRequired: boolean }>(payload);
+      }
       toast(result.approvalRequired ? "已提交双人审批" : "价格已生效"); setOpen(false); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "提交失败"); } finally { setBusy(false); }
   };

@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./r2-writes": {
+      "types": "./dist/r2-writes.d.ts",
+      "import": "./dist/r2-writes.js"
     }
   },
   "files": [

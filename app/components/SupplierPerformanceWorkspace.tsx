@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { writeSupplierPerformance } from "../lib/r2-mutation-client";
 
 type Toast = (message: string) => void;
 type MetricKey = "delivery" | "quality" | "exception" | "preparation" | "satisfaction" | "sampling";
@@ -39,8 +40,7 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
   const saveReview = async () => {
     setBusy(true);
     try {
-      const response = await fetch("/api/supplier-performance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "review", supplierId: Number(review.supplierId), quarter, reviewType: review.reviewType, score: Number(review.score), tags: review.tags.split(/[，,]/).map(x => x.trim()).filter(Boolean), comment: review.comment }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error || "评价保存失败");
+      await writeSupplierPerformance({ action: "review", supplierId: Number(review.supplierId), quarter, reviewType: review.reviewType, score: Number(review.score), tags: review.tags.split(/[，,]/).map(x => x.trim()).filter(Boolean), comment: review.comment });
       setReviewOpen(false); toast("评价已保存，评价人姓名不会向工厂显示"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "评价保存失败"); } finally { setBusy(false); }
   };
@@ -48,8 +48,7 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
     if (Math.abs(total - 100) > 0.001) return toast("指标权重合计必须为 100%");
     setBusy(true);
     try {
-      const response = await fetch("/api/supplier-performance", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action: "weights", ...weights, tier, effectiveFrom }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error || "权重保存失败");
+      await writeSupplierPerformance({ action: "weights", ...weights, tier, effectiveFrom });
       setWeightsOpen(false); toast("新权重版本已保存，将从指定日期生效"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "权重保存失败"); } finally { setBusy(false); }
   };
