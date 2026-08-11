@@ -2,7 +2,26 @@ export {
   apiErrorResponseSchema,
   apiErrorSchemaId,
   type ApiErrorResponse,
+  type PlatformErrorCode,
 } from "./errors.js";
+export {
+  assignUserRoleCommandSchema,
+  commandHeadersSchema,
+  commandResponseSchema,
+  CSRF_TOKEN_HEADER,
+  IDEMPOTENCY_KEY_HEADER,
+  loginCommandSchema,
+  loginVerifyCommandSchema,
+  markNotificationReadCommandSchema,
+  REQUEST_DIGEST_HEADER,
+  revokeUserRoleCommandSchema,
+  stepUpRequestCommandSchema,
+  stepUpVerifyCommandSchema,
+  unlockUserCommandSchema,
+  type CommandMetadata,
+  type CommandResponse,
+  type PlatformCommandName,
+} from "./commands.js";
 export {
   healthLiveResponseSchema,
   healthLiveSchemaId,

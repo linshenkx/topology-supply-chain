@@ -1053,6 +1053,8 @@ export const fileObjects = sqliteTable("file_objects", {
   factoryId: integer("factory_id").references(() => factories.id),
   supplierId: integer("supplier_id").references(() => suppliers.id),
   sensitive: integer("sensitive", { mode: "boolean" }).notNull().default(false),
+  scanStatus: text("scan_status", { enum: ["quarantined", "clean", "rejected"] }).notNull().default("quarantined"),
+  contentSha256: text("content_sha256").notNull().default(""),
   retainUntil: text("retain_until"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
@@ -1154,6 +1156,13 @@ export const authChallenges = sqliteTable("auth_challenges", {
   expiresAt: text("expires_at").notNull(),
   attempts: integer("attempts").notNull().default(0),
   verifiedAt: text("verified_at"),
+  sessionId: integer("session_id").references(() => authSessions.id),
+  action: text("action"),
+  objectType: text("object_type"),
+  objectId: text("object_id"),
+  objectVersion: integer("object_version"),
+  requestDigest: text("request_digest"),
+  consumedAt: text("consumed_at"),
   ...timestamps,
 });
 
@@ -1182,3 +1191,49 @@ export const authSessions = sqliteTable("auth_sessions", {
   lastSeenAt: text("last_seen_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 });
+
+export const writerFences = sqliteTable("writer_fences", {
+  resource: text("resource").primaryKey(),
+  owner: text("owner").notNull(),
+  enabled: integer("enabled", { mode: "boolean" }).notNull().default(true),
+  generation: integer("generation").notNull().default(1),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const commandIdempotency = sqliteTable("command_idempotency", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  commandName: text("command_name").notNull(),
+  actorScope: text("actor_scope").notNull(),
+  idempotencyKey: text("idempotency_key").notNull(),
+  requestDigest: text("request_digest").notNull(),
+  status: text("status", { enum: ["pending", "completed", "unknown"] }).notNull().default("pending"),
+  responseStatus: integer("response_status"),
+  responseJson: text("response_json"),
+  expiresAt: text("expires_at").notNull(),
+  ...timestamps,
+}, table => [uniqueIndex("command_idempotency_scope_key_unique").on(table.commandName, table.actorScope, table.idempotencyKey)]);
+
+export const outboxMessages = sqliteTable("outbox_messages", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  topic: text("topic").notNull(),
+  aggregateType: text("aggregate_type").notNull(),
+  aggregateId: text("aggregate_id").notNull(),
+  deduplicationKey: text("deduplication_key").notNull().unique(),
+  payloadJson: text("payload_json").notNull(),
+  status: text("status", { enum: ["pending", "processing", "completed", "dead"] }).notNull().default("pending"),
+  availableAt: text("available_at").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  maxAttempts: integer("max_attempts").notNull().default(8),
+  lockedBy: text("locked_by"),
+  lockedAt: text("locked_at"),
+  lastErrorCode: text("last_error_code"),
+  completedAt: text("completed_at"),
+  ...timestamps,
+});
+
+export const resourceVersions = sqliteTable("resource_versions", {
+  resourceType: text("resource_type").notNull(),
+  resourceId: text("resource_id").notNull(),
+  version: integer("version").notNull().default(1),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [uniqueIndex("resource_versions_identity_unique").on(table.resourceType, table.resourceId)]);

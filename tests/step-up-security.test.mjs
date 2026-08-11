@@ -81,6 +81,10 @@ test("server consumption is user, purpose, scope, verification and expiry bound"
   for (const predicate of [
     /eq\(authChallenges\.challengeNo, challengeNo\)/,
     /eq\(authChallenges\.userId, input\.userId\)/,
+    /eq\(authChallenges\.sessionId, input\.sessionId\)/,
+    /eq\(authChallenges\.action, input\.action\)/,
+    /eq\(authChallenges\.objectVersion, input\.objectVersion!\)/,
+    /eq\(authChallenges\.requestDigest, input\.requestDigest!\.toLowerCase\(\)\)/,
     /eq\(authChallenges\.purpose, "high_risk"\)/,
     /eq\(authChallenges\.deviceId, scope\)/,
     /isNotNull\(authChallenges\.verifiedAt\)/,
@@ -89,7 +93,13 @@ test("server consumption is user, purpose, scope, verification and expiry bound"
     assert.match(source, predicate);
   }
   assert.match(source, /executeAffected\(db\.delete\(authChallenges\)/);
+  assert.ok(source.indexOf("const [binding] = await db.select") < source.indexOf("db.delete(authChallenges)"));
+  assert.match(source, /binding\.objectVersion !== input\.objectVersion/);
+  assert.match(source, /new AccessError\(409, "对象版本已经变化/);
   assert.match(source, /consumed !== 1/);
+  assert.doesNotMatch(source, /Date\.parse/u);
+  assert.match(source, /TIMESTAMPDIFF\(MICROSECOND/u);
+  assert.match(source, /GREATEST\(CURRENT_TIMESTAMP\(3\), DATE_ADD/u);
 });
 
 test("affected-row normalization supports D1 and MySQL mutation results", async () => {
@@ -114,6 +124,8 @@ test("finance actions no longer trust a client smsVerified boolean", () => {
     read("app/components/FinanceExceptionWorkspace.tsx"),
   ].join("\n");
   assert.doesNotMatch(clients, /smsVerified\s*:\s*true/);
+  assert.doesNotMatch(clients, /Date\.parse/u);
+  assert.match(clients, /objectVersion/);
   assert.match(clients, /challengeNo/);
   assert.match(clients, /setPaying\(row\);setSmsVerified\(false\);setChallengeNo\(""\)/);
 });
@@ -123,7 +135,7 @@ test("approval proofs are bound to the selected approval and consumed server-sid
   const page = read("app/page.tsx");
   assert.doesNotMatch(route, /body\.smsVerified/);
   assert.match(route, /scope: `approval:\$\{approval\.id\}`/);
-  assert.match(page, /scope: `approval:\$\{selected\.id\}`/);
+  assert.match(page, /objectVersion: selected\.objectVersion, requestDigest/);
   assert.match(page, /challengeNo: selected\.highRisk \? challengeNo/);
 });
 
@@ -133,6 +145,8 @@ test("approval proof consumption and pending-state CAS share the claim transacti
   const claimEnd = route.indexOf("if (!correctionApproval)", claimStart);
   const claim = route.slice(claimStart, claimEnd);
   assert.ok(claimStart >= 0 && claimEnd > claimStart);
+  assert.ok(claim.indexOf("lockApprovalRequestRow") < claim.indexOf("consumeVerifiedStepUp"));
+  assert.ok(claim.indexOf("databaseObjectVersion") < claim.indexOf("consumeVerifiedStepUp"));
   assert.ok(claim.indexOf("consumeVerifiedStepUp") < claim.indexOf("executeAffected"));
   assert.match(claim, /eq\(approvalRequests\.status, "pending"\)/);
   assert.match(claim, /claimed !== 1/);
@@ -147,9 +161,24 @@ test("approval proof consumption and pending-state CAS share the claim transacti
   assert.doesNotMatch(route, /await (?:db|tx)\.update\(approvalRequests\)\.set\(approvalUpdate\)/);
 });
 
+test("finance locks and rereads authoritative versions before consuming proofs", () => {
+  const route = read("app/api/finance/route.ts");
+  for (const marker of ["withLockedInvoiceException", "lockPaymentRecordRow", "withLockedPaymentRequest"]) {
+    assert.match(route, new RegExp(marker));
+  }
+  for (const scope of ["release_invoice_risk", "request_record_correction", "record_payment"]) {
+    const start = route.indexOf(`action: "${scope}"`);
+    assert.ok(start >= 0);
+  }
+  assert.match(route, /objectVersion: exception\.objectVersion/);
+  assert.match(route, /objectVersion: original\.objectVersion/);
+  assert.match(route, /objectVersion: paymentRequest\.objectVersion/);
+  assert.match(route, /eq\(invoiceExceptions\.updatedAt, exception\.updatedAt\)/);
+  assert.match(route, /eq\(factoryPaymentRequests\.updatedAt, paymentRequest\.updatedAt\)/);
+});
+
 test("stored OTP hashes are salted with their challenge number", () => {
-  const requestRoute = read("app/api/auth/step-up/request/route.ts");
-  const verifyRoute = read("app/api/auth/step-up/verify/route.ts");
-  assert.match(requestRoute, /hashSecret\(`\$\{challengeNo\}:\$\{code\}`\)/);
-  assert.match(verifyRoute, /hashSecret\(`\$\{challenge\.challengeNo\}:\$\{body\.code!\}`\)/);
+  const source = read("apps/api/src/modules/auth/writes.ts");
+  assert.match(source, /sha256\(`\$\{challengeNo\}:\$\{code\}`\)/);
+  assert.match(source, /sha256\(`\$\{request\.body\.challengeNo\}:\$\{request\.body\.code\}`\)/);
 });

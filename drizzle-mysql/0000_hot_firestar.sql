@@ -1,5 +1,5 @@
 CREATE TABLE `ai_conversations` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`title` text NOT NULL,
 	`status` text NOT NULL DEFAULT ('active'),
@@ -10,7 +10,7 @@ CREATE TABLE `ai_conversations` (
 );
 --> statement-breakpoint
 CREATE TABLE `ai_messages` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`conversation_id` int NOT NULL,
 	`role` text NOT NULL,
 	`content` text NOT NULL,
@@ -21,7 +21,7 @@ CREATE TABLE `ai_messages` (
 );
 --> statement-breakpoint
 CREATE TABLE `ai_operation_drafts` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`conversation_id` int NOT NULL,
 	`operation_type` text NOT NULL,
 	`payload_json` text NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE `ai_operation_drafts` (
 );
 --> statement-breakpoint
 CREATE TABLE `approval_requests` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`request_no` varchar(191) NOT NULL,
 	`workflow_type` text NOT NULL,
 	`entity_type` text NOT NULL,
@@ -57,7 +57,7 @@ CREATE TABLE `approval_requests` (
 );
 --> statement-breakpoint
 CREATE TABLE `approvals` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`exception_id` int NOT NULL,
 	`decision` text NOT NULL,
 	`comment` text NOT NULL DEFAULT (''),
@@ -67,7 +67,7 @@ CREATE TABLE `approvals` (
 );
 --> statement-breakpoint
 CREATE TABLE `audit_logs` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`actor_user_id` int,
 	`action` text NOT NULL,
 	`module` text NOT NULL,
@@ -86,7 +86,7 @@ CREATE TABLE `audit_logs` (
 );
 --> statement-breakpoint
 CREATE TABLE `auth_challenges` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`challenge_no` varchar(191) NOT NULL,
 	`user_id` int NOT NULL,
 	`purpose` text NOT NULL,
@@ -104,7 +104,7 @@ CREATE TABLE `auth_challenges` (
 );
 --> statement-breakpoint
 CREATE TABLE `auth_credentials` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`password_hash` text NOT NULL,
 	`password_salt` text NOT NULL,
@@ -118,7 +118,7 @@ CREATE TABLE `auth_credentials` (
 );
 --> statement-breakpoint
 CREATE TABLE `auth_sessions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`token_hash` varchar(191) NOT NULL,
 	`device_id` varchar(191) NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE `auth_sessions` (
 );
 --> statement-breakpoint
 CREATE TABLE `bom_components` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`bom_id` int NOT NULL,
 	`component_sku` varchar(191) NOT NULL,
 	`item_type` text NOT NULL,
@@ -147,7 +147,7 @@ CREATE TABLE `bom_components` (
 );
 --> statement-breakpoint
 CREATE TABLE `core_order_reschedules` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`core_supplier_order_id` int NOT NULL,
 	`previous_ship_date` text NOT NULL,
 	`proposed_ship_date` text NOT NULL,
@@ -165,7 +165,7 @@ CREATE TABLE `core_order_reschedules` (
 );
 --> statement-breakpoint
 CREATE TABLE `core_price_agreements` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`supplier_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`currency` text NOT NULL DEFAULT ('CNY'),
@@ -182,7 +182,7 @@ CREATE TABLE `core_price_agreements` (
 );
 --> statement-breakpoint
 CREATE TABLE `core_price_change_requests` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`current_agreement_id` int,
 	`supplier_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
@@ -203,7 +203,7 @@ CREATE TABLE `core_price_change_requests` (
 );
 --> statement-breakpoint
 CREATE TABLE `core_supplier_order_items` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`core_supplier_order_id` int NOT NULL,
 	`component_sku` varchar(191) NOT NULL,
 	`quantity` int NOT NULL,
@@ -219,7 +219,7 @@ CREATE TABLE `core_supplier_order_items` (
 );
 --> statement-breakpoint
 CREATE TABLE `core_supplier_orders` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`order_no` varchar(191) NOT NULL,
 	`source_purchase_order_id` int NOT NULL,
 	`assembly_factory_id` int NOT NULL,
@@ -238,7 +238,7 @@ CREATE TABLE `core_supplier_orders` (
 );
 --> statement-breakpoint
 CREATE TABLE `defect_catalog` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`code` varchar(191) NOT NULL,
 	`name` text NOT NULL,
 	`item_type` text,
@@ -254,7 +254,7 @@ CREATE TABLE `defect_catalog` (
 );
 --> statement-breakpoint
 CREATE TABLE `defect_images` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`inspection_defect_id` int NOT NULL,
 	`file_key` text NOT NULL,
 	`file_name` text NOT NULL,
@@ -263,7 +263,7 @@ CREATE TABLE `defect_images` (
 );
 --> statement-breakpoint
 CREATE TABLE `delivery_batches` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_order_id` int NOT NULL,
 	`batch_no` varchar(191) NOT NULL,
 	`quantity` int NOT NULL,
@@ -282,7 +282,7 @@ CREATE TABLE `delivery_batches` (
 );
 --> statement-breakpoint
 CREATE TABLE `delivery_setting_changes` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`setting_id` int NOT NULL,
 	`old_days` int NOT NULL,
 	`new_days` int NOT NULL,
@@ -294,7 +294,7 @@ CREATE TABLE `delivery_setting_changes` (
 );
 --> statement-breakpoint
 CREATE TABLE `exceptions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_order_id` int,
 	`factory_id` int,
 	`type` varchar(191) NOT NULL,
@@ -308,7 +308,7 @@ CREATE TABLE `exceptions` (
 );
 --> statement-breakpoint
 CREATE TABLE `execution_orders` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_no` varchar(191) NOT NULL,
 	`order_item_id` int NOT NULL,
 	`factory_id` int NOT NULL,
@@ -328,7 +328,7 @@ CREATE TABLE `execution_orders` (
 );
 --> statement-breakpoint
 CREATE TABLE `factories` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`name` text NOT NULL,
 	`code` varchar(191) NOT NULL,
 	`status` text NOT NULL DEFAULT ('active'),
@@ -339,7 +339,7 @@ CREATE TABLE `factories` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_change_requests` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`from_factory_id` int NOT NULL,
 	`to_factory_id` int NOT NULL,
@@ -355,7 +355,7 @@ CREATE TABLE `factory_change_requests` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_invoices` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`factory_id` int NOT NULL,
 	`purchase_order_id` int NOT NULL,
 	`coverage_mode` text NOT NULL,
@@ -379,7 +379,7 @@ CREATE TABLE `factory_invoices` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_payment_request_items` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`payment_request_id` int NOT NULL,
 	`payment_schedule_id` int NOT NULL,
 	`purchase_order_id` int NOT NULL,
@@ -390,7 +390,7 @@ CREATE TABLE `factory_payment_request_items` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_payment_requests` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`request_no` varchar(191) NOT NULL,
 	`factory_id` int NOT NULL,
 	`actual_shipment_date` text NOT NULL,
@@ -414,7 +414,7 @@ CREATE TABLE `factory_payment_requests` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_payment_schedules` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_order_id` int NOT NULL,
 	`factory_id` int NOT NULL,
 	`delivery_batch_id` int NOT NULL,
@@ -435,7 +435,7 @@ CREATE TABLE `factory_payment_schedules` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_payment_terms` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`factory_id` int NOT NULL,
 	`name` text NOT NULL,
 	`mode` text NOT NULL,
@@ -452,7 +452,7 @@ CREATE TABLE `factory_payment_terms` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_plan_responses` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_plan_id` int NOT NULL,
 	`factory_id` int NOT NULL,
 	`decision` text NOT NULL,
@@ -470,7 +470,7 @@ CREATE TABLE `factory_plan_responses` (
 );
 --> statement-breakpoint
 CREATE TABLE `factory_supplier_delivery_settings` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`factory_id` int NOT NULL,
 	`supplier_id` int NOT NULL,
 	`component_sku` varchar(191) NOT NULL,
@@ -483,7 +483,7 @@ CREATE TABLE `factory_supplier_delivery_settings` (
 );
 --> statement-breakpoint
 CREATE TABLE `file_objects` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`object_key` varchar(191) NOT NULL,
 	`file_name` text NOT NULL,
 	`content_type` text NOT NULL,
@@ -502,7 +502,7 @@ CREATE TABLE `file_objects` (
 );
 --> statement-breakpoint
 CREATE TABLE `import_batches` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`import_no` varchar(191) NOT NULL,
 	`type` varchar(191) NOT NULL,
 	`file_object_id` int,
@@ -525,7 +525,7 @@ CREATE TABLE `import_batches` (
 );
 --> statement-breakpoint
 CREATE TABLE `import_staging_rows` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`import_batch_id` int NOT NULL,
 	`sheet_name` text NOT NULL,
 	`source_row_no` int NOT NULL,
@@ -539,7 +539,7 @@ CREATE TABLE `import_staging_rows` (
 );
 --> statement-breakpoint
 CREATE TABLE `inspection_defects` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`inspection_id` int NOT NULL,
 	`defect_id` int NOT NULL,
 	`quantity` int NOT NULL,
@@ -551,7 +551,7 @@ CREATE TABLE `inspection_defects` (
 );
 --> statement-breakpoint
 CREATE TABLE `inspection_images` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`inspection_id` int NOT NULL,
 	`file_key` text NOT NULL,
 	`file_name` text NOT NULL,
@@ -560,7 +560,7 @@ CREATE TABLE `inspection_images` (
 );
 --> statement-breakpoint
 CREATE TABLE `inventory` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`warehouse_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`item_type` text NOT NULL,
@@ -574,7 +574,7 @@ CREATE TABLE `inventory` (
 );
 --> statement-breakpoint
 CREATE TABLE `inventory_batches` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`batch_no` varchar(191) NOT NULL,
 	`warehouse_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
@@ -598,7 +598,7 @@ CREATE TABLE `inventory_batches` (
 );
 --> statement-breakpoint
 CREATE TABLE `inventory_movements` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`warehouse_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`type` varchar(191) NOT NULL,
@@ -610,7 +610,7 @@ CREATE TABLE `inventory_movements` (
 );
 --> statement-breakpoint
 CREATE TABLE `inventory_reservations` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`batch_id` int NOT NULL,
 	`entity_type` text NOT NULL,
 	`entity_id` int,
@@ -626,7 +626,7 @@ CREATE TABLE `inventory_reservations` (
 );
 --> statement-breakpoint
 CREATE TABLE `inventory_transfers` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`transfer_no` varchar(191) NOT NULL,
 	`from_warehouse_id` int NOT NULL,
 	`to_warehouse_id` int NOT NULL,
@@ -646,7 +646,7 @@ CREATE TABLE `inventory_transfers` (
 );
 --> statement-breakpoint
 CREATE TABLE `invoice_exceptions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`invoice_id` int NOT NULL,
 	`exception_type` text NOT NULL,
 	`affected_amount_minor` int NOT NULL,
@@ -667,7 +667,7 @@ CREATE TABLE `invoice_exceptions` (
 );
 --> statement-breakpoint
 CREATE TABLE `invoice_payment_allocations` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`invoice_id` int NOT NULL,
 	`payment_request_id` int NOT NULL,
 	`allocated_amount_minor` int NOT NULL,
@@ -680,7 +680,7 @@ CREATE TABLE `invoice_payment_allocations` (
 );
 --> statement-breakpoint
 CREATE TABLE `invoice_verifications` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`invoice_id` int NOT NULL,
 	`verifier_role` varchar(191) NOT NULL,
 	`decision` text NOT NULL,
@@ -692,7 +692,7 @@ CREATE TABLE `invoice_verifications` (
 );
 --> statement-breakpoint
 CREATE TABLE `nonconformance_dispositions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`inspection_id` int NOT NULL,
 	`type` varchar(191) NOT NULL,
 	`quantity` int NOT NULL,
@@ -707,7 +707,7 @@ CREATE TABLE `nonconformance_dispositions` (
 );
 --> statement-breakpoint
 CREATE TABLE `notification_messages` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`recipient_user_id` int,
 	`recipient_role` text,
 	`recipient_factory_id` int,
@@ -729,7 +729,7 @@ CREATE TABLE `notification_messages` (
 );
 --> statement-breakpoint
 CREATE TABLE `notifications` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`recipient_role` text NOT NULL,
 	`type` varchar(191) NOT NULL,
 	`title` text NOT NULL,
@@ -742,7 +742,7 @@ CREATE TABLE `notifications` (
 );
 --> statement-breakpoint
 CREATE TABLE `order_items` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_order_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`product_name` text NOT NULL,
@@ -759,7 +759,7 @@ CREATE TABLE `order_items` (
 );
 --> statement-breakpoint
 CREATE TABLE `payment_records` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`payment_request_id` int NOT NULL,
 	`amount_minor` int NOT NULL,
 	`paid_at` text NOT NULL,
@@ -776,7 +776,7 @@ CREATE TABLE `payment_records` (
 );
 --> statement-breakpoint
 CREATE TABLE `product_boms` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`finished_sku` varchar(191) NOT NULL,
 	`version` varchar(191) NOT NULL,
 	`effective_from` varchar(191) NOT NULL,
@@ -795,7 +795,7 @@ CREATE TABLE `product_boms` (
 );
 --> statement-breakpoint
 CREATE TABLE `product_return_dispositions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`product_return_id` int NOT NULL,
 	`type` varchar(191) NOT NULL,
 	`quantity` int NOT NULL,
@@ -810,7 +810,7 @@ CREATE TABLE `product_return_dispositions` (
 );
 --> statement-breakpoint
 CREATE TABLE `product_return_inspections` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`product_return_id` int NOT NULL,
 	`inspected_quantity` int NOT NULL,
 	`passed_quantity` int NOT NULL,
@@ -823,7 +823,7 @@ CREATE TABLE `product_return_inspections` (
 );
 --> statement-breakpoint
 CREATE TABLE `product_returns` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`return_no` varchar(191) NOT NULL,
 	`source_delivery_batch_id` int NOT NULL,
 	`warehouse_id` int NOT NULL,
@@ -842,7 +842,7 @@ CREATE TABLE `product_returns` (
 );
 --> statement-breakpoint
 CREATE TABLE `production_material_lines` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_order_id` int NOT NULL,
 	`bom_component_id` int NOT NULL,
 	`theoretical_quantity` int NOT NULL,
@@ -857,7 +857,7 @@ CREATE TABLE `production_material_lines` (
 );
 --> statement-breakpoint
 CREATE TABLE `production_reports` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_order_id` int NOT NULL,
 	`actual_finished_quantity` int NOT NULL,
 	`variance_quantity` int NOT NULL,
@@ -874,7 +874,7 @@ CREATE TABLE `production_reports` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_import_diffs` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_import_id` int NOT NULL,
 	`sheet_name` text NOT NULL,
 	`row_key` text NOT NULL,
@@ -886,7 +886,7 @@ CREATE TABLE `purchase_import_diffs` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_imports` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`file_key` text NOT NULL,
 	`file_name` text NOT NULL,
 	`detected_order_no` text,
@@ -900,7 +900,7 @@ CREATE TABLE `purchase_imports` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_orders` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`order_no` varchar(191) NOT NULL,
 	`source` text NOT NULL DEFAULT ('lingxing_excel'),
 	`source_file_key` text,
@@ -915,7 +915,7 @@ CREATE TABLE `purchase_orders` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_plan_items` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_plan_id` int NOT NULL,
 	`expected_arrival_date` varchar(191) NOT NULL,
 	`factory_id` int NOT NULL,
@@ -935,7 +935,7 @@ CREATE TABLE `purchase_plan_items` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_plan_order_links` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_plan_item_id` int NOT NULL,
 	`order_item_id` int NOT NULL,
 	`allocated_quantity` int NOT NULL,
@@ -948,7 +948,7 @@ CREATE TABLE `purchase_plan_order_links` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_plan_source_rows` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`purchase_plan_id` int NOT NULL,
 	`source_row_no` int NOT NULL,
 	`source_plan_no` text NOT NULL,
@@ -959,7 +959,7 @@ CREATE TABLE `purchase_plan_source_rows` (
 );
 --> statement-breakpoint
 CREATE TABLE `purchase_plans` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`plan_no` varchar(191) NOT NULL,
 	`version` int NOT NULL DEFAULT 1,
 	`source` text NOT NULL DEFAULT ('lingxing_excel'),
@@ -977,7 +977,7 @@ CREATE TABLE `purchase_plans` (
 );
 --> statement-breakpoint
 CREATE TABLE `quality_inspections` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`execution_order_id` int NOT NULL,
 	`stage` text NOT NULL,
 	`inspection_method` text NOT NULL,
@@ -1007,7 +1007,7 @@ CREATE TABLE `quality_inspections` (
 );
 --> statement-breakpoint
 CREATE TABLE `quality_rules` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`scope` text NOT NULL,
 	`sku` varchar(191),
 	`item_type` text,
@@ -1022,7 +1022,7 @@ CREATE TABLE `quality_rules` (
 );
 --> statement-breakpoint
 CREATE TABLE `reminder_schedules` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`reminder_type` text NOT NULL,
 	`entity_type` text NOT NULL,
 	`entity_id` int NOT NULL,
@@ -1044,7 +1044,7 @@ CREATE TABLE `reminder_schedules` (
 );
 --> statement-breakpoint
 CREATE TABLE `replacement_invoice_links` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`invoice_exception_id` int NOT NULL,
 	`replacement_invoice_id` int NOT NULL,
 	`covered_amount_minor` int NOT NULL,
@@ -1056,7 +1056,7 @@ CREATE TABLE `replacement_invoice_links` (
 );
 --> statement-breakpoint
 CREATE TABLE `shipment_evidence` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`delivery_batch_id` int NOT NULL,
 	`file_key` text NOT NULL,
 	`file_name` text NOT NULL,
@@ -1065,7 +1065,7 @@ CREATE TABLE `shipment_evidence` (
 );
 --> statement-breakpoint
 CREATE TABLE `shipment_receipts` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`delivery_batch_id` int NOT NULL,
 	`received_quantity` int NOT NULL,
 	`damaged_quantity` int NOT NULL DEFAULT 0,
@@ -1079,7 +1079,7 @@ CREATE TABLE `shipment_receipts` (
 );
 --> statement-breakpoint
 CREATE TABLE `sku_factory_defaults` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`sku` varchar(191) NOT NULL,
 	`factory_id` int NOT NULL,
 	`selected_by` int NOT NULL,
@@ -1090,7 +1090,7 @@ CREATE TABLE `sku_factory_defaults` (
 );
 --> statement-breakpoint
 CREATE TABLE `sku_unit_conversions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`sku_id` int NOT NULL,
 	`purchase_unit` varchar(191) NOT NULL,
 	`stock_unit` text NOT NULL,
@@ -1105,7 +1105,7 @@ CREATE TABLE `sku_unit_conversions` (
 );
 --> statement-breakpoint
 CREATE TABLE `skus` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`code` varchar(191) NOT NULL,
 	`name` text NOT NULL,
 	`item_type` text,
@@ -1123,7 +1123,7 @@ CREATE TABLE `skus` (
 );
 --> statement-breakpoint
 CREATE TABLE `stocktake_adjustments` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`stocktake_id` int NOT NULL,
 	`stocktake_count_id` int NOT NULL,
 	`variance_quantity` int NOT NULL,
@@ -1139,7 +1139,7 @@ CREATE TABLE `stocktake_adjustments` (
 );
 --> statement-breakpoint
 CREATE TABLE `stocktake_counts` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`stocktake_id` int NOT NULL,
 	`batch_id` int,
 	`sku` varchar(191) NOT NULL,
@@ -1156,7 +1156,7 @@ CREATE TABLE `stocktake_counts` (
 );
 --> statement-breakpoint
 CREATE TABLE `stocktakes` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`stocktake_no` varchar(191) NOT NULL,
 	`warehouse_id` int NOT NULL,
 	`scope` text NOT NULL,
@@ -1172,7 +1172,7 @@ CREATE TABLE `stocktakes` (
 );
 --> statement-breakpoint
 CREATE TABLE `supplier_bank_accounts` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`supplier_id` int NOT NULL,
 	`account_name` text NOT NULL,
 	`bank_name` text NOT NULL,
@@ -1185,7 +1185,7 @@ CREATE TABLE `supplier_bank_accounts` (
 );
 --> statement-breakpoint
 CREATE TABLE `supplier_contacts` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`supplier_id` int NOT NULL,
 	`name` text NOT NULL,
 	`phone` text NOT NULL,
@@ -1200,7 +1200,7 @@ CREATE TABLE `supplier_contacts` (
 );
 --> statement-breakpoint
 CREATE TABLE `supplier_skus` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`factory_id` int NOT NULL,
 	`supplier_id` int NOT NULL,
 	`sku` varchar(191) NOT NULL,
@@ -1224,7 +1224,7 @@ CREATE TABLE `supplier_skus` (
 );
 --> statement-breakpoint
 CREATE TABLE `suppliers` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`code` varchar(191) NOT NULL,
 	`name` text NOT NULL,
 	`tier` int,
@@ -1254,7 +1254,7 @@ CREATE TABLE `suppliers` (
 );
 --> statement-breakpoint
 CREATE TABLE `supply_risk_cases` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`risk_no` varchar(191) NOT NULL,
 	`assembly_factory_id` int NOT NULL,
 	`source_supplier_id` int,
@@ -1276,7 +1276,7 @@ CREATE TABLE `supply_risk_cases` (
 );
 --> statement-breakpoint
 CREATE TABLE `trusted_devices` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`device_id` varchar(191) NOT NULL,
 	`device_name` text NOT NULL DEFAULT (''),
@@ -1292,7 +1292,7 @@ CREATE TABLE `trusted_devices` (
 );
 --> statement-breakpoint
 CREATE TABLE `user_roles` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`user_id` int NOT NULL,
 	`role_code` text NOT NULL,
 	`effective_from` varchar(191) NOT NULL,
@@ -1307,7 +1307,7 @@ CREATE TABLE `user_roles` (
 );
 --> statement-breakpoint
 CREATE TABLE `users` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`email` varchar(191) NOT NULL,
 	`mobile` text NOT NULL DEFAULT (''),
 	`name` text NOT NULL,
@@ -1323,7 +1323,7 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 CREATE TABLE `warehouses` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`code` varchar(191) NOT NULL,
 	`name` text NOT NULL,
 	`type` varchar(191) NOT NULL,
@@ -1349,18 +1349,18 @@ ALTER TABLE `auth_challenges` ADD CONSTRAINT `auth_challenges_user_id_users_id_f
 ALTER TABLE `auth_credentials` ADD CONSTRAINT `auth_credentials_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `auth_sessions` ADD CONSTRAINT `auth_sessions_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `bom_components` ADD CONSTRAINT `bom_components_bom_id_product_boms_id_fk` FOREIGN KEY (`bom_id`) REFERENCES `product_boms`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `core_order_reschedules` ADD CONSTRAINT `core_order_reschedules_core_supplier_order_id_core_supplier_orders_id_fk` FOREIGN KEY (`core_supplier_order_id`) REFERENCES `core_supplier_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `core_order_reschedules` ADD CONSTRAINT `core_order_reschedules_core_supplier_order_id_c_de15af857a0ed2f8` FOREIGN KEY (`core_supplier_order_id`) REFERENCES `core_supplier_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_order_reschedules` ADD CONSTRAINT `core_order_reschedules_factory_confirmed_by_users_id_fk` FOREIGN KEY (`factory_confirmed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_order_reschedules` ADD CONSTRAINT `core_order_reschedules_supply_chain_reviewed_by_users_id_fk` FOREIGN KEY (`supply_chain_reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_price_agreements` ADD CONSTRAINT `core_price_agreements_supplier_id_suppliers_id_fk` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_price_agreements` ADD CONSTRAINT `core_price_agreements_maintained_by_users_id_fk` FOREIGN KEY (`maintained_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `core_price_change_requests` ADD CONSTRAINT `core_price_change_requests_current_agreement_id_core_price_agreements_id_fk` FOREIGN KEY (`current_agreement_id`) REFERENCES `core_price_agreements`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `core_price_change_requests` ADD CONSTRAINT `core_price_change_requests_current_agreement_id_50887df6d9b1647c` FOREIGN KEY (`current_agreement_id`) REFERENCES `core_price_agreements`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_price_change_requests` ADD CONSTRAINT `core_price_change_requests_supplier_id_suppliers_id_fk` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_price_change_requests` ADD CONSTRAINT `core_price_change_requests_requested_by_users_id_fk` FOREIGN KEY (`requested_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_price_change_requests` ADD CONSTRAINT `core_price_change_requests_reviewed_by_users_id_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `core_supplier_order_items` ADD CONSTRAINT `core_supplier_order_items_core_supplier_order_id_core_supplier_orders_id_fk` FOREIGN KEY (`core_supplier_order_id`) REFERENCES `core_supplier_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `core_supplier_order_items` ADD CONSTRAINT `core_supplier_order_items_price_agreement_id_core_price_agreements_id_fk` FOREIGN KEY (`price_agreement_id`) REFERENCES `core_price_agreements`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `core_supplier_orders` ADD CONSTRAINT `core_supplier_orders_source_purchase_order_id_purchase_orders_id_fk` FOREIGN KEY (`source_purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `core_supplier_order_items` ADD CONSTRAINT `core_supplier_order_items_core_supplier_order_i_f723509c11a8c5cf` FOREIGN KEY (`core_supplier_order_id`) REFERENCES `core_supplier_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `core_supplier_order_items` ADD CONSTRAINT `core_supplier_order_items_price_agreement_id_co_639530df3d295ec5` FOREIGN KEY (`price_agreement_id`) REFERENCES `core_price_agreements`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `core_supplier_orders` ADD CONSTRAINT `core_supplier_orders_source_purchase_order_id_p_be7a832068314361` FOREIGN KEY (`source_purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_supplier_orders` ADD CONSTRAINT `core_supplier_orders_assembly_factory_id_factories_id_fk` FOREIGN KEY (`assembly_factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_supplier_orders` ADD CONSTRAINT `core_supplier_orders_supplier_id_suppliers_id_fk` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `core_supplier_orders` ADD CONSTRAINT `core_supplier_orders_confirmed_by_users_id_fk` FOREIGN KEY (`confirmed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1368,7 +1368,7 @@ ALTER TABLE `defect_catalog` ADD CONSTRAINT `defect_catalog_proposed_by_users_id
 ALTER TABLE `defect_catalog` ADD CONSTRAINT `defect_catalog_approved_by_users_id_fk` FOREIGN KEY (`approved_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `defect_images` ADD CONSTRAINT `defect_images_inspection_defect_id_inspection_defects_id_fk` FOREIGN KEY (`inspection_defect_id`) REFERENCES `inspection_defects`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `delivery_batches` ADD CONSTRAINT `delivery_batches_execution_order_id_execution_orders_id_fk` FOREIGN KEY (`execution_order_id`) REFERENCES `execution_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `delivery_setting_changes` ADD CONSTRAINT `delivery_setting_changes_setting_id_factory_supplier_delivery_settings_id_fk` FOREIGN KEY (`setting_id`) REFERENCES `factory_supplier_delivery_settings`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `delivery_setting_changes` ADD CONSTRAINT `delivery_setting_changes_setting_id_factory_sup_53a6d0327a276471` FOREIGN KEY (`setting_id`) REFERENCES `factory_supplier_delivery_settings`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `delivery_setting_changes` ADD CONSTRAINT `delivery_setting_changes_changed_by_users_id_fk` FOREIGN KEY (`changed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `exceptions` ADD CONSTRAINT `exceptions_execution_order_id_execution_orders_id_fk` FOREIGN KEY (`execution_order_id`) REFERENCES `execution_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `exceptions` ADD CONSTRAINT `exceptions_factory_id_factories_id_fk` FOREIGN KEY (`factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1384,16 +1384,16 @@ ALTER TABLE `factory_invoices` ADD CONSTRAINT `factory_invoices_factory_id_facto
 ALTER TABLE `factory_invoices` ADD CONSTRAINT `factory_invoices_purchase_order_id_purchase_orders_id_fk` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_invoices` ADD CONSTRAINT `factory_invoices_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_invoices` ADD CONSTRAINT `factory_invoices_maintained_by_users_id_fk` FOREIGN KEY (`maintained_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_payment_request_id_factory_payment_requests_id_fk` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_payment_schedule_id_factory_payment_schedules_id_fk` FOREIGN KEY (`payment_schedule_id`) REFERENCES `factory_payment_schedules`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_purchase_order_id_purchase_orders_id_fk` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_triggered_by_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`triggered_by_delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_payment_request_i_5a271b353f92023e` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_payment_schedule__88dd176c4d397cb7` FOREIGN KEY (`payment_schedule_id`) REFERENCES `factory_payment_schedules`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_purchase_order_id_48b159065f600f15` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_request_items` ADD CONSTRAINT `factory_payment_request_items_triggered_by_deli_54a478a121d2937b` FOREIGN KEY (`triggered_by_delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_requests` ADD CONSTRAINT `factory_payment_requests_factory_id_factories_id_fk` FOREIGN KEY (`factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_requests` ADD CONSTRAINT `factory_payment_requests_maintained_by_users_id_fk` FOREIGN KEY (`maintained_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_purchase_order_id_purchase_orders_id_fk` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_purchase_order_id_pur_25f3df85e702189d` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_factory_id_factories_id_fk` FOREIGN KEY (`factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_payment_term_id_factory_payment_terms_id_fk` FOREIGN KEY (`payment_term_id`) REFERENCES `factory_payment_terms`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_delivery_batch_id_del_adbdac85e4bea087` FOREIGN KEY (`delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_payment_term_id_facto_405a7ee91373a247` FOREIGN KEY (`payment_term_id`) REFERENCES `factory_payment_terms`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_schedules` ADD CONSTRAINT `factory_payment_schedules_maintained_by_users_id_fk` FOREIGN KEY (`maintained_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_terms` ADD CONSTRAINT `factory_payment_terms_factory_id_factories_id_fk` FOREIGN KEY (`factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `factory_payment_terms` ADD CONSTRAINT `factory_payment_terms_maintained_by_users_id_fk` FOREIGN KEY (`maintained_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1429,11 +1429,11 @@ ALTER TABLE `invoice_exceptions` ADD CONSTRAINT `invoice_exceptions_invoice_id_f
 ALTER TABLE `invoice_exceptions` ADD CONSTRAINT `invoice_exceptions_created_by_users_id_fk` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `invoice_exceptions` ADD CONSTRAINT `invoice_exceptions_risk_released_by_users_id_fk` FOREIGN KEY (`risk_released_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `invoice_payment_allocations` ADD CONSTRAINT `invoice_payment_allocations_invoice_id_factory_invoices_id_fk` FOREIGN KEY (`invoice_id`) REFERENCES `factory_invoices`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `invoice_payment_allocations` ADD CONSTRAINT `invoice_payment_allocations_payment_request_id_factory_payment_requests_id_fk` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `invoice_payment_allocations` ADD CONSTRAINT `invoice_payment_allocations_payment_request_id__1414da7029500a5d` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `invoice_payment_allocations` ADD CONSTRAINT `invoice_payment_allocations_created_by_users_id_fk` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `invoice_verifications` ADD CONSTRAINT `invoice_verifications_invoice_id_factory_invoices_id_fk` FOREIGN KEY (`invoice_id`) REFERENCES `factory_invoices`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `invoice_verifications` ADD CONSTRAINT `invoice_verifications_verified_by_users_id_fk` FOREIGN KEY (`verified_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `nonconformance_dispositions` ADD CONSTRAINT `nonconformance_dispositions_inspection_id_quality_inspections_id_fk` FOREIGN KEY (`inspection_id`) REFERENCES `quality_inspections`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `nonconformance_dispositions` ADD CONSTRAINT `nonconformance_dispositions_inspection_id_quali_c71953bfdb446c20` FOREIGN KEY (`inspection_id`) REFERENCES `quality_inspections`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `nonconformance_dispositions` ADD CONSTRAINT `nonconformance_dispositions_confirmed_by_users_id_fk` FOREIGN KEY (`confirmed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `nonconformance_dispositions` ADD CONSTRAINT `nonconformance_dispositions_exception_id_exceptions_id_fk` FOREIGN KEY (`exception_id`) REFERENCES `exceptions`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `notification_messages` ADD CONSTRAINT `notification_messages_recipient_user_id_users_id_fk` FOREIGN KEY (`recipient_user_id`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1441,23 +1441,23 @@ ALTER TABLE `notification_messages` ADD CONSTRAINT `notification_messages_recipi
 ALTER TABLE `notification_messages` ADD CONSTRAINT `notification_messages_recipient_supplier_id_suppliers_id_fk` FOREIGN KEY (`recipient_supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `order_items` ADD CONSTRAINT `order_items_purchase_order_id_purchase_orders_id_fk` FOREIGN KEY (`purchase_order_id`) REFERENCES `purchase_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `order_items` ADD CONSTRAINT `order_items_supplier_id_suppliers_id_fk` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `payment_records` ADD CONSTRAINT `payment_records_payment_request_id_factory_payment_requests_id_fk` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `payment_records` ADD CONSTRAINT `payment_records_payment_request_id_factory_paym_706233bd059a8132` FOREIGN KEY (`payment_request_id`) REFERENCES `factory_payment_requests`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `payment_records` ADD CONSTRAINT `payment_records_invoice_exception_id_invoice_exceptions_id_fk` FOREIGN KEY (`invoice_exception_id`) REFERENCES `invoice_exceptions`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `payment_records` ADD CONSTRAINT `payment_records_recorded_by_users_id_fk` FOREIGN KEY (`recorded_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `payment_records` ADD CONSTRAINT `payment_records_reviewed_by_users_id_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_boms` ADD CONSTRAINT `product_boms_reviewed_by_users_id_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_boms` ADD CONSTRAINT `product_boms_created_by_users_id_fk` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `product_return_dispositions` ADD CONSTRAINT `product_return_dispositions_product_return_id_product_returns_id_fk` FOREIGN KEY (`product_return_id`) REFERENCES `product_returns`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `product_return_dispositions` ADD CONSTRAINT `product_return_dispositions_product_return_id_p_4b3ff4334fdcf82e` FOREIGN KEY (`product_return_id`) REFERENCES `product_returns`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_return_dispositions` ADD CONSTRAINT `product_return_dispositions_proposed_by_users_id_fk` FOREIGN KEY (`proposed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_return_dispositions` ADD CONSTRAINT `product_return_dispositions_reviewed_by_users_id_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `product_return_inspections` ADD CONSTRAINT `product_return_inspections_product_return_id_product_returns_id_fk` FOREIGN KEY (`product_return_id`) REFERENCES `product_returns`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `product_return_inspections` ADD CONSTRAINT `product_return_inspections_product_return_id_pr_9c839a0a7f0b5ac0` FOREIGN KEY (`product_return_id`) REFERENCES `product_returns`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_return_inspections` ADD CONSTRAINT `product_return_inspections_inspected_by_users_id_fk` FOREIGN KEY (`inspected_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_returns` ADD CONSTRAINT `product_returns_source_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`source_delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_returns` ADD CONSTRAINT `product_returns_warehouse_id_warehouses_id_fk` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_returns` ADD CONSTRAINT `product_returns_batch_id_inventory_batches_id_fk` FOREIGN KEY (`batch_id`) REFERENCES `inventory_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_returns` ADD CONSTRAINT `product_returns_proposed_by_users_id_fk` FOREIGN KEY (`proposed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `product_returns` ADD CONSTRAINT `product_returns_reviewed_by_users_id_fk` FOREIGN KEY (`reviewed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `production_material_lines` ADD CONSTRAINT `production_material_lines_execution_order_id_execution_orders_id_fk` FOREIGN KEY (`execution_order_id`) REFERENCES `execution_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `production_material_lines` ADD CONSTRAINT `production_material_lines_execution_order_id_ex_dde7c9ee31f81f5e` FOREIGN KEY (`execution_order_id`) REFERENCES `execution_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `production_material_lines` ADD CONSTRAINT `production_material_lines_bom_component_id_bom_components_id_fk` FOREIGN KEY (`bom_component_id`) REFERENCES `bom_components`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `production_reports` ADD CONSTRAINT `production_reports_execution_order_id_execution_orders_id_fk` FOREIGN KEY (`execution_order_id`) REFERENCES `execution_orders`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `production_reports` ADD CONSTRAINT `production_reports_reported_by_users_id_fk` FOREIGN KEY (`reported_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1469,7 +1469,7 @@ ALTER TABLE `purchase_plan_items` ADD CONSTRAINT `purchase_plan_items_purchase_p
 ALTER TABLE `purchase_plan_items` ADD CONSTRAINT `purchase_plan_items_factory_id_factories_id_fk` FOREIGN KEY (`factory_id`) REFERENCES `factories`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `purchase_plan_items` ADD CONSTRAINT `purchase_plan_items_warehouse_id_warehouses_id_fk` FOREIGN KEY (`warehouse_id`) REFERENCES `warehouses`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `purchase_plan_items` ADD CONSTRAINT `purchase_plan_items_bom_id_product_boms_id_fk` FOREIGN KEY (`bom_id`) REFERENCES `product_boms`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `purchase_plan_order_links` ADD CONSTRAINT `purchase_plan_order_links_purchase_plan_item_id_purchase_plan_items_id_fk` FOREIGN KEY (`purchase_plan_item_id`) REFERENCES `purchase_plan_items`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `purchase_plan_order_links` ADD CONSTRAINT `purchase_plan_order_links_purchase_plan_item_id_2920864ae38de57d` FOREIGN KEY (`purchase_plan_item_id`) REFERENCES `purchase_plan_items`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `purchase_plan_order_links` ADD CONSTRAINT `purchase_plan_order_links_order_item_id_order_items_id_fk` FOREIGN KEY (`order_item_id`) REFERENCES `order_items`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `purchase_plan_order_links` ADD CONSTRAINT `purchase_plan_order_links_confirmed_by_users_id_fk` FOREIGN KEY (`confirmed_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `purchase_plan_source_rows` ADD CONSTRAINT `purchase_plan_source_rows_purchase_plan_id_purchase_plans_id_fk` FOREIGN KEY (`purchase_plan_id`) REFERENCES `purchase_plans`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
@@ -1479,8 +1479,8 @@ ALTER TABLE `quality_inspections` ADD CONSTRAINT `quality_inspections_execution_
 ALTER TABLE `quality_inspections` ADD CONSTRAINT `quality_inspections_quality_rule_id_quality_rules_id_fk` FOREIGN KEY (`quality_rule_id`) REFERENCES `quality_rules`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `quality_inspections` ADD CONSTRAINT `quality_inspections_submitted_by_users_id_fk` FOREIGN KEY (`submitted_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `quality_rules` ADD CONSTRAINT `quality_rules_created_by_users_id_fk` FOREIGN KEY (`created_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `replacement_invoice_links` ADD CONSTRAINT `replacement_invoice_links_invoice_exception_id_invoice_exceptions_id_fk` FOREIGN KEY (`invoice_exception_id`) REFERENCES `invoice_exceptions`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE `replacement_invoice_links` ADD CONSTRAINT `replacement_invoice_links_replacement_invoice_id_factory_invoices_id_fk` FOREIGN KEY (`replacement_invoice_id`) REFERENCES `factory_invoices`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `replacement_invoice_links` ADD CONSTRAINT `replacement_invoice_links_invoice_exception_id__e3cfd03b8537a122` FOREIGN KEY (`invoice_exception_id`) REFERENCES `invoice_exceptions`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE `replacement_invoice_links` ADD CONSTRAINT `replacement_invoice_links_replacement_invoice_i_d1626588229a9a1a` FOREIGN KEY (`replacement_invoice_id`) REFERENCES `factory_invoices`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `shipment_evidence` ADD CONSTRAINT `shipment_evidence_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `shipment_receipts` ADD CONSTRAINT `shipment_receipts_delivery_batch_id_delivery_batches_id_fk` FOREIGN KEY (`delivery_batch_id`) REFERENCES `delivery_batches`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE `shipment_receipts` ADD CONSTRAINT `shipment_receipts_received_by_users_id_fk` FOREIGN KEY (`received_by`) REFERENCES `users`(`id`) ON DELETE no action ON UPDATE no action;--> statement-breakpoint

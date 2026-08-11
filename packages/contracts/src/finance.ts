@@ -18,6 +18,7 @@ export interface FinancePaymentRequest {
   totalAmountMinor: number;
   invoiceCoveredAmountMinor: number;
   status: FinancePaymentRequestStatus;
+  objectVersion: number;
 }
 
 export type FinanceInvoiceStatus =
@@ -46,6 +47,7 @@ export interface FinancePaymentRecord {
   bankReference: string;
   recordType: "payment" | "reversal" | "correction" | "refund";
   invoiceExceptionId: number | null;
+  objectVersion: number;
 }
 
 export interface FinanceInvoiceVerification {
@@ -74,6 +76,7 @@ export interface FinanceInvoiceException {
   refundedAmountMinor: number;
   status: "awaiting_remediation" | "risk_warning" | "resolved";
   reason: string;
+  objectVersion: number;
 }
 
 export interface FinanceReplacementInvoiceLink {
@@ -184,6 +187,7 @@ export const financeResponseSchema = {
           "totalAmountMinor",
           "invoiceCoveredAmountMinor",
           "status",
+          "objectVersion",
         ],
         properties: {
           id: positiveIntegerSchema,
@@ -205,6 +209,7 @@ export const financeResponseSchema = {
               "cancelled",
             ],
           },
+          objectVersion: positiveIntegerSchema,
         },
       },
     },
@@ -222,6 +227,7 @@ export const financeResponseSchema = {
           "bankReference",
           "recordType",
           "invoiceExceptionId",
+          "objectVersion",
         ],
         properties: {
           id: positiveIntegerSchema,
@@ -234,6 +240,7 @@ export const financeResponseSchema = {
             enum: ["payment", "reversal", "correction", "refund"],
           },
           invoiceExceptionId: nullablePositiveIntegerSchema,
+          objectVersion: positiveIntegerSchema,
         },
       },
     },
@@ -300,6 +307,7 @@ export const financeResponseSchema = {
           "refundedAmountMinor",
           "status",
           "reason",
+          "objectVersion",
         ],
         properties: {
           id: positiveIntegerSchema,
@@ -314,6 +322,7 @@ export const financeResponseSchema = {
             enum: ["awaiting_remediation", "risk_warning", "resolved"],
           },
           reason: nonEmptyStringSchema,
+          objectVersion: positiveIntegerSchema,
         },
       },
     },

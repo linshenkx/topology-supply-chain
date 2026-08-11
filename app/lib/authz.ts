@@ -7,6 +7,7 @@ import { runtimeEnv } from "./runtime-env";
 import { isLocalPreviewRequest } from "./access-boundary";
 
 export type AccessContext = {
+  sessionId: number | null;
   userId: number;
   email: string;
   name: string;
@@ -38,11 +39,12 @@ export async function requireAccess(request: Request): Promise<AccessContext> {
       const [user] = await db.select().from(users).where(eq(users.id, session.userId)).limit(1);
       if (!user || user.accountStatus !== "active") throw new AccessError(403, "账号当前不可用。");
       await db.update(authSessions).set({ lastSeenAt: new Date().toISOString() }).where(eq(authSessions.id, session.id));
-      return buildContext(user, false);
+      return buildContext(user, false, session.id);
     }
   }
   if (localPreview) {
     return {
+      sessionId: null,
       userId: 0,
       email: "preview@topologygz.com",
       name: "本地预览管理员",
@@ -56,7 +58,7 @@ export async function requireAccess(request: Request): Promise<AccessContext> {
   throw new AccessError(401, "请先登录后再访问系统。");
 }
 
-async function buildContext(user: typeof users.$inferSelect, localPreview: boolean): Promise<AccessContext> {
+async function buildContext(user: typeof users.$inferSelect, localPreview: boolean, sessionId?: number): Promise<AccessContext> {
   const db = getDb();
   const today = new Date().toISOString().slice(0, 10);
   await db.update(userRoles)
@@ -73,6 +75,7 @@ async function buildContext(user: typeof users.$inferSelect, localPreview: boole
     or(isNull(userRoles.effectiveTo), gte(userRoles.effectiveTo, today)),
   ));
   return {
+    sessionId: sessionId ?? null,
     userId: user.id,
     email: user.email,
     name: user.name,

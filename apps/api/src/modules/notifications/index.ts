@@ -1,5 +1,8 @@
 import {
   apiErrorSchemaId,
+  commandHeadersSchema,
+  commandResponseSchema,
+  markNotificationReadCommandSchema,
   notificationsResponseSchema,
   notificationsSchemaId,
   type Notification,
@@ -9,7 +12,14 @@ import {
 } from "@topology/contracts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
-import type { QueryExecutor } from "../../infrastructure/database.js";
+import { PlatformError } from "../../errors.js";
+import { createAuditWriter } from "../../infrastructure/audit.js";
+import type {
+  DatabaseClient,
+  QueryExecutor,
+} from "../../infrastructure/database.js";
+import { executeCommand } from "../../platform/commands.js";
+import { requireCsrf, requireSameOrigin } from "../../platform/security.js";
 import type { AccessContext } from "../auth/index.js";
 
 const NOTIFICATION_LIMIT = 100;
@@ -36,7 +46,7 @@ FROM notification_messages`;
 
 type NotificationsAccessContext = Pick<
   AccessContext,
-  "localPreview" | "userId"
+  "localPreview" | "sessionId" | "userId"
 >;
 type DataRow = Record<string, unknown>;
 
@@ -44,7 +54,7 @@ export interface NotificationsModuleOptions {
   authenticate: (
     request: FastifyRequest,
   ) => Promise<NotificationsAccessContext>;
-  database?: QueryExecutor;
+  database?: DatabaseClient;
 }
 
 export class NotificationsUnavailableError extends Error {
@@ -193,6 +203,74 @@ export async function registerNotificationsModule(
         throw new NotificationsUnavailableError();
       }
       return readNotifications(options.database, integer(access.userId));
+    },
+  );
+
+  app.post<{ Body: { id: number } }>(
+    "/api/v1/notifications/read",
+    {
+      schema: {
+        tags: ["notifications"],
+        summary: "Mark an owned notification as read",
+        headers: commandHeadersSchema,
+        body: markNotificationReadCommandSchema,
+        response: {
+          200: commandResponseSchema,
+          "4xx": { $ref: `${apiErrorSchemaId}#` },
+          503: { $ref: `${apiErrorSchemaId}#` },
+          "5xx": { $ref: `${apiErrorSchemaId}#` },
+        },
+      },
+    },
+    async (request, reply) => {
+      requireSameOrigin(request);
+      requireCsrf(request);
+      const access = await options.authenticate(request);
+      if (access.localPreview || access.sessionId === null) {
+        throw new PlatformError(403, "FORBIDDEN", "Authenticated session required");
+      }
+      if (options.database === undefined) throw new NotificationsUnavailableError();
+      const response = await executeCommand({
+        actorScope: `user:${access.userId}`,
+        command: "notifications.mark-read",
+        database: options.database,
+        payload: request.body,
+        request,
+        run: async ({ transaction }) => {
+          const rows = await transaction.query<Record<string, unknown>>(
+            `SELECT id, status, read_at AS readAt
+             FROM notification_messages
+             WHERE id = ? AND recipient_user_id = ?
+             LIMIT 1 FOR UPDATE`,
+            [request.body.id, access.userId],
+          );
+          const row = rows[0];
+          if (row === undefined) {
+            throw new PlatformError(404, "NOT_FOUND", "Notification not found");
+          }
+          if (row.readAt === null || row.readAt === "") {
+            const changed = await transaction.execute(
+              `UPDATE notification_messages
+               SET status = 'read', read_at = CURRENT_TIMESTAMP(3)
+               WHERE id = ? AND recipient_user_id = ? AND read_at IS NULL`,
+              [request.body.id, access.userId],
+            );
+            if (changed.affectedRows !== 1) {
+              throw new PlatformError(409, "VERSION_CONFLICT", "Notification state changed");
+            }
+          }
+          await createAuditWriter({ database: transaction })({
+            access,
+            action: "mark_read",
+            module: "notifications",
+            entityType: "notification",
+            entityId: request.body.id,
+            request,
+          });
+          return { success: true, id: request.body.id, status: "read" };
+        },
+      });
+      return reply.status(response.statusCode).send(response.body);
     },
   );
 }

@@ -7,12 +7,14 @@ const defaultConnectionLimit = 10;
 const defaultConnectTimeoutMs = 5_000;
 const defaultPingTimeoutMs = 2_000;
 const defaultQueryTimeoutMs = 5_000;
+const defaultTransactionTimeoutMs = 30_000;
 const minimumConnectTimeoutMs = 100;
 const maximumConnectTimeoutMs = 30_000;
 const minimumPingTimeoutMs = 10;
 const maximumPingTimeoutMs = 4_000;
 const minimumQueryTimeoutMs = 10;
 const maximumQueryTimeoutMs = 30_000;
+const maximumTransactionTimeoutMs = 60_000;
 const maximumConnectionLimit = 50;
 
 export type QueryParameters = readonly ExecuteValues[];
@@ -20,6 +22,7 @@ export type DatabaseRow = Record<string, unknown>;
 
 export interface ExecuteResult {
   affectedRows: number;
+  insertId?: number;
 }
 
 export interface DatabaseOperationOptions {
@@ -43,6 +46,10 @@ export interface QueryExecutor {
 }
 
 export interface DatabaseClient extends QueryExecutor {
+  transaction<Result>(
+    callback: (transaction: QueryExecutor) => Promise<Result>,
+    options?: DatabaseOperationOptions,
+  ): Promise<Result>;
   ping(options?: PingOptions): Promise<void>;
   close(): Promise<void>;
 }
@@ -52,6 +59,7 @@ export interface DatabaseConfig {
   connectTimeoutMs: number;
   pingTimeoutMs: number;
   queryTimeoutMs: number;
+  transactionTimeoutMs: number;
   tls: {
     enabled: boolean;
     rejectUnauthorized: boolean;
@@ -63,6 +71,8 @@ export type DatabaseEnvironment = Readonly<
 >;
 
 export interface DatabasePoolConnection {
+  beginTransaction(): Promise<void>;
+  commit(): Promise<void>;
   destroy(): void;
   execute(
     options: { sql: string; timeout: number },
@@ -74,6 +84,7 @@ export interface DatabasePoolConnection {
     params: ExecuteValues[],
   ): Promise<[unknown, unknown]>;
   release(): void;
+  rollback(): Promise<void>;
 }
 
 export interface DatabasePool {
@@ -93,7 +104,8 @@ export type DatabaseErrorCode =
   | "DATABASE_OPERATION_ABORTED"
   | "DATABASE_OPERATION_FAILED"
   | "DATABASE_OPERATION_TIMED_OUT"
-  | "DATABASE_POOL_CREATION_FAILED";
+  | "DATABASE_POOL_CREATION_FAILED"
+  | "DATABASE_TRANSACTION_OUTCOME_UNKNOWN";
 
 export class DatabaseClientError extends Error {
   readonly code: DatabaseErrorCode;
@@ -275,6 +287,13 @@ function parseDatabaseEnvironment(
     minimumQueryTimeoutMs,
     maximumQueryTimeoutMs,
   );
+  const transactionTimeoutMs = parseInteger(
+    env,
+    "DB_TRANSACTION_TIMEOUT_MS",
+    defaultTransactionTimeoutMs,
+    minimumConnectTimeoutMs,
+    maximumTransactionTimeoutMs,
+  );
   const tlsMode = parseEnum(
     env,
     "DB_SSL",
@@ -316,6 +335,7 @@ function parseDatabaseEnvironment(
       connectTimeoutMs,
       pingTimeoutMs,
       queryTimeoutMs,
+      transactionTimeoutMs,
       tls,
     },
     poolOptions,
@@ -334,6 +354,13 @@ function operationError(
   return new DatabaseClientError(
     "DATABASE_OPERATION_FAILED",
     `Database ${operation} failed`,
+  );
+}
+
+function transactionOutcomeUnknown(): DatabaseClientError {
+  return new DatabaseClientError(
+    "DATABASE_TRANSACTION_OUTCOME_UNKNOWN",
+    "Database transaction outcome is unknown and must not be retried automatically",
   );
 }
 
@@ -567,12 +594,15 @@ function createMysqlPool(options: PoolOptions): DatabasePool {
     getConnection: async () => {
       const connection = await pool.getConnection();
       return {
+        beginTransaction: () => connection.beginTransaction(),
+        commit: () => connection.commit(),
         destroy: () => connection.destroy(),
         execute: (queryOptions, params) =>
           connection.execute(queryOptions, params),
         ping: () => connection.ping(),
         query: (queryOptions, params) => connection.query(queryOptions, params),
         release: () => connection.release(),
+        rollback: () => connection.rollback(),
       };
     },
   };
@@ -608,7 +638,223 @@ export function createDatabaseClient(
     }
   }
 
+  function connectionExecutor(
+    connection: DatabasePoolConnection,
+    transactionCancellation?: ReturnType<typeof createCancellation>,
+  ): QueryExecutor {
+    async function executeOnConnection(
+      operation: "execute" | "query",
+      sql: string,
+      params: QueryParameters,
+      operationOptions: DatabaseOperationOptions,
+    ): Promise<unknown> {
+      assertSql(sql);
+      const requestedTimeoutMs = resolveTimeoutMs(
+        operationOptions.timeoutMs,
+        config.queryTimeoutMs,
+        minimumQueryTimeoutMs,
+        maximumQueryTimeoutMs,
+      );
+      const transactionRemainingMs = transactionCancellation?.remainingMs();
+      const timeoutMs = transactionRemainingMs === undefined
+        ? requestedTimeoutMs
+        : Math.min(requestedTimeoutMs, transactionRemainingMs);
+      if (timeoutMs <= 0) {
+        throw cancellationError(operation, new OperationCancellation("timed_out"), true);
+      }
+      if (operationOptions.signal?.aborted) {
+        throw cancellationError(operation, new OperationCancellation("aborted"));
+      }
+      const cancellation = createCancellation(operationOptions.signal, timeoutMs);
+      let operationPromise: Promise<[unknown, unknown]> | undefined;
+      try {
+        operationPromise = connection[operation](
+          { sql, timeout: timeoutMs },
+          [...params],
+        );
+        const [result] = await Promise.race([
+          operationPromise,
+          cancellation.promise,
+          ...(transactionCancellation === undefined
+            ? []
+            : [transactionCancellation.promise]),
+        ]);
+        return result;
+      } catch (error) {
+        if (error instanceof OperationCancellation) {
+          void operationPromise?.catch(() => undefined);
+          throw cancellationError(operation, error, true);
+        }
+        if (isProtocolSequenceTimeout(error)) {
+          throw cancellationError(
+            operation,
+            new OperationCancellation("timed_out"),
+            true,
+          );
+        }
+        if (error instanceof DatabaseClientError) throw error;
+        throw operationError(operation);
+      } finally {
+        cancellation.cleanup();
+      }
+    }
+
+    return {
+      async query<Row extends DatabaseRow = DatabaseRow>(
+        sql: string,
+        params: QueryParameters = [],
+        operationOptions: DatabaseOperationOptions = {},
+      ): Promise<readonly Row[]> {
+        const rows = await executeOnConnection(
+          "query",
+          sql,
+          params,
+          operationOptions,
+        );
+        if (!Array.isArray(rows)) throw operationError("query");
+        return rows as Row[];
+      },
+      async execute(
+        sql: string,
+        params: QueryParameters = [],
+        operationOptions: DatabaseOperationOptions = {},
+      ): Promise<ExecuteResult> {
+        const result = await executeOnConnection(
+          "execute",
+          sql,
+          params,
+          operationOptions,
+        );
+        const affectedRows =
+          typeof result === "object" &&
+          result !== null &&
+          "affectedRows" in result
+            ? result.affectedRows
+            : undefined;
+        const insertId =
+          typeof result === "object" &&
+          result !== null &&
+          "insertId" in result &&
+          typeof result.insertId === "number" &&
+          Number.isSafeInteger(result.insertId) &&
+          result.insertId >= 0
+            ? result.insertId
+            : undefined;
+        if (
+          typeof affectedRows !== "number" ||
+          !Number.isSafeInteger(affectedRows) ||
+          affectedRows < 0
+        ) {
+          throw operationError("execute");
+        }
+        return {
+          affectedRows,
+          ...(insertId === undefined ? {} : { insertId }),
+        };
+      },
+    };
+  }
+
   return {
+    async transaction<Result>(
+      callback: (transaction: QueryExecutor) => Promise<Result>,
+      transactionOptions: DatabaseOperationOptions = {},
+    ): Promise<Result> {
+      assertOpen();
+      const timeoutMs = resolveTimeoutMs(
+        transactionOptions.timeoutMs,
+        config.transactionTimeoutMs,
+        minimumConnectTimeoutMs,
+        maximumTransactionTimeoutMs,
+      );
+      if (transactionOptions.signal?.aborted) {
+        throw cancellationError("execute", new OperationCancellation("aborted"));
+      }
+      const cancellation = createCancellation(transactionOptions.signal, timeoutMs);
+      const connectionPromise = Promise.resolve().then(() => pool.getConnection());
+      let connection: DatabasePoolConnection | undefined;
+      let committed = false;
+      let began = false;
+      let destroyed = false;
+      try {
+        try {
+          connection = await Promise.race([connectionPromise, cancellation.promise]);
+        } catch (error) {
+          if (error instanceof OperationCancellation) {
+            releaseLateConnection(connectionPromise);
+            throw cancellationError("execute", error);
+          }
+          throw operationError("execute");
+        }
+
+        let lifecyclePromise: Promise<unknown> = connection.beginTransaction();
+        try {
+          await Promise.race([lifecyclePromise, cancellation.promise]);
+        } catch (error) {
+          void lifecyclePromise.catch(() => undefined);
+          if (error instanceof OperationCancellation) {
+            connection.destroy();
+            destroyed = true;
+            throw transactionOutcomeUnknown();
+          }
+          connection.destroy();
+          destroyed = true;
+          throw operationError("execute");
+        }
+        began = true;
+        const callbackPromise = Promise.resolve().then(() =>
+          callback(connectionExecutor(connection!, cancellation)),
+        );
+        let result: Result;
+        try {
+          result = await Promise.race([callbackPromise, cancellation.promise]);
+        } catch (error) {
+          if (error instanceof OperationCancellation) {
+            void callbackPromise.catch(() => undefined);
+            connection.destroy();
+            destroyed = true;
+            throw transactionOutcomeUnknown();
+          }
+          throw error;
+        }
+        lifecyclePromise = connection.commit();
+        try {
+          await Promise.race([lifecyclePromise, cancellation.promise]);
+          committed = true;
+        } catch {
+          void lifecyclePromise.catch(() => undefined);
+          connection.destroy();
+          destroyed = true;
+          throw transactionOutcomeUnknown();
+        }
+        return result;
+      } catch (error) {
+        if (began && !committed && !destroyed && connection !== undefined) {
+          if (
+            error instanceof DatabaseClientError &&
+            (error.code === "DATABASE_OPERATION_ABORTED" ||
+              error.code === "DATABASE_OPERATION_TIMED_OUT")
+          ) {
+            connection.destroy();
+            destroyed = true;
+            throw transactionOutcomeUnknown();
+          }
+          const rollbackPromise = connection.rollback();
+          try {
+            await Promise.race([rollbackPromise, cancellation.promise]);
+          } catch {
+            void rollbackPromise.catch(() => undefined);
+            connection.destroy();
+            destroyed = true;
+            throw transactionOutcomeUnknown();
+          }
+        }
+        throw error;
+      } finally {
+        cancellation.cleanup();
+        if (!destroyed && connection !== undefined) safelyDisposeConnection(connection, false);
+      }
+    },
     async query<Row extends DatabaseRow = DatabaseRow>(
       sql: string,
       params: QueryParameters = [],
@@ -661,6 +907,15 @@ export function createDatabaseClient(
           "affectedRows" in result
             ? result.affectedRows
             : undefined;
+        const insertId =
+          typeof result === "object" &&
+          result !== null &&
+          "insertId" in result &&
+          typeof result.insertId === "number" &&
+          Number.isSafeInteger(result.insertId) &&
+          result.insertId >= 0
+            ? result.insertId
+            : undefined;
 
         if (
           typeof affectedRows !== "number" ||
@@ -670,7 +925,10 @@ export function createDatabaseClient(
           throw operationError("execute");
         }
 
-        return { affectedRows };
+        return {
+          affectedRows,
+          ...(insertId === undefined ? {} : { insertId }),
+        };
       } catch (error) {
         if (error instanceof DatabaseClientError) {
           throw error;

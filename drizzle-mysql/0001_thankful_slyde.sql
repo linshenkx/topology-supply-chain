@@ -1,5 +1,5 @@
 CREATE TABLE `supplier_performance_reviews` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`supplier_id` int NOT NULL,
 	`quarter` varchar(191) NOT NULL,
 	`review_type` varchar(191) NOT NULL,
@@ -14,7 +14,7 @@ CREATE TABLE `supplier_performance_reviews` (
 );
 --> statement-breakpoint
 CREATE TABLE `supplier_performance_weight_versions` (
-	`id` serial AUTO_INCREMENT NOT NULL,
+	`id` int AUTO_INCREMENT NOT NULL,
 	`tier` int NOT NULL,
 	`effective_from` varchar(191) NOT NULL,
 	`delivery_weight_bps` int NOT NULL,

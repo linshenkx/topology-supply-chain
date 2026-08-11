@@ -45,34 +45,34 @@ test("cross-dialect upsert selects D1 and MySQL builder methods", async () => {
 });
 
 test("login OTP uses atomic claim and attempt increment conditions", () => {
-  const source = read("app/api/auth/verify/route.ts");
-  assert.match(source, /executeUpsert\(db\.insert\(trustedDevices\)\.values\(trustedDevice\)/);
-  assert.doesNotMatch(source, /\.onConflictDoUpdate\(/);
-  assert.match(source, /attempts:\s*sql`\$\{authChallenges\.attempts\} \+ 1`/);
+  const source = read("apps/api/src/modules/auth/writes.ts");
+  assert.match(source, /readLoginChallenge\(transaction, request\.body\.challengeNo, true\)/);
+  assert.match(source, /SET attempts = attempts \+ 1/);
   for (const predicate of [
-    /isNull\(authChallenges\.verifiedAt\)/,
-    /gt\(authChallenges\.expiresAt,\s*verifiedAt\)/,
-    /lt\(authChallenges\.attempts,\s*5\)/,
-    /claimed !== 1/,
-    /incremented !== 1/,
+    /verified_at IS NULL/,
+    /attempts < \?/,
+    /expires_at > \?/,
+    /claimed\.affectedRows !== 1/,
+    /ON DUPLICATE KEY UPDATE/,
   ]) {
     assert.match(source, predicate);
   }
-  const claimedIndex = source.indexOf("if (claimed !== 1)");
-  const activeAccountIndex = source.indexOf("eq(users.accountStatus, \"active\")");
-  const upsertIndex = source.indexOf("executeUpsert(db.insert(trustedDevices)");
-  assert.ok(claimedIndex < activeAccountIndex && activeAccountIndex < upsertIndex);
+  const claimedIndex = source.indexOf("if (claimed.affectedRows !== 1)");
+  const upsertIndex = source.indexOf("INSERT INTO trusted_devices", claimedIndex);
+  const sessionIndex = source.indexOf("insertSession(transaction", upsertIndex);
+  assert.ok(claimedIndex < upsertIndex && upsertIndex < sessionIndex);
 });
 
 test("step-up OTP uses atomic claim and attempt increment conditions", () => {
-  const source = read("app/api/auth/step-up/verify/route.ts");
-  assert.match(source, /attempts:\s*sql`\$\{authChallenges\.attempts\} \+ 1`/);
+  const source = read("apps/api/src/modules/auth/writes.ts");
+  assert.match(source, /LIMIT 1 FOR UPDATE/);
+  assert.match(source, /SET attempts = attempts \+ 1/);
   for (const predicate of [
-    /isNull\(authChallenges\.verifiedAt\)/,
-    /gt\(authChallenges\.expiresAt,\s*verifiedAt\)/,
-    /lt\(authChallenges\.attempts,\s*5\)/,
-    /claimed !== 1/,
-    /incremented !== 1/,
+    /integer\(challenge\.sessionId\) !== access\.sessionId/,
+    /verified_at IS NULL/,
+    /attempts < \?/,
+    /expires_at > \?/,
+    /claimed\.affectedRows !== 1/,
   ]) {
     assert.match(source, predicate);
   }

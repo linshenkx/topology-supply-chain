@@ -3,61 +3,55 @@ import fs from "node:fs";
 import test from "node:test";
 
 const source = fs.readFileSync(
-  new URL("../app/api/auth/login/route.ts", import.meta.url),
+  new URL("../apps/api/src/modules/auth/writes.ts", import.meta.url),
   "utf8",
 );
 
 test("wrong-password attempts use a capped database-side increment", () => {
-  assert.match(source, /failedAttempts:\s*sql`\$\{authCredentials\.failedAttempts\} \+ 1`/);
-  assert.match(source, /lt\(authCredentials\.failedAttempts,\s*5\)/);
-  assert.doesNotMatch(source, /credential\.failedAttempts\s*\+\s*1/);
-  assert.match(source, /executeAffected\(tx\.update\(authCredentials\)/);
-  assert.match(source, /incremented !== 1 && latestAttempts < 5/);
+  assert.match(source, /Math\.min\(current\.failedAttempts \+ 1, MAX_ATTEMPTS\)/);
+  assert.match(source, /SET failed_attempts = \?/);
+  assert.match(source, /WHERE id = \?/);
+  assert.match(source, /account_status = 'locked'/);
 });
 
 test("latest failure count and account lock stay inside one transaction", () => {
-  const transactionStart = source.indexOf("const attempts = await withDbTransaction(db, async tx =>");
-  const increment = source.indexOf("executeAffected(tx.update(authCredentials)", transactionStart);
-  const latestRead = source.indexOf("const [latestCredential] = await tx.select", increment);
-  const credentialLock = source.indexOf("lockedAt: attemptedAt", latestRead);
-  const accountLock = source.indexOf("accountStatus: \"locked\"", credentialLock);
-  const transactionReturn = source.indexOf("return latestAttempts", accountLock);
-  const response = source.indexOf("error: attempts >= 5", transactionReturn);
+  const transactionStart = source.indexOf("run: async ({ transaction }) =>");
+  const latestRead = source.indexOf("readCredential(transaction, account, true)", transactionStart);
+  const increment = source.indexOf("SET failed_attempts = ?", latestRead);
+  const credentialLock = source.indexOf("locked_at = CASE", increment);
+  const accountLock = source.indexOf("account_status = 'locked'", credentialLock);
+  const transactionReturn = source.indexOf("return { authenticated: false", accountLock);
+  const response = source.indexOf("result.locked !== undefined", transactionReturn);
 
   assert.ok(transactionStart >= 0);
-  assert.ok(transactionStart < increment);
-  assert.ok(increment < latestRead);
+  assert.ok(transactionStart < latestRead);
+  assert.ok(latestRead < increment);
   assert.ok(latestRead < credentialLock);
   assert.ok(credentialLock < accountLock);
   assert.ok(accountLock < transactionReturn);
   assert.ok(transactionReturn < response);
-  assert.match(source, /eq\(users\.accountStatus,\s*user\.accountStatus\)/);
-  assert.match(source, /`账号或密码错误，还可尝试\$\{5 - attempts\}次。`/);
+  assert.match(source, /current\.accountStatus !== "active"/);
+  assert.match(source, /Account locked after repeated failures/);
 });
 
 test("successful passwords keep the existing counter reset", () => {
-  assert.match(source, /const credentialReset = await withDbTransaction\(db, async tx =>/);
-  assert.match(source, /failedAttempts:\s*0,[\s\S]*?lockedAt:\s*null/);
+  assert.match(source, /SET failed_attempts = 0, locked_at = NULL/);
   for (const predicate of [
-    /eq\(authCredentials\.failedAttempts,\s*credential\.failedAttempts\)/,
-    /eq\(authCredentials\.updatedAt,\s*credential\.updatedAt\)/,
-    /isNull\(authCredentials\.lockedAt\)/,
-    /lt\(authCredentials\.failedAttempts,\s*5\)/,
-    /reset !== 1/,
-    /eq\(users\.accountStatus,\s*"active"\)/,
+    /readCredential\(transaction, account, true\)/,
+    /current\.accountStatus !== "active"/,
+    /WHERE id = \? AND failed_attempts < \?/,
   ]) {
     assert.match(source, predicate);
   }
 });
 
 test("account activity is rechecked before sessions and login challenges", () => {
-  const trustedBranch = source.indexOf("if (trusted)");
-  const trustedActiveCheck = source.indexOf("eq(users.accountStatus, \"active\")", trustedBranch);
-  const sessionCreation = source.indexOf("createSession({", trustedBranch);
-  const challengeNumber = source.indexOf("const challengeNo = `OTP-", sessionCreation);
-  const challengeActiveCheck = source.indexOf("eq(users.accountStatus, \"active\")", challengeNumber);
-  const challengeInsert = source.indexOf("db.insert(authChallenges)", challengeNumber);
+  const lockedRead = source.indexOf("readCredential(transaction, account, true)");
+  const activeCheck = source.indexOf('current.accountStatus !== "active"', lockedRead);
+  const sessionCreation = source.indexOf("insertSession(transaction", activeCheck);
+  const challengeNumber = source.indexOf('deriveChallengeNumber("OTP"', activeCheck);
+  const challengeInsert = source.indexOf("INSERT INTO auth_challenges", challengeNumber);
 
-  assert.ok(trustedBranch < trustedActiveCheck && trustedActiveCheck < sessionCreation);
-  assert.ok(challengeNumber < challengeActiveCheck && challengeActiveCheck < challengeInsert);
+  assert.ok(lockedRead < activeCheck && activeCheck < sessionCreation);
+  assert.ok(activeCheck < challengeNumber && challengeNumber < challengeInsert);
 });

@@ -7,6 +7,27 @@ export interface ApiErrorResponse {
   details?: Record<string, unknown>;
 }
 
+export type PlatformErrorCode =
+  | "BAD_REQUEST"
+  | "UNAUTHORIZED"
+  | "FORBIDDEN"
+  | "NOT_FOUND"
+  | "METHOD_NOT_ALLOWED"
+  | "CONFLICT"
+  | "TOO_MANY_REQUESTS"
+  | "ORIGIN_REJECTED"
+  | "CSRF_REJECTED"
+  | "IDEMPOTENCY_KEY_REUSED"
+  | "COMMAND_IN_PROGRESS"
+  | "COMMAND_OUTCOME_UNKNOWN"
+  | "VERSION_CONFLICT"
+  | "WRITER_FENCE_REJECTED"
+  | "OTP_EXPIRED"
+  | "OTP_ATTEMPTS_EXCEEDED"
+  | "FILE_QUARANTINED"
+  | "FILE_TYPE_REJECTED"
+  | "INTERNAL_SERVER_ERROR";
+
 export const apiErrorResponseSchema = {
   $id: apiErrorSchemaId,
   type: "object",

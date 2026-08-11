@@ -1,10 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { finalRequestDigest, mutateJson } from "../lib/mutation-client";
 
 type Invoice = { id:number; invoiceNo:string; amountTaxIncludedMinor:number; status:string };
 type Exception = { id:number; invoiceId:number; exceptionType:string; affectedAmountMinor:number; replacementCoveredAmountMinor:number; refundedAmountMinor:number; replacementDeadline:string; status:string; reason:string };
-type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string };
+type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string; objectVersion:number };
 type PaymentRequest = { id:number; requestNo:string };
 type Data = { invoices:Invoice[]; exceptions:Exception[]; payments:Payment[]; paymentRequests:PaymentRequest[]; replacementLinks:Array<{id:number;invoiceExceptionId:number;replacementInvoiceId:number;coveredAmountMinor:number;status:string}> };
 
@@ -38,11 +39,12 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
     finally { setBusy(false); }
   }
 
-  async function stepUp(paymentRecordId:number) {
-    const request = await json("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ scope:`finance:request_record_correction:${paymentRecordId}` }) });
+  async function stepUp(row: Payment, finalPayload: Record<string, unknown>) {
+    const requestDigest = await finalRequestDigest(finalPayload);
+    const request = await mutateJson<{challengeNo:string;previewCode?:string;mobile?:string},Record<string,unknown>>("/api/v1/auth/step-up/request", "POST", { action:"request_record_correction", objectType:"finance:request_record_correction", objectId:String(row.id), objectVersion:row.objectVersion, requestDigest });
     const code = window.prompt(request.previewCode ? `本地预览验证码：${request.previewCode}` : `验证码已发送至 ${request.mobile || "绑定手机"}，请输入6位验证码`);
     if (!code) return null;
-    await json("/api/auth/step-up/verify", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ challengeNo:request.challengeNo, code }) });
+    await mutateJson("/api/v1/auth/step-up/verify", "POST", { challengeNo:request.challengeNo, code });
     return request.challengeNo as string;
   }
 
@@ -89,9 +91,11 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
     const proposedBankReference = window.prompt("更正后的银行流水号", row.bankReference);
     if (!proposedPaymentRequestId || !amount || !proposedPaidAt || !proposedBankReference) return;
     try {
-      const challengeNo = await stepUp(row.id);
+      const finalPayload = { action:"request_record_correction", paymentRecordId:row.id, reason,
+        proposedPaymentRequestId, proposedAmountMinor:Math.round(amount*100), proposedPaidAt, proposedBankReference:proposedBankReference.trim() };
+      const challengeNo = await stepUp(row, finalPayload);
       if (!challengeNo) return;
-      await post({ action:"request_record_correction", paymentRecordId:row.id, reason, proposedPaymentRequestId, proposedAmountMinor:Math.round(amount*100), proposedPaidAt, proposedBankReference, challengeNo }, "更正申请已提交，等待另一位财务同事审批");
+      await post({ ...finalPayload, challengeNo }, "更正申请已提交，等待另一位财务同事审批");
     } catch (error) { toast(error instanceof Error ? error.message : "手机验证失败"); }
   }
 

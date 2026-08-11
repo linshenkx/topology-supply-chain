@@ -5,6 +5,7 @@ import { buildApp } from "../dist/app.js";
 import { registerFilesModule } from "../dist/modules/files/index.js";
 
 const baseContext = {
+  sessionId: 19,
   userId: 7,
   email: "user@example.com",
   name: "User",
@@ -29,6 +30,7 @@ function fileRow(overrides = {}) {
     factoryId: 3,
     supplierId: null,
     sensitive: 1,
+    scanStatus: "clean",
     retainUntil: "2031-08-11T00:00:00.000Z",
     createdAt: "2026-08-11 08:00:00.000",
     ...overrides,
@@ -49,13 +51,15 @@ function fakeDatabase(rows = [fileRow()]) {
   };
 }
 
-async function createFilesApp({ audit, context, database, storage } = {}) {
+async function createFilesApp({ audit, authorizeEntity, context, database, scannerReady, storage } = {}) {
   const app = await buildApp({ logger: false });
   await registerFilesModule(app, {
     authenticate: async () => context ?? baseContext,
     database,
     storage,
     audit: audit ?? (() => undefined),
+    ...(authorizeEntity === null ? {} : { authorizeEntity: authorizeEntity ?? (async () => true) }),
+    ...(scannerReady === undefined ? {} : { scannerReady }),
   });
   return app;
 }
@@ -64,6 +68,14 @@ function assertPrivateNoStore(response) {
   assert.equal(response.headers["cache-control"], "private, no-store");
   assert.equal(response.headers.pragma, "no-cache");
   assert.equal(response.headers.vary, "Cookie");
+}
+
+function uploadBody(boundary, fields = []) {
+  return Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="evidence.pdf"\r\nContent-Type: application/pdf\r\n\r\n%PDF-1.7\nfile`),
+    ...fields.map(([name, value]) => Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="${name}"\r\n\r\n${value}`)),
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
 }
 
 test("owner, matching organization, and internal roles can download through the storage port", async () => {
@@ -143,6 +155,61 @@ test("owner, matching organization, and internal roles can download through the 
       await app.close();
     }
   }
+});
+
+test("entity-scoped downloads fail closed without a registered domain authorizer", async (t) => {
+  const app = await createFilesApp({ authorizeEntity: null, database: fakeDatabase(), storage: { async readObject() { return Buffer.from("private-data"); } } });
+  t.after(() => app.close());
+  const response = await app.inject({ method: "GET", url: "/api/v1/files?id=42" });
+  assert.equal(response.statusCode, 403);
+  assert.equal(response.json().code, "FORBIDDEN");
+});
+
+test("missing, unknown, and historical entity scopes fail closed before storage", async () => {
+  let writes = 0;
+  for (const fixture of [
+    { fields: [["category", "invoice"]], authorizeEntity: async () => true, expected: 400 },
+    { fields: [["category", "other"], ["entityType", "unknown"], ["entityId", "9"]], authorizeEntity: async () => false, expected: 403 },
+  ]) {
+    const boundary = `scope-${fixture.expected}`;
+    const app = await createFilesApp({
+      authorizeEntity: fixture.authorizeEntity,
+      database: {}, scannerReady: async () => undefined,
+      storage: { async readObject() { return null; }, async writeQuarantinedObject() { writes += 1; } },
+    });
+    try {
+      const response = await app.inject({ method: "POST", url: "/api/v1/files",
+        headers: { host: "scm.example", origin: "https://scm.example", "x-forwarded-host": "scm.example", "x-forwarded-proto": "https",
+          cookie: `topology_csrf=${"a".repeat(64)}`, "x-csrf-token": "a".repeat(64), "idempotency-key": `scope-required-${fixture.expected}`,
+          "content-type": `multipart/form-data; boundary=${boundary}` },
+        payload: uploadBody(boundary, fixture.fields) });
+      assert.equal(response.statusCode, fixture.expected);
+    } finally { await app.close(); }
+  }
+  const historical = await createFilesApp({ database: fakeDatabase([fileRow({ entityType: null, entityId: null })]), storage: { async readObject() { return Buffer.from("private-data"); } } });
+  try {
+    const response = await historical.inject({ method: "GET", url: "/api/v1/files?id=42" });
+    assert.equal(response.statusCode, 403);
+  } finally { await historical.close(); }
+  assert.equal(writes, 0);
+});
+
+test("upload refuses before storage when no scanner readiness port is configured", async (t) => {
+  let writes = 0;
+  const app = await createFilesApp({
+    database: {},
+    storage: { async readObject() { return null; }, async writeQuarantinedObject() { writes += 1; } },
+  });
+  t.after(() => app.close());
+  const response = await app.inject({
+    method: "POST", url: "/api/v1/files",
+    headers: { host: "scm.example", origin: "https://scm.example", "x-forwarded-host": "scm.example", "x-forwarded-proto": "https",
+      cookie: `topology_csrf=${"a".repeat(64)}`, "x-csrf-token": "a".repeat(64), "idempotency-key": "scanner-required-0001",
+      "content-type": "multipart/form-data; boundary=scanner" },
+    payload: "--scanner--\r\n",
+  });
+  assert.equal(response.statusCode, 503);
+  assert.equal(writes, 0);
 });
 
 test("an unrelated external user is forbidden before audit or storage access", async (t) => {
@@ -318,4 +385,21 @@ test("storage body length must exactly match bounded metadata", async (t) => {
   assert.doesNotMatch(response.body, /short|object\.pdf/u);
   assert.equal(auditCalls, 1);
   assertPrivateNoStore(response);
+});
+
+test("quarantined files are blocked before audit and storage access", async (t) => {
+  let auditCalls = 0;
+  let storageCalls = 0;
+  const app = await createFilesApp({
+    database: fakeDatabase([fileRow({ scanStatus: "quarantined" })]),
+    audit: () => { auditCalls += 1; },
+    storage: { async readObject() { storageCalls += 1; return Buffer.from("private-data"); } },
+  });
+  t.after(() => app.close());
+
+  const response = await app.inject({ method: "GET", url: "/api/v1/files?id=42" });
+  assert.equal(response.statusCode, 423);
+  assert.equal(response.json().code, "FILE_QUARANTINED");
+  assert.equal(auditCalls, 0);
+  assert.equal(storageCalls, 0);
 });

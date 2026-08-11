@@ -13,7 +13,8 @@ export COMPOSE_ENV_FILES="${DEPLOY_DIR}/.env.production"
 export RELEASE_TAG="${RELEASE_TAG:-${APP_IMAGE_TAG:-$(date -u +%Y%m%d%H%M%S)}}"
 export APP_IMAGE_TAG="${RELEASE_TAG}"
 export API_IMAGE_TAG="${RELEASE_TAG}"
-echo "准备发布镜像版本：${RELEASE_TAG}（Web/API 同版本）"
+export WORKER_IMAGE_TAG="${RELEASE_TAG}"
+echo "准备发布镜像版本：${RELEASE_TAG}（Web/API/Worker 同版本）"
 
 wait_for_service_health() {
   local display_name="$1"
@@ -32,10 +33,14 @@ wait_for_service_health() {
   return 1
 }
 
-docker compose build app api migrator
+docker compose build app api worker migrator
 docker compose --profile migration run --rm migrator node scripts/check-production-env.mjs
+docker compose --profile migration run --rm migrator node scripts/check-mysql-migration-history.mjs
+docker compose stop app api worker
+docker compose --profile migration run --rm migrator node scripts/check-write-drain.mjs
 docker compose --profile migration run --rm migrator
-docker compose up -d app api
+docker compose --profile migration run --rm migrator node scripts/set-writer-fences.mjs
+docker compose up -d app api worker
 
 if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then
   exit 1
@@ -45,5 +50,10 @@ if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/re
   exit 1
 fi
 
+if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then
+  exit 1
+fi
+
+printf '%s\n' "${RELEASE_TAG}" > .active-release
 docker image prune -f --filter "until=168h" >/dev/null
-echo "Web 与 API 均已发布到版本 ${RELEASE_TAG}。"
+echo "Web、API 与 Worker 均已发布到版本 ${RELEASE_TAG}。"

@@ -10,8 +10,12 @@ const development = {
 };
 const production = {
   APP_ENV: "production",
+  API_SESSION_SIGNING_KEY: "test-session-signing-key-that-is-long-enough",
   DEPLOY_TARGET: "aliyun",
   NODE_ENV: "production",
+  OTP_SEALING_KEY_ID: "test-v1",
+  OTP_SEALING_KEY: "11".repeat(32),
+  WORKER_INTERNAL_URL: "http://worker:3002",
 };
 
 function fakeDatabase({ pingError } = {}) {
@@ -148,6 +152,7 @@ test("injected production database participates in readiness", async (t) => {
     databasePingTimeoutMs: 1_500,
     environment: production,
     logger: false,
+    fileScannerReady: async () => undefined,
   });
   t.after(() => app.close());
 
@@ -157,7 +162,10 @@ test("injected production database participates in readiness", async (t) => {
   });
 
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json().checks, [{ name: "mysql", status: "ok" }]);
+  assert.deepEqual(response.json().checks, [
+    { name: "mysql", status: "ok" },
+    { name: "worker-providers", status: "ok" },
+  ]);
   assert.deepEqual(database.calls.ping, [{ timeoutMs: 1_500 }]);
 });
 
@@ -170,6 +178,7 @@ test("database readiness failures are sanitized and bounded", async (t) => {
     environment: production,
     logger: false,
     readinessTimeoutMs: 100,
+    fileScannerReady: async () => undefined,
   });
   t.after(() => app.close());
 
@@ -189,6 +198,7 @@ test("runtime closes only databases that it creates", async () => {
     database: injected,
     environment: production,
     logger: false,
+    fileScannerReady: async () => undefined,
   });
   await injectedApp.close();
   assert.equal(injected.calls.close, 0);
@@ -201,6 +211,7 @@ test("runtime closes only databases that it creates", async () => {
       DATABASE_URL: "mysql://user:password@database:3306/topology",
     },
     logger: false,
+    fileScannerReady: async () => undefined,
   });
   await ownedApp.close();
   assert.equal(owned.calls.close, 1);

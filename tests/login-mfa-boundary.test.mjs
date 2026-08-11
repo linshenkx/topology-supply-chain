@@ -3,31 +3,31 @@ import fs from "node:fs";
 import test from "node:test";
 
 const loginSource = fs.readFileSync(
-  new URL("../app/api/auth/login/route.ts", import.meta.url),
+  new URL("../apps/api/src/modules/auth/writes.ts", import.meta.url),
   "utf8",
 );
 const verifySource = fs.readFileSync(
-  new URL("../app/api/auth/verify/route.ts", import.meta.url),
+  new URL("../apps/api/src/modules/auth/writes.ts", import.meta.url),
   "utf8",
 );
 
 test("login preview behavior uses the shared production boundary", () => {
-  assert.match(loginSource, /isLocalPreviewRequest\(\{[\s\S]*?requestUrl:\s*request\.url/);
-  for (const marker of ["APP_ENV", "DEPLOY_TARGET", "NODE_ENV"]) {
-    assert.match(loginSource, new RegExp(`runtimeEnv\\("${marker}"\\)`));
+  assert.match(loginSource, /function isPreview\(options: AuthWriteOptions\)/);
+  for (const marker of ["appEnv", "deployTarget", "nodeEnv"]) {
+    assert.match(loginSource, new RegExp(`environment\\?\\.${marker}`));
   }
   assert.doesNotMatch(loginSource, /\["localhost",\s*"127\.0\.0\.1"\]/);
-  assert.match(loginSource, /\.\.\.\(local\s*\?\s*\{\s*previewCode:\s*code\s*\}\s*:\s*\{\}\)/);
+  assert.match(loginSource, /\.\.\.\(isPreview\(options\) \? \{ previewCode: code \} : \{\}\)/);
 });
 
 test("trusted-device validity is filtered by the database clock value", () => {
-  assert.match(loginSource, /gt\(trustedDevices\.trustedUntil,\s*nowIso\)/);
+  assert.match(loginSource, /trusted_until > \?/);
   assert.doesNotMatch(loginSource, /new Date\(device\.trustedUntil\)/);
 });
 
 test("login challenges are scoped and expiration-filtered in the database query", () => {
-  assert.match(verifySource, /eq\(authChallenges\.purpose,\s*"login"\)/);
-  assert.match(verifySource, /isNull\(authChallenges\.verifiedAt\)/);
-  assert.match(verifySource, /gt\(authChallenges\.expiresAt,\s*nowIso\)/);
+  assert.match(verifySource, /purpose = 'login'/);
+  assert.match(verifySource, /challenge\.verifiedAt !== null \|\| challenge\.expiresAt <= at\.toISOString\(\)/);
+  assert.match(verifySource, /verified_at IS NULL AND attempts < \? AND expires_at > \?/);
   assert.doesNotMatch(verifySource, /new Date\(challenge\.expiresAt\)/);
 });

@@ -1,7 +1,7 @@
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, getTableColumns } from "drizzle-orm";
 import { getDb } from "../../../db";
 import { executeAffected } from "../../../db/insert-one";
-import { withLockedFinancialRows } from "../../../db/row-lock";
+import { lockApprovalRequestRow, withLockedFinancialRows } from "../../../db/row-lock";
 import { approvalRequests, corePriceAgreements, corePriceChangeRequests, deliveryBatches, executionOrders, factoryPaymentRequests, factoryPlanResponses, inventoryBatches, inventoryMovements, inventoryTransfers, invoiceExceptions, orderItems, paymentRecords, productionMaterialLines, productionReports, productBoms, purchaseOrders, purchasePlanItems, purchasePlans, reminderSchedules, skus, stocktakeAdjustments, stocktakeCounts, stocktakes, supplierSkus, suppliers, userRoles, warehouses } from "../../../db/schema";
 import { AccessError, accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
@@ -9,14 +9,17 @@ import { assertProductionWarehouse, finalizeProductionInventory } from "../../li
 import { createReminder } from "../../lib/reminders";
 import { withDbTransaction } from "../../../db/transaction";
 import { evaluatePayableLedger, evaluateRefundCorrection } from "../../lib/payment-guard";
-import { consumeVerifiedStepUp } from "../../lib/step-up";
+import { consumeVerifiedStepUp, databaseObjectVersion, finalRequestDigest, nextDatabaseUpdatedAt } from "../../lib/step-up";
 
 export async function GET(request: Request) {
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "finance"]);
     if (access.localPreview) return Response.json({ approvals: [], preview: true });
-    const rows = await getDb().select().from(approvalRequests).orderBy(desc(approvalRequests.requestedAt)).limit(100);
+    const rows = await getDb().select({
+      ...getTableColumns(approvalRequests),
+      objectVersion: databaseObjectVersion(approvalRequests.updatedAt),
+    }).from(approvalRequests).orderBy(desc(approvalRequests.requestedAt)).limit(100);
     await writeAudit(access, { action: "view", module: "approvals", entityType: "approval_list", entityId: "latest", request });
     return Response.json({ approvals: rows });
   } catch (error) {
@@ -57,29 +60,44 @@ export async function POST(request: Request) {
       return Response.json({ error: "盘点差异只能由供应链同事审核。" }, { status: 403 });
     }
     const now = new Date().toISOString();
-    const approvalUpdate = {
-      status: body.decision!,
-      reviewedBy: access.userId,
-      reviewedAt: now,
-      reviewComment: body.comment?.trim() ?? "",
-      smsVerifiedAt: approval.highRisk ? now : null,
-      updatedAt: now,
-    };
+    const finalPayload = { id: body.id, decision: body.decision, comment: body.comment?.trim() ?? "" };
     const correctionApproval = approval.workflowType === "financial_record_correction" && body.decision === "approved";
     const claimApproval = async (tx: typeof db) => {
-      if (approval.highRisk) {
+      await lockApprovalRequestRow(tx, approval.id);
+      const [authoritative] = await tx.select({
+        ...getTableColumns(approvalRequests),
+        objectVersion: databaseObjectVersion(approvalRequests.updatedAt),
+      }).from(approvalRequests).where(eq(approvalRequests.id, approval.id)).limit(1);
+      if (!authoritative || authoritative.status !== "pending") {
+        throw new AccessError(409, "该审批单已经处理或版本已变化。");
+      }
+      if (authoritative.highRisk) {
         await consumeVerifiedStepUp(tx, {
           challengeNo: body.challengeNo,
           userId: access.userId,
           localPreview: false,
           scope: `approval:${approval.id}`,
+          sessionId: access.sessionId,
+          action: "review",
+          objectType: "approval",
+          objectId: String(approval.id),
+          objectVersion: authoritative.objectVersion,
+          requestDigest: finalRequestDigest(finalPayload),
         });
       }
       const claimed = await executeAffected(tx.update(approvalRequests)
-        .set(approvalUpdate)
+        .set({
+          status: body.decision!,
+          reviewedBy: access.userId,
+          reviewedAt: now,
+          reviewComment: body.comment?.trim() ?? "",
+          smsVerifiedAt: authoritative.highRisk ? now : null,
+          updatedAt: nextDatabaseUpdatedAt(approvalRequests.updatedAt),
+        })
         .where(and(
           eq(approvalRequests.id, approval.id),
           eq(approvalRequests.status, "pending"),
+          eq(approvalRequests.updatedAt, authoritative.updatedAt),
         )));
       if (claimed !== 1) throw new AccessError(409, "该审批单已经处理。");
     };

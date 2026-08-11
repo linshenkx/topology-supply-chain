@@ -9,6 +9,10 @@
     ".": {
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
+    },
+    "./platform": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
     }
   },
   "files": [
@@ -19,9 +23,10 @@
     "build": "pnpm --filter @topology/contracts build && pnpm run build:code",
     "build:code": "tsc -p tsconfig.json",
     "start": "node dist/server.js",
-    "test": "pnpm run build && node --test test/*.test.mjs"
+    "test": "pnpm run build && node --test --test-concurrency=1 test/*.test.mjs"
   },
   "dependencies": {
+    "@fastify/multipart": "10.1.0",
     "@fastify/swagger": "9.8.1",
     "@topology/contracts": "workspace:*",
     "ali-oss": "6.23.0",

@@ -38,6 +38,7 @@ const financeRows = {
       totalAmountMinor: 20_000,
       invoiceCoveredAmountMinor: 20_000,
       status: "submitted_to_finance",
+      objectVersion: 1_786_435_200_001,
       paymentNote: "must-not-leak-payment-note",
     },
   ],
@@ -50,6 +51,7 @@ const financeRows = {
       bankReference: "BANK-REFERENCE-31",
       recordType: "payment",
       invoiceExceptionId: null,
+      objectVersion: 1_786_435_200_002,
       recordedBy: 902,
     },
   ],
@@ -84,6 +86,7 @@ const financeRows = {
       refundedAmountMinor: 1_000,
       status: "awaiting_remediation",
       reason: "supplier voided invoice",
+      objectVersion: 1_786_435_200_003,
       riskReleaseEvidenceFileKey: "must-not-leak-risk-file",
     },
   ],
@@ -210,6 +213,9 @@ test("internal roles receive the bounded frontend-compatible finance envelope", 
       ]);
       assert.equal(body.payments[0].bankReference, "BANK-REFERENCE-31");
       assert.equal(body.payments[0].invoiceExceptionId, null);
+      assert.equal(body.paymentRequests[0].objectVersion, financeRows.factory_payment_requests[0].objectVersion);
+      assert.equal(body.payments[0].objectVersion, financeRows.payment_records[0].objectVersion);
+      assert.equal(body.exceptions[0].objectVersion, financeRows.invoice_exceptions[0].objectVersion);
       assert.equal(body.verifications[0].rejectionReason, null);
       assert.equal(body.invoices[0].fileKey, undefined);
       assert.equal(body.paymentRequests[0].paymentNote, undefined);
@@ -228,6 +234,9 @@ test("internal roles receive the bounded frontend-compatible finance envelope", 
         database.queries[2].sql,
         /ORDER BY created_at DESC, id DESC\s+LIMIT 300$/u,
       );
+      assert.match(database.queries[1].sql, /TIMESTAMPDIFF\(MICROSECOND/u);
+      assert.match(database.queries[2].sql, /TIMESTAMPDIFF\(MICROSECOND/u);
+      assert.match(database.queries[5].sql, /TIMESTAMPDIFF\(MICROSECOND/u);
       assert.match(
         database.queries[3].sql,
         /ORDER BY verified_at DESC, id DESC\s+LIMIT 400$/u,

@@ -4,8 +4,9 @@ import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
 import { isPayableLedgerRecord } from "../lib/payment-guard";
 import FinanceExceptionWorkspace from "./FinanceExceptionWorkspace";
 import "../finance.css";
+import { finalRequestDigest, mutateJson, uploadPlatformFile } from "../lib/mutation-client";
 
-type PaymentRequest = { id:number; requestNo:string; factoryId:number; plannedPaymentDate:string; totalAmountMinor:number; invoiceCoveredAmountMinor:number; status:string };
+type PaymentRequest = { id:number; requestNo:string; factoryId:number; plannedPaymentDate:string; totalAmountMinor:number; invoiceCoveredAmountMinor:number; status:string; objectVersion:number };
 type Invoice = { id:number; invoiceNo:string; purchaseOrderId:number; amountTaxIncludedMinor:number; expectedAmountMinor:number; amountMatchesExpected:boolean; status:string; issuedAt:string };
 type Verification = { id:number; invoiceId:number; verifierRole:string; decision:string; rejectionReason?:string|null };
 type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string; invoiceExceptionId:number|null };
@@ -31,6 +32,7 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
   const [paying, setPaying] = useState<PaymentRequest|null>(null);
   const [challengeNo, setChallengeNo] = useState("");
   const [smsVerified, setSmsVerified] = useState(false);
+  const [verifiedDigest, setVerifiedDigest] = useState("");
 
   const refresh = useCallback(async () => setData(await requestJson("/api/v1/finance")), []);
   useEffect(() => { refresh().catch(error => toast(error.message)); }, [refresh, toast]);
@@ -50,18 +52,21 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
     finally { setBusy(false); }
   }
 
-  async function upload(file:File) {
+  async function upload(file:File, purchaseOrderId:number) {
     const form = new FormData(); form.append("file", file); form.append("category", "invoice");
-    const result = await requestJson("/api/files", { method:"POST", body:form });
-    return result.file.objectKey as string;
+    form.append("entityType", "purchase_order"); form.append("entityId", String(purchaseOrderId));
+    const result = await uploadPlatformFile<{ file:{ id:number; scanStatus:string }; usable:boolean }>(form);
+    if (!result.usable) throw new Error("文件已进入安全隔离区；扫描通过前不能用于发票登记。");
+    return String(result.file.id);
   }
 
   async function createInvoice(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("file") as File;
     setBusy(true);
     try {
-      const fileKey = await upload(file);
-      const ok = await post({ action:"create_invoice", factoryId:Number(form.get("factoryId")), purchaseOrderId:Number(form.get("purchaseOrderId")), invoiceNo:form.get("invoiceNo"), invoiceType:form.get("invoiceType"), coverageMode:form.get("coverageMode"), amountTaxIncludedMinor:Math.round(Number(form.get("amount"))*100), taxAmountMinor:Math.round(Number(form.get("taxAmount"))*100), expectedAmountMinor:Math.round(Number(form.get("expectedAmount"))*100), issuedAt:form.get("issuedAt"), fileKey }, "发票已登记，等待供应链与财务双重核验");
+      const purchaseOrderId = Number(form.get("purchaseOrderId"));
+      const fileKey = await upload(file, purchaseOrderId);
+      const ok = await post({ action:"create_invoice", factoryId:Number(form.get("factoryId")), purchaseOrderId, invoiceNo:form.get("invoiceNo"), invoiceType:form.get("invoiceType"), coverageMode:form.get("coverageMode"), amountTaxIncludedMinor:Math.round(Number(form.get("amount"))*100), taxAmountMinor:Math.round(Number(form.get("taxAmount"))*100), expectedAmountMinor:Math.round(Number(form.get("expectedAmount"))*100), issuedAt:form.get("issuedAt"), fileKey }, "发票已登记，等待供应链与财务双重核验");
       if (ok) { setInvoiceOpen(false); event.currentTarget.reset(); }
     } catch (error) { toast(error instanceof Error ? error.message : "发票登记失败"); setBusy(false); }
   }
@@ -74,17 +79,27 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
 
   async function requestSms() {
     if (!paying) return;
-    try { const result = await requestJson("/api/auth/step-up/request", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ scope:`finance:record_payment:${paying.id}` }) }); setChallengeNo(result.challengeNo); setSmsVerified(false); toast(result.previewCode ? `本地预览验证码：${result.previewCode}` : `验证码已发送至 ${result.mobile || "绑定手机"}`); }
+    const form = document.querySelector<HTMLFormElement>(".finance-dialog form");
+    if (!form) return;
+    const values = new FormData(form);
+    const finalPayload = { action:"record_payment", paymentRequestId:paying.id,
+      amountMinor:Math.round(Number(values.get("amount"))*100), paidAt:String(values.get("paidAt") ?? ""),
+      bankReference:String(values.get("bankReference") ?? "").trim() };
+    if (finalPayload.amountMinor <= 0 || !finalPayload.paidAt || !finalPayload.bankReference) { toast("请先填写完整的最终付款信息"); return; }
+    const requestDigest = await finalRequestDigest(finalPayload);
+    try { const result = await mutateJson<{challengeNo:string;previewCode?:string;mobile?:string},Record<string,unknown>>("/api/v1/auth/step-up/request", "POST", { action:"record_payment", objectType:"finance:record_payment", objectId:String(paying.id), objectVersion:paying.objectVersion, requestDigest }); setChallengeNo(result.challengeNo); setVerifiedDigest(requestDigest); setSmsVerified(false); toast(result.previewCode ? `本地预览验证码：${result.previewCode}` : `验证码已发送至 ${result.mobile || "绑定手机"}`); }
     catch (error) { toast(error instanceof Error ? error.message : "验证码发送失败"); }
   }
   async function verifySms(code:string) {
-    try { await requestJson("/api/auth/step-up/verify", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify({ challengeNo, code }) }); setSmsVerified(true); toast("手机验证码验证成功"); }
+    try { await mutateJson("/api/v1/auth/step-up/verify", "POST", { challengeNo, code }); setSmsVerified(true); toast("手机验证码验证成功"); }
     catch (error) { toast(error instanceof Error ? error.message : "验证码错误"); }
   }
   async function recordPayment(event:FormEvent<HTMLFormElement>) {
     event.preventDefault(); if (!paying || !smsVerified) { toast("请先完成手机验证码验证"); return; }
     const form = new FormData(event.currentTarget);
-    const ok = await post({ action:"record_payment", paymentRequestId:paying.id, amountMinor:Math.round(Number(form.get("amount"))*100), paidAt:form.get("paidAt"), bankReference:form.get("bankReference"), challengeNo }, "付款记录已保存");
+    const finalPayload = { action:"record_payment", paymentRequestId:paying.id, amountMinor:Math.round(Number(form.get("amount"))*100), paidAt:String(form.get("paidAt") ?? ""), bankReference:String(form.get("bankReference") ?? "").trim() };
+    if (await finalRequestDigest(finalPayload) !== verifiedDigest) { toast("付款信息已改变，请重新完成手机验证"); setSmsVerified(false); return; }
+    const ok = await post({ ...finalPayload, challengeNo }, "付款记录已保存");
     if (ok) { setPaying(null); setChallengeNo(""); setSmsVerified(false); }
   }
 

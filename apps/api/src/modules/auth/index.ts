@@ -12,7 +12,13 @@ import type {
   preHandlerHookHandler,
 } from "fastify";
 
-import type { QueryExecutor } from "../../infrastructure/database.js";
+import type {
+  DatabaseClient,
+  QueryExecutor,
+} from "../../infrastructure/database.js";
+import { registerAuthWriteRoutes } from "./writes.js";
+import type { OtpSealingConfig } from "../../platform/secrets.js";
+import { csrfCookie } from "../../platform/security.js";
 
 export const SESSION_COOKIE = "topology_session";
 
@@ -32,6 +38,7 @@ const SESSION_SECURITY_POLICY = {
 } as const;
 
 export interface AccessContext {
+  sessionId: number | null;
   userId: number;
   email: string;
   name: string;
@@ -54,7 +61,9 @@ export interface AuthenticateOptions {
 }
 
 export interface AuthModuleOptions extends AuthenticateOptions {
-  database?: QueryExecutor;
+  database?: DatabaseClient;
+  sessionSigningKey?: string;
+  otpSealing?: OtpSealingConfig;
 }
 
 type SessionUserRow = Record<string, unknown> & {
@@ -162,6 +171,7 @@ function readSessionCookie(cookieHeader: string | undefined): SessionCookie {
 
 function previewContext(): AccessContext {
   return {
+    sessionId: null,
     userId: 0,
     email: "preview@topologygz.com",
     name: "本地预览管理员",
@@ -183,6 +193,7 @@ function requireSessionRow(row: SessionUserRow | undefined): SessionUserRow {
     typeof row.name !== "string" || row.name.length === 0 ||
     typeof row.primaryRole !== "string" || row.primaryRole.length === 0 ||
     typeof row.organizationName !== "string" ||
+    row.organizationName.trim().length === 0 ||
     (row.factoryId !== null &&
       (!Number.isSafeInteger(row.factoryId) || row.factoryId <= 0)) ||
     (row.supplierId !== null &&
@@ -193,6 +204,24 @@ function requireSessionRow(row: SessionUserRow | undefined): SessionUserRow {
   }
 
   return row;
+}
+
+function requireOrganizationBinding(session: SessionUserRow): void {
+  if (session.factoryId !== null && session.supplierId !== null) {
+    throw new AuthenticationError(403);
+  }
+  if (
+    session.primaryRole === "factory" &&
+    (session.factoryId === null || session.supplierId !== null)
+  ) {
+    throw new AuthenticationError(403);
+  }
+  if (
+    session.primaryRole === "supplier_qc" &&
+    (session.supplierId === null || session.factoryId !== null)
+  ) {
+    throw new AuthenticationError(403);
+  }
 }
 
 async function loadSessionContext(
@@ -231,6 +260,7 @@ async function loadSessionContext(
 
   const session = requireSessionRow(sessionRows[0]);
   if (session.accountStatus !== "active") throw new AuthenticationError(403);
+  requireOrganizationBinding(session);
 
   let roleRows: readonly RoleRow[];
   try {
@@ -311,6 +341,7 @@ async function loadSessionContext(
   );
 
   return {
+    sessionId: session.sessionId,
     userId: session.userId,
     email: session.email,
     name: session.name,
@@ -416,6 +447,24 @@ export async function registerAuthModule(
         },
       },
     },
-    async (request) => sessionResponse(requireAccessContext(request)),
+    async (request, reply) => {
+      const context = requireAccessContext(request);
+      const existing = readSessionCookie(request.headers.cookie);
+      if (!context.localPreview && existing.kind === "valid" && options.sessionSigningKey !== undefined) {
+        reply.header("set-cookie", csrfCookie(options.sessionSigningKey, existing.token));
+      }
+      return sessionResponse(context);
+    },
   );
+
+  await registerAuthWriteRoutes(app, {
+    authenticate: (request) => authenticateRequest(options.database, request, options),
+    ...(options.database === undefined ? {} : { database: options.database }),
+    ...(options.environment === undefined ? {} : { environment: options.environment }),
+    ...(options.now === undefined ? {} : { now: options.now }),
+    ...(options.sessionSigningKey === undefined
+      ? {}
+      : { sessionSigningKey: options.sessionSigningKey }),
+    ...(options.otpSealing === undefined ? {} : { otpSealing: options.otpSealing }),
+  });
 }

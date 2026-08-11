@@ -278,7 +278,7 @@ test("recordPayment locks, refreshes, validates, writes and recomputes in order"
   const ordered = [
     "if (access.localPreview)",
     "withLockedPaymentRequest(db, paymentRequestId",
-    "await tx.select().from(factoryPaymentRequests)",
+    "databaseObjectVersion(factoryPaymentRequests.updatedAt)",
     "evaluatePaymentCapacity",
     "if (capacity.wouldExceed)",
     "consumeVerifiedStepUp(tx",

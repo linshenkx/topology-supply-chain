@@ -4,8 +4,7 @@ const API_V1_UPSTREAM_ORIGIN = "http://127.0.0.1:3001";
 const DEFAULT_REQUEST_TIMEOUT_MS = 5_000;
 const MAX_COOKIE_HEADER_LENGTH = 8_192;
 const MAX_REQUEST_ID_LENGTH = 200;
-const SESSION_COOKIE = "topology_session";
-const SESSION_TOKEN_PATTERN = /^[a-f\d]{64}$/iu;
+const ALLOWED_COOKIES = new Set(["topology_session", "topology_csrf"]);
 
 export interface DevelopmentGetBridgeOptions {
   path: `/api/v1/${string}`;
@@ -23,7 +22,7 @@ function proxyAllowed(request: Request): boolean {
   });
 }
 
-function sessionCookie(cookieHeader: string | null): string | null {
+function safeCookies(cookieHeader: string | null): string | null {
   if (
     cookieHeader === null ||
     cookieHeader.length > MAX_COOKIE_HEADER_LENGTH
@@ -32,29 +31,38 @@ function sessionCookie(cookieHeader: string | null): string | null {
   }
 
   const matches: string[] = [];
+  const names = new Set<string>();
   for (const part of cookieHeader.split(";")) {
     const separator = part.indexOf("=");
     if (separator < 0) continue;
-    if (part.slice(0, separator).trim() !== SESSION_COOKIE) continue;
-    matches.push(part.slice(separator + 1).trim());
+    const name = part.slice(0, separator).trim();
+    if (!ALLOWED_COOKIES.has(name)) continue;
+    if (names.has(name)) return null;
+    names.add(name);
+    const value = part.slice(separator + 1).trim();
+    if (!/^[a-f\d]{64}$/iu.test(value)) return null;
+    matches.push(`${name}=${value}`);
   }
-
-  const token = matches[0];
-  return matches.length === 1 &&
-    token !== undefined &&
-    SESSION_TOKEN_PATTERN.test(token)
-    ? `${SESSION_COOKIE}=${token}`
-    : null;
+  return matches.length > 0 ? matches.join("; ") : null;
 }
 
-function requestHeaders(request: Request): Headers {
+function requestHeaders(request: Request, publicUrl?: URL): Headers {
   const headers = new Headers({ accept: "application/json" });
-  const cookie = sessionCookie(request.headers.get("cookie"));
+  const cookie = safeCookies(request.headers.get("cookie"));
   const requestId = request.headers.get("x-request-id");
 
   if (cookie !== null) headers.set("cookie", cookie);
   if (requestId !== null && requestId.length <= MAX_REQUEST_ID_LENGTH) {
     headers.set("x-request-id", requestId);
+  }
+  for (const name of ["content-type", "idempotency-key", "x-csrf-token", "x-request-digest"]) {
+    const value = request.headers.get(name);
+    if (value !== null && value.length <= 512) headers.set(name, value);
+  }
+  if (publicUrl !== undefined) {
+    headers.set("origin", publicUrl.origin);
+    headers.set("x-forwarded-host", publicUrl.host);
+    headers.set("x-forwarded-proto", publicUrl.protocol.slice(0, -1));
   }
 
   return headers;
@@ -70,6 +78,12 @@ function responseHeaders(response?: Response): Headers {
   for (const name of ["content-disposition", "content-type", "x-request-id"]) {
     const value = response?.headers.get(name) ?? null;
     if (value !== null) headers.set(name, value);
+  }
+  const setCookies = response === undefined ? [] :
+    ((response.headers as Headers & { getSetCookie?: () => string[] }).getSetCookie?.() ??
+      [response.headers.get("set-cookie")].filter((value): value is string => value !== null));
+  for (const value of setCookies) {
+    if (/^(topology_session|topology_csrf)=/u.test(value)) headers.append("set-cookie", value);
   }
 
   return headers;
@@ -125,5 +139,37 @@ export async function proxyDevelopmentApiV1Get(
       { error: options.unavailableMessage },
       { status: 502, headers: responseHeaders() },
     );
+  }
+}
+
+export async function proxyDevelopmentApiV1Mutation(
+  request: Request,
+  options: DevelopmentGetBridgeOptions,
+): Promise<Response> {
+  let requestUrl: URL;
+  try { requestUrl = new URL(request.url); } catch { return notFound(); }
+  if (!proxyAllowed(request) || requestUrl.pathname !== options.path ||
+      !["POST", "PATCH", "DELETE"].includes(request.method)) return notFound();
+  const browserOrigin = request.headers.get("origin");
+  if (browserOrigin === null) return notFound();
+  try {
+    if (new URL(browserOrigin).origin !== requestUrl.origin) return notFound();
+  } catch {
+    return notFound();
+  }
+  const upstreamUrl = new URL(options.path, API_V1_UPSTREAM_ORIGIN);
+  try {
+    const upstream = await fetch(upstreamUrl, {
+      method: request.method,
+      // proxyAllowed proves requestUrl is non-production loopback. Rebuild the
+      // public origin from that trusted URL instead of forwarding Host input.
+      headers: requestHeaders(request, requestUrl),
+      body: await request.arrayBuffer(),
+      redirect: "manual",
+      signal: AbortSignal.timeout(options.requestTimeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS),
+    });
+    return new Response(upstream.body, { status: upstream.status, headers: responseHeaders(upstream) });
+  } catch {
+    return Response.json({ error: options.unavailableMessage }, { status: 502, headers: responseHeaders() });
   }
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { uploadPlatformFile } from "../lib/mutation-client";
 
 type Shipment = {
   id: number; executionOrderId: number; batchNo: string; quantity: number; plannedShipAt: string;
@@ -29,12 +30,15 @@ async function jsonRequest(url: string, init?: RequestInit) {
   return data;
 }
 
-async function upload(file: File, category: string) {
+async function upload(file: File, category: string, entityType: "delivery_batch" | "product_return", entityId: number): Promise<{ objectKey:string; fileName:string }> {
   const form = new FormData();
   form.append("file", file);
   form.append("category", category);
-  const data = await jsonRequest("/api/files", { method: "POST", body: form });
-  return data.file as { objectKey: string; fileName: string };
+  form.append("entityType", entityType);
+  form.append("entityId", String(entityId));
+  const data = await uploadPlatformFile<{ file:{ id:number; fileName:string }; usable:boolean }>(form);
+  if (!data.usable) throw new Error("文件已隔离，扫描通过前不能提交业务操作。");
+  return { objectKey: String(data.file.id), fileName: data.file.fileName };
 }
 
 export default function ShippingWorkspace({ toast }: { toast: (message: string) => void }) {
@@ -126,14 +130,14 @@ function ActionBox({ title, children, close }: { title: string; children: React.
 function ShipForm({ id, busy, post, close }: { id: number; busy: boolean; post: Function; close: () => void }) {
   return <ActionBox title="登记实际发货" close={close}><form className="production-form" onSubmit={async event => {
     event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File;
-    try { const saved = await upload(file, "shipment_evidence"); await post("/api/shipments", { action: "ship", deliveryBatchId: id, shippedAt: form.get("shippedAt"), carrier: form.get("carrier"), logisticsNo: form.get("logisticsNo"), deviationReason: form.get("deviationReason"), evidenceFileKey: saved.objectKey, evidenceFileName: saved.fileName }, "实际发货已登记，库存已扣减"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
+    try { const saved = await upload(file, "shipment_evidence", "delivery_batch", id); await post("/api/shipments", { action: "ship", deliveryBatchId: id, shippedAt: form.get("shippedAt"), carrier: form.get("carrier"), logisticsNo: form.get("logisticsNo"), deviationReason: form.get("deviationReason"), evidenceFileKey: saved.objectKey, evidenceFileName: saved.fileName }, "实际发货已登记，库存已扣减"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
   }}><label>实际发货时间<input name="shippedAt" type="datetime-local" required /></label><label>承运商<input name="carrier" required /></label><label>物流单号<input name="logisticsNo" required /></label><label>偏离原因<input name="deviationReason" placeholder="未按计划日期时必填" /></label><label>发货凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>提交发货</button></form></ActionBox>;
 }
 
 function ReceiveForm({ id, busy, post, close }: { id: number; busy: boolean; post: Function; close: () => void }) {
   return <ActionBox title="确认收货" close={close}><form className="production-form" onSubmit={async event => {
     event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File;
-    try { const saved = await upload(file, "receipt_evidence"); await post("/api/shipments", { action: "receive", deliveryBatchId: id, receivedQuantity: Number(form.get("receivedQuantity")), damagedQuantity: Number(form.get("damagedQuantity")), receivedAt: form.get("receivedAt"), exceptionReason: form.get("exceptionReason"), receiptEvidenceFileKey: saved.objectKey }, "签收已确认"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
+    try { const saved = await upload(file, "receipt_evidence", "delivery_batch", id); await post("/api/shipments", { action: "receive", deliveryBatchId: id, receivedQuantity: Number(form.get("receivedQuantity")), damagedQuantity: Number(form.get("damagedQuantity")), receivedAt: form.get("receivedAt"), exceptionReason: form.get("exceptionReason"), receiptEvidenceFileKey: saved.objectKey }, "签收已确认"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
   }}><label>签收数量<input name="receivedQuantity" type="number" min="0" required /></label><label>破损数量<input name="damagedQuantity" type="number" min="0" defaultValue="0" required /></label><label>签收时间<input name="receivedAt" type="datetime-local" required /></label><label>少货/破损原因<input name="exceptionReason" /></label><label>签收凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>确认签收</button></form></ActionBox>;
 }
 
@@ -144,7 +148,7 @@ function ReturnsPanel({ rows, shipments, busy, post, action, setAction }: { rows
 }
 
 function InspectForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: Function; close: () => void }) {
-  return <ActionBox title="退货质检" close={close}><form className="production-form" onSubmit={async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File; try { const saved = await upload(file, "quality_evidence"); const passed = Number(form.get("passedQuantity")); await post("/api/returns", { action: "inspect", productReturnId: record.id, inspectedQuantity: record.quantity, passedQuantity: passed, failedQuantity: record.quantity - passed, defectReason: form.get("defectReason"), evidenceFileKey: saved.objectKey }, "退货质检已完成"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); } }}><label>检验数量<input value={record.quantity} readOnly /></label><label>合格数量<input name="passedQuantity" type="number" min="0" max={record.quantity} required /></label><label>不良原因<input name="defectReason" /></label><label>现场照片/凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>提交质检</button></form></ActionBox>;
+  return <ActionBox title="退货质检" close={close}><form className="production-form" onSubmit={async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File; try { const saved = await upload(file, "quality_evidence", "product_return", record.id); const passed = Number(form.get("passedQuantity")); await post("/api/returns", { action: "inspect", productReturnId: record.id, inspectedQuantity: record.quantity, passedQuantity: passed, failedQuantity: record.quantity - passed, defectReason: form.get("defectReason"), evidenceFileKey: saved.objectKey }, "退货质检已完成"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); } }}><label>检验数量<input value={record.quantity} readOnly /></label><label>合格数量<input name="passedQuantity" type="number" min="0" max={record.quantity} required /></label><label>不良原因<input name="defectReason" /></label><label>现场照片/凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>提交质检</button></form></ActionBox>;
 }
 
 function DispositionForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: Function; close: () => void }) {

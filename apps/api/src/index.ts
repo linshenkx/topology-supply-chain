@@ -20,3 +20,24 @@ export {
   type AccessContext,
   type AuthModuleOptions,
 } from "./modules/auth/index.js";
+export {
+  ApprovalEffectRegistry,
+  ApprovalPolicyRegistry,
+  consumeStepUpClaim,
+  type ApprovalClaim,
+  type ApprovalEffectPort,
+  type ApprovalPolicyPort,
+} from "./platform/approvals.js";
+export {
+  FileAuthorizationRegistry,
+  PLATFORM_FILE_ENTITY_TYPES,
+  createPlatformFileEntityAuthorizer,
+  loadDomainRegistrationManifests,
+  registerDomainManifests,
+  registerParallelDomainModules,
+  type DomainRegistration,
+  type DomainRegistrationContext,
+  type DomainRegistrationManifest,
+  type ParallelDomainRegistrations,
+} from "./platform/registrations.js";
+export { requireWriterFence, type WriterFenceRequirement } from "./platform/commands.js";

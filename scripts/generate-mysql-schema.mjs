@@ -36,16 +36,32 @@ const indexedTextColumns = new Set([
   "device_id",
   "quarter",
   "review_type",
+  "resource",
+  "owner",
+  "command_name",
+  "actor_scope",
+  "idempotency_key",
+  "request_digest",
+  "deduplication_key",
+  "aggregate_type",
+  "aggregate_id",
+  "topic",
+  "resource_type",
+  "resource_id",
+  "scan_status",
+  "content_sha256",
+  "object_type",
+  "object_id",
 ]);
 source = source
   .replace(
     'import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";',
-    'import { boolean, datetime, int, mysqlTable, serial, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";',
+    'import { boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";',
   )
   .replaceAll("sqliteTable(", "mysqlTable(")
   .replace(
     /integer\("id"\)\.primaryKey\(\{ autoIncrement: true \}\)/g,
-    'serial("id").primaryKey()',
+    'int("id").autoincrement().primaryKey()',
   )
   .replace(
     /integer\(("[^"]+"), \{ mode: "boolean" \}\)/g,

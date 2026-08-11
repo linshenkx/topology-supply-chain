@@ -13,6 +13,7 @@ import SupplierWorkspace from "./components/SupplierWorkspace";
 import ShippingWorkspace from "./components/ShippingWorkspace";
 import FinanceWorkspace from "./components/FinanceWorkspace";
 import AuditWorkspace from "./components/AuditWorkspace";
+import { finalRequestDigest, mutateJson } from "./lib/mutation-client";
 
 type Order = {
   id: string; factory: string; product: string; sku: string; qty: number;
@@ -378,6 +379,7 @@ type ManagedUser = {
 type ApprovalItem = {
   id: number; requestNo: string; workflowType: string; summary: string;
   highRisk: boolean; status: string; requestedAt: string;
+  objectVersion: number;
 };
 
 const roleLabels: Record<string, string> = {
@@ -416,10 +418,7 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
 
   const grantRole = async () => {
     try {
-      await apiJson("/api/users", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId: Number(selectedUser), roleCode, effectiveFrom, effectiveTo: effectiveTo || null, reason }),
-      });
+      await mutateJson("/api/v1/users", "POST", { userId: Number(selectedUser), roleCode, effectiveFrom, effectiveTo: effectiveTo || null, reason });
       toast("角色申请已提交，等待另一位管理员审批");
       setReason("");
       await refresh();
@@ -427,10 +426,7 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
   };
   const unlock = async (userId: number) => {
     try {
-      await apiJson("/api/users", {
-        method: "PATCH", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ userId, action: "unlock" }),
-      });
+      await mutateJson("/api/v1/users", "PATCH", { userId, action: "unlock" });
       toast("账号已解锁");
       await refresh();
     } catch (error) { toast(error instanceof Error ? error.message : "解锁失败"); }
@@ -439,10 +435,7 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
     const revokeReason = window.prompt("请输入撤销该角色的原因");
     if (!revokeReason) return;
     try {
-      await apiJson("/api/users", {
-        method: "DELETE", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ roleAssignmentId, reason: revokeReason }),
-      });
+      await mutateJson("/api/v1/users", "DELETE", { roleAssignmentId, reason: revokeReason });
       toast("撤销申请已提交，等待另一位管理员审批");
       await refresh();
     } catch (error) { toast(error instanceof Error ? error.message : "提交失败"); }
@@ -509,10 +502,11 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
   const sendCode = async () => {
     if (!selected) return;
     try {
-      const data = await apiJson("/api/auth/step-up/request", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scope: `approval:${selected.id}` }),
-      });
+      const requestDigest = await finalRequestDigest({ id: selected.id, decision, comment: comment.trim() });
+      const data = await mutateJson<{ challengeNo:string; mobile?:string; previewCode?:string }, Record<string, unknown>>(
+        "/api/v1/auth/step-up/request", "POST",
+        { action: "review", objectType: "approval", objectId: String(selected.id), objectVersion: selected.objectVersion, requestDigest },
+      );
       setChallengeNo(data.challengeNo);
       setMaskedMobile(data.mobile || "");
       toast(data.previewCode ? `本地预览验证码：${data.previewCode}` : `验证码已发送至 ${data.mobile}`);
@@ -520,10 +514,7 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
   };
   const verifyCode = async () => {
     try {
-      await apiJson("/api/auth/step-up/verify", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ challengeNo, code }),
-      });
+      await mutateJson("/api/v1/auth/step-up/verify", "POST", { challengeNo, code });
       setVerified(true); toast("手机验证通过，请确认提交审批");
     } catch (error) { toast(error instanceof Error ? error.message : "验证码校验失败"); }
   };
@@ -616,16 +607,16 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   }, []);
   const login = async () => {
     setMessage("正在验证…");
-    const response = await fetch("/api/auth/login", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ account, password, deviceId, deviceName: navigator.userAgent.slice(0, 80) }) });
-    const payload = await response.json();
-    if (!response.ok) { setMessage(payload.error ?? "登录失败"); return; }
+    let payload: { authenticated:boolean; challengeNo?:string; maskedMobile?:string; previewCode?:string };
+    try { payload = await mutateJson("/api/v1/auth/login", "POST", { account, password, deviceId, deviceName: navigator.userAgent.slice(0, 80) }, { csrf:false }); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "登录失败"); return; }
     if (payload.authenticated) { onAuthenticated(); return; }
-    setChallengeNo(payload.challengeNo); setMaskedMobile(payload.maskedMobile); setMessage(payload.previewCode ? `本地预览验证码：${payload.previewCode}` : "验证码已发送");
+    if (!payload.challengeNo) { setMessage("登录响应缺少验证码任务"); return; }
+    setChallengeNo(payload.challengeNo); setMaskedMobile(payload.maskedMobile ?? ""); setMessage(payload.previewCode ? `本地预览验证码：${payload.previewCode}` : "验证码已发送");
   };
   const verify = async () => {
-    const response = await fetch("/api/auth/verify", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ challengeNo, code, deviceName: navigator.userAgent.slice(0, 80) }) });
-    const payload = await response.json();
-    if (!response.ok) { setMessage(payload.error ?? "验证失败"); return; }
+    try { await mutateJson("/api/v1/auth/verify", "POST", { challengeNo, code, deviceName: navigator.userAgent.slice(0, 80) }, { csrf:false }); }
+    catch (error) { setMessage(error instanceof Error ? error.message : "验证失败"); return; }
     onAuthenticated();
   };
   return <main className="login-shell"><section className="login-card"><div className="login-brand"><i>拓</i><span><strong>拓扑供应链</strong><small>广州拓扑睡眠科技有限公司</small></span></div><div className="login-copy"><span>SCM · 进销存协同系统</span><h1>{challengeNo ? "验证登录设备" : "欢迎回来"}</h1><p>{challengeNo ? `验证码已发送至 ${maskedMobile}` : "使用账号密码登录；新设备、异地或高风险操作需要手机验证。"}</p></div>{challengeNo ? <div className="login-form"><label>手机验证码<input inputMode="numeric" maxLength={6} value={code} onChange={e=>setCode(e.target.value.replace(/\D/g,""))} placeholder="请输入6位验证码"/></label><button onClick={verify}>验证并信任设备90天</button><button className="text-button" onClick={()=>{setChallengeNo("");setCode("");setMessage("");}}>返回账号登录</button></div> : <div className="login-form"><label>登录账号<input autoComplete="username" value={account} onChange={e=>setAccount(e.target.value)} placeholder="请输入公司邮箱"/></label><label>密码<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="请输入密码"/></label><button onClick={login}>登录</button><small>连续输错5次将锁定账号，需管理员解锁</small></div>}{message&&<div className="login-message">{message}</div>}<footer>scm.topologygz.com · 安全访问</footer></section></main>;

@@ -14,6 +14,7 @@ export interface ApprovalListItem {
   highRisk: boolean;
   status: ApprovalStatus;
   requestedAt: string;
+  objectVersion: number;
 }
 
 export interface ApprovalsResponse {
@@ -41,6 +42,7 @@ export const approvalsResponseSchema = {
           "highRisk",
           "status",
           "requestedAt",
+          "objectVersion",
         ],
         properties: {
           id: { type: "integer", minimum: 1 },
@@ -53,6 +55,7 @@ export const approvalsResponseSchema = {
             enum: ["pending", "approved", "rejected", "cancelled"],
           },
           requestedAt: { type: "string", minLength: 1 },
+          objectVersion: { type: "integer", minimum: 1 },
         },
       },
     },

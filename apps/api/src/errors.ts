@@ -1,8 +1,30 @@
-import type { ApiErrorResponse } from "@topology/contracts";
+import type {
+  ApiErrorResponse,
+  PlatformErrorCode,
+} from "@topology/contracts";
 
 interface PublicErrorDescriptor {
   code: string;
   message: string;
+}
+
+export class PlatformError extends Error {
+  readonly code: PlatformErrorCode;
+  readonly details?: Record<string, unknown>;
+  readonly statusCode: number;
+
+  constructor(
+    statusCode: number,
+    code: PlatformErrorCode,
+    message: string,
+    details?: Record<string, unknown>,
+  ) {
+    super(message);
+    this.name = "PlatformError";
+    this.statusCode = statusCode;
+    this.code = code;
+    if (details !== undefined) this.details = details;
+  }
 }
 
 const publicErrorsByStatus = new Map<number, PublicErrorDescriptor>([
@@ -38,4 +60,20 @@ export function createApiErrorResponse(
     ...publicError,
     requestId,
   };
+}
+
+export function createErrorResponse(
+  error: unknown,
+  statusCode: number,
+  requestId: string,
+): ApiErrorResponse {
+  if (error instanceof PlatformError) {
+    return {
+      code: error.code,
+      message: error.message,
+      requestId,
+      ...(error.details === undefined ? {} : { details: error.details }),
+    };
+  }
+  return createApiErrorResponse(statusCode, requestId);
 }

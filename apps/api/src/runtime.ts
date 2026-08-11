@@ -42,6 +42,19 @@ import {
 } from "./modules/suppliers/index.js";
 import { registerUsersModule } from "./modules/users/index.js";
 import { registerWarehousesModule } from "./modules/warehouses/index.js";
+import { ApprovalEffectRegistry, ApprovalPolicyRegistry } from "./platform/approvals.js";
+import { readOtpSealingConfig } from "./platform/secrets.js";
+import {
+  FileAuthorizationRegistry,
+  PLATFORM_FILE_ENTITY_TYPES,
+  createPlatformFileEntityAuthorizer,
+  registerDomainManifests,
+  registerParallelDomainModules,
+  type DomainRegistrationManifest,
+  type ParallelDomainRegistrations,
+} from "./platform/registrations.js";
+import { executeCommand, requireWriterFence } from "./platform/commands.js";
+import { enqueueOutbox } from "./platform/outbox.js";
 import {
   buildApp,
   type BuildAppOptions,
@@ -61,8 +74,13 @@ export interface BuildRuntimeAppOptions
   auditExporter?: AuditLogExportPort;
   environment?: DatabaseEnvironment;
   fileStorage?: FileStoragePort;
+  fileScannerReady?: () => Promise<void>;
   now?: () => Date;
   supplierPerformanceExporter?: SupplierPerformanceExportPort;
+  domainRegistrations?: ParallelDomainRegistrations;
+  registrationManifests?: readonly DomainRegistrationManifest[];
+  approvalEffects?: ApprovalEffectRegistry;
+  approvalPolicy?: ApprovalPolicyRegistry;
 }
 
 function normalized(value: string | undefined): string | undefined {
@@ -118,6 +136,12 @@ export async function buildRuntimeApp(
 ): Promise<FastifyInstance> {
   const environment = options.environment ?? process.env;
   const production = isProductionRuntime(environment);
+  const sessionSigningKey = environment.API_SESSION_SIGNING_KEY?.trim();
+  if (production && (sessionSigningKey?.length ?? 0) < 32) {
+    throw new Error("API_SESSION_SIGNING_KEY must contain at least 32 characters");
+  }
+  let otpSealing: ReturnType<typeof readOtpSealingConfig> | undefined;
+  let workerInternalUrl: string | undefined;
   let database = options.database;
   let ownsDatabase = false;
   let databasePingTimeoutMs =
@@ -133,6 +157,20 @@ export async function buildRuntimeApp(
       createDatabaseClient({ env })))(environment);
     ownsDatabase = true;
   }
+  if (production) {
+    otpSealing = readOtpSealingConfig(environment);
+    workerInternalUrl = environment.WORKER_INTERNAL_URL?.trim();
+    if (!workerInternalUrl && options.fileScannerReady === undefined) {
+      throw new Error("WORKER_INTERNAL_URL is required in production");
+    }
+  }
+  const providerReadiness = options.fileScannerReady ?? (async () => {
+    if (!workerInternalUrl) throw new Error("WORKER_INTERNAL_URL is required");
+    const response = await fetch(new URL("/health/ready", workerInternalUrl), {
+      signal: AbortSignal.timeout(3_000),
+    });
+    if (!response.ok) throw new Error("Worker providers unavailable");
+  });
 
   const resolvedAuthEnvironment = authEnvironment(environment);
   const readinessTimeoutMs =
@@ -147,15 +185,16 @@ export async function buildRuntimeApp(
         ? {}
         : { serviceName: options.serviceName }),
       readinessTimeoutMs,
-      readinessChecks:
-        database === undefined
-          ? []
-          : [
-              {
-                name: "mysql",
-                run: () => database?.ping({ timeoutMs: databasePingTimeoutMs }),
-              },
-            ],
+      readinessChecks: [
+        ...(database === undefined ? [] : [{
+          name: "mysql",
+          run: () => database?.ping({ timeoutMs: databasePingTimeoutMs }),
+        }]),
+        ...(!production ? [] : [{
+          name: "worker-providers",
+          run: providerReadiness,
+        }]),
+      ],
     });
 
     if (ownsDatabase && database !== undefined) {
@@ -169,6 +208,8 @@ export async function buildRuntimeApp(
       ...(database === undefined ? {} : { database }),
       environment: resolvedAuthEnvironment,
       ...(options.now === undefined ? {} : { now: options.now }),
+      ...(sessionSigningKey === undefined ? {} : { sessionSigningKey }),
+      ...(otpSealing === undefined ? {} : { otpSealing }),
     };
     const authenticate = (request: Parameters<typeof authenticateRequest>[1]) =>
       authenticateRequest(database, request, authOptions);
@@ -182,6 +223,15 @@ export async function buildRuntimeApp(
     const supplierPerformanceExporter =
       options.supplierPerformanceExporter ??
       createSupplierPerformanceXlsxExporter();
+    const fileAuthorizations = new FileAuthorizationRegistry();
+    const approvalEffects = options.approvalEffects ?? new ApprovalEffectRegistry();
+    const approvalPolicy = options.approvalPolicy ?? new ApprovalPolicyRegistry();
+    if (database !== undefined) {
+      const builtInFileAuthorization = createPlatformFileEntityAuthorizer(database);
+      for (const entityType of PLATFORM_FILE_ENTITY_TYPES) {
+        fileAuthorizations.register(entityType, builtInFileAuthorization);
+      }
+    }
 
     await registerAuthModule(app, authOptions);
     await registerMasterDataModule(app, {
@@ -283,7 +333,37 @@ export async function buildRuntimeApp(
       authenticate,
       audit,
       storage: fileStorage,
+      authorizeEntity: (input) => fileAuthorizations.authorize(input),
+      scannerReady: providerReadiness,
     });
+    const registrationContext = {
+      app,
+      ...(database === undefined ? {} : { database }),
+      unitOfWork: async <Result>(
+        run: (transaction: import("./infrastructure/database.js").QueryExecutor) => Promise<Result>,
+      ): Promise<Result> => {
+        if (database === undefined) throw new Error("Database unavailable");
+        return database.transaction(run);
+      },
+      executeCommand,
+      requireWriterFence,
+      authenticate,
+      authorize: (access: import("./modules/auth/index.js").AccessContext, roles: readonly string[]) =>
+        access.roles.some((role) => roles.includes(role)),
+      audit,
+      enqueueOutbox,
+      approvalPolicy,
+      approvalEffects,
+      fileAuthorizations,
+    };
+    await registerDomainManifests(
+      registrationContext,
+      options.registrationManifests ?? [],
+    );
+    await registerParallelDomainModules(
+      registrationContext,
+      options.domainRegistrations ?? {},
+    );
 
     return app;
   } catch (error) {

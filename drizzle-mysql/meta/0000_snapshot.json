@@ -9,7 +9,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -92,7 +92,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -174,7 +174,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -292,7 +292,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -467,7 +467,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -555,7 +555,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -694,7 +694,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -826,7 +826,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -931,7 +931,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1041,7 +1041,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1148,7 +1148,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1251,8 +1251,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "core_order_reschedules_core_supplier_order_id_core_supplier_orders_id_fk": {
-          "name": "core_order_reschedules_core_supplier_order_id_core_supplier_orders_id_fk",
+        "core_order_reschedules_core_supplier_order_id_c_de15af857a0ed2f8": {
+          "name": "core_order_reschedules_core_supplier_order_id_c_de15af857a0ed2f8",
           "tableFrom": "core_order_reschedules",
           "tableTo": "core_supplier_orders",
           "columnsFrom": [
@@ -1307,7 +1307,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1446,7 +1446,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1569,8 +1569,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "core_price_change_requests_current_agreement_id_core_price_agreements_id_fk": {
-          "name": "core_price_change_requests_current_agreement_id_core_price_agreements_id_fk",
+        "core_price_change_requests_current_agreement_id_50887df6d9b1647c": {
+          "name": "core_price_change_requests_current_agreement_id_50887df6d9b1647c",
           "tableFrom": "core_price_change_requests",
           "tableTo": "core_price_agreements",
           "columnsFrom": [
@@ -1638,7 +1638,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1725,8 +1725,8 @@
         }
       },
       "foreignKeys": {
-        "core_supplier_order_items_core_supplier_order_id_core_supplier_orders_id_fk": {
-          "name": "core_supplier_order_items_core_supplier_order_id_core_supplier_orders_id_fk",
+        "core_supplier_order_items_core_supplier_order_i_f723509c11a8c5cf": {
+          "name": "core_supplier_order_items_core_supplier_order_i_f723509c11a8c5cf",
           "tableFrom": "core_supplier_order_items",
           "tableTo": "core_supplier_orders",
           "columnsFrom": [
@@ -1738,8 +1738,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "core_supplier_order_items_price_agreement_id_core_price_agreements_id_fk": {
-          "name": "core_supplier_order_items_price_agreement_id_core_price_agreements_id_fk",
+        "core_supplier_order_items_price_agreement_id_co_639530df3d295ec5": {
+          "name": "core_supplier_order_items_price_agreement_id_co_639530df3d295ec5",
           "tableFrom": "core_supplier_order_items",
           "tableTo": "core_price_agreements",
           "columnsFrom": [
@@ -1768,7 +1768,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -1871,8 +1871,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "core_supplier_orders_source_purchase_order_id_purchase_orders_id_fk": {
-          "name": "core_supplier_orders_source_purchase_order_id_purchase_orders_id_fk",
+        "core_supplier_orders_source_purchase_order_id_p_be7a832068314361": {
+          "name": "core_supplier_orders_source_purchase_order_id_p_be7a832068314361",
           "tableFrom": "core_supplier_orders",
           "tableTo": "purchase_orders",
           "columnsFrom": [
@@ -1947,7 +1947,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2079,7 +2079,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2146,7 +2146,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2288,7 +2288,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2347,8 +2347,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "delivery_setting_changes_setting_id_factory_supplier_delivery_settings_id_fk": {
-          "name": "delivery_setting_changes_setting_id_factory_supplier_delivery_settings_id_fk",
+        "delivery_setting_changes_setting_id_factory_sup_53a6d0327a276471": {
+          "name": "delivery_setting_changes_setting_id_factory_sup_53a6d0327a276471",
           "tableFrom": "delivery_setting_changes",
           "tableTo": "factory_supplier_delivery_settings",
           "columnsFrom": [
@@ -2390,7 +2390,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2520,7 +2520,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2693,7 +2693,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2762,7 +2762,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -2919,7 +2919,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3134,7 +3134,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3186,8 +3186,8 @@
         }
       },
       "foreignKeys": {
-        "factory_payment_request_items_payment_request_id_factory_payment_requests_id_fk": {
-          "name": "factory_payment_request_items_payment_request_id_factory_payment_requests_id_fk",
+        "factory_payment_request_items_payment_request_i_5a271b353f92023e": {
+          "name": "factory_payment_request_items_payment_request_i_5a271b353f92023e",
           "tableFrom": "factory_payment_request_items",
           "tableTo": "factory_payment_requests",
           "columnsFrom": [
@@ -3199,8 +3199,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "factory_payment_request_items_payment_schedule_id_factory_payment_schedules_id_fk": {
-          "name": "factory_payment_request_items_payment_schedule_id_factory_payment_schedules_id_fk",
+        "factory_payment_request_items_payment_schedule__88dd176c4d397cb7": {
+          "name": "factory_payment_request_items_payment_schedule__88dd176c4d397cb7",
           "tableFrom": "factory_payment_request_items",
           "tableTo": "factory_payment_schedules",
           "columnsFrom": [
@@ -3212,8 +3212,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "factory_payment_request_items_purchase_order_id_purchase_orders_id_fk": {
-          "name": "factory_payment_request_items_purchase_order_id_purchase_orders_id_fk",
+        "factory_payment_request_items_purchase_order_id_48b159065f600f15": {
+          "name": "factory_payment_request_items_purchase_order_id_48b159065f600f15",
           "tableFrom": "factory_payment_request_items",
           "tableTo": "purchase_orders",
           "columnsFrom": [
@@ -3225,8 +3225,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "factory_payment_request_items_triggered_by_delivery_batch_id_delivery_batches_id_fk": {
-          "name": "factory_payment_request_items_triggered_by_delivery_batch_id_delivery_batches_id_fk",
+        "factory_payment_request_items_triggered_by_deli_54a478a121d2937b": {
+          "name": "factory_payment_request_items_triggered_by_deli_54a478a121d2937b",
           "tableFrom": "factory_payment_request_items",
           "tableTo": "delivery_batches",
           "columnsFrom": [
@@ -3255,7 +3255,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3448,7 +3448,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3572,8 +3572,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "factory_payment_schedules_purchase_order_id_purchase_orders_id_fk": {
-          "name": "factory_payment_schedules_purchase_order_id_purchase_orders_id_fk",
+        "factory_payment_schedules_purchase_order_id_pur_25f3df85e702189d": {
+          "name": "factory_payment_schedules_purchase_order_id_pur_25f3df85e702189d",
           "tableFrom": "factory_payment_schedules",
           "tableTo": "purchase_orders",
           "columnsFrom": [
@@ -3598,8 +3598,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "factory_payment_schedules_delivery_batch_id_delivery_batches_id_fk": {
-          "name": "factory_payment_schedules_delivery_batch_id_delivery_batches_id_fk",
+        "factory_payment_schedules_delivery_batch_id_del_adbdac85e4bea087": {
+          "name": "factory_payment_schedules_delivery_batch_id_del_adbdac85e4bea087",
           "tableFrom": "factory_payment_schedules",
           "tableTo": "delivery_batches",
           "columnsFrom": [
@@ -3611,8 +3611,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "factory_payment_schedules_payment_term_id_factory_payment_terms_id_fk": {
-          "name": "factory_payment_schedules_payment_term_id_factory_payment_terms_id_fk",
+        "factory_payment_schedules_payment_term_id_facto_405a7ee91373a247": {
+          "name": "factory_payment_schedules_payment_term_id_facto_405a7ee91373a247",
           "tableFrom": "factory_payment_schedules",
           "tableTo": "factory_payment_terms",
           "columnsFrom": [
@@ -3654,7 +3654,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3793,7 +3793,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -3964,7 +3964,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4089,7 +4089,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4253,7 +4253,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4450,7 +4450,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4553,7 +4553,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4658,7 +4658,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4725,7 +4725,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -4833,7 +4833,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5017,7 +5017,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5131,7 +5131,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5264,7 +5264,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5449,7 +5449,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5630,7 +5630,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5712,8 +5712,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "invoice_payment_allocations_payment_request_id_factory_payment_requests_id_fk": {
-          "name": "invoice_payment_allocations_payment_request_id_factory_payment_requests_id_fk",
+        "invoice_payment_allocations_payment_request_id__1414da7029500a5d": {
+          "name": "invoice_payment_allocations_payment_request_id__1414da7029500a5d",
           "tableFrom": "invoice_payment_allocations",
           "tableTo": "factory_payment_requests",
           "columnsFrom": [
@@ -5755,7 +5755,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5858,7 +5858,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -5941,8 +5941,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "nonconformance_dispositions_inspection_id_quality_inspections_id_fk": {
-          "name": "nonconformance_dispositions_inspection_id_quality_inspections_id_fk",
+        "nonconformance_dispositions_inspection_id_quali_c71953bfdb446c20": {
+          "name": "nonconformance_dispositions_inspection_id_quali_c71953bfdb446c20",
           "tableFrom": "nonconformance_dispositions",
           "tableTo": "quality_inspections",
           "columnsFrom": [
@@ -5997,7 +5997,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6182,7 +6182,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6263,7 +6263,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6405,7 +6405,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6501,8 +6501,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "payment_records_payment_request_id_factory_payment_requests_id_fk": {
-          "name": "payment_records_payment_request_id_factory_payment_requests_id_fk",
+        "payment_records_payment_request_id_factory_paym_706233bd059a8132": {
+          "name": "payment_records_payment_request_id_factory_paym_706233bd059a8132",
           "tableFrom": "payment_records",
           "tableTo": "factory_payment_requests",
           "columnsFrom": [
@@ -6570,7 +6570,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6727,7 +6727,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6810,8 +6810,8 @@
         }
       },
       "foreignKeys": {
-        "product_return_dispositions_product_return_id_product_returns_id_fk": {
-          "name": "product_return_dispositions_product_return_id_product_returns_id_fk",
+        "product_return_dispositions_product_return_id_p_4b3ff4334fdcf82e": {
+          "name": "product_return_dispositions_product_return_id_p_4b3ff4334fdcf82e",
           "tableFrom": "product_return_dispositions",
           "tableTo": "product_returns",
           "columnsFrom": [
@@ -6866,7 +6866,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -6932,8 +6932,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "product_return_inspections_product_return_id_product_returns_id_fk": {
-          "name": "product_return_inspections_product_return_id_product_returns_id_fk",
+        "product_return_inspections_product_return_id_pr_9c839a0a7f0b5ac0": {
+          "name": "product_return_inspections_product_return_id_pr_9c839a0a7f0b5ac0",
           "tableFrom": "product_return_inspections",
           "tableTo": "product_returns",
           "columnsFrom": [
@@ -6975,7 +6975,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7165,7 +7165,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7250,8 +7250,8 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "production_material_lines_execution_order_id_execution_orders_id_fk": {
-          "name": "production_material_lines_execution_order_id_execution_orders_id_fk",
+        "production_material_lines_execution_order_id_ex_dde7c9ee31f81f5e": {
+          "name": "production_material_lines_execution_order_id_ex_dde7c9ee31f81f5e",
           "tableFrom": "production_material_lines",
           "tableTo": "execution_orders",
           "columnsFrom": [
@@ -7293,7 +7293,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7445,7 +7445,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7532,7 +7532,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7650,7 +7650,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7749,7 +7749,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -7942,7 +7942,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8010,8 +8010,8 @@
         }
       },
       "foreignKeys": {
-        "purchase_plan_order_links_purchase_plan_item_id_purchase_plan_items_id_fk": {
-          "name": "purchase_plan_order_links_purchase_plan_item_id_purchase_plan_items_id_fk",
+        "purchase_plan_order_links_purchase_plan_item_id_2920864ae38de57d": {
+          "name": "purchase_plan_order_links_purchase_plan_item_id_2920864ae38de57d",
           "tableFrom": "purchase_plan_order_links",
           "tableTo": "purchase_plan_items",
           "columnsFrom": [
@@ -8066,7 +8066,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8148,7 +8148,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8297,7 +8297,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8546,7 +8546,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8658,7 +8658,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8809,7 +8809,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8871,8 +8871,8 @@
         }
       },
       "foreignKeys": {
-        "replacement_invoice_links_invoice_exception_id_invoice_exceptions_id_fk": {
-          "name": "replacement_invoice_links_invoice_exception_id_invoice_exceptions_id_fk",
+        "replacement_invoice_links_invoice_exception_id__e3cfd03b8537a122": {
+          "name": "replacement_invoice_links_invoice_exception_id__e3cfd03b8537a122",
           "tableFrom": "replacement_invoice_links",
           "tableTo": "invoice_exceptions",
           "columnsFrom": [
@@ -8884,8 +8884,8 @@
           "onDelete": "no action",
           "onUpdate": "no action"
         },
-        "replacement_invoice_links_replacement_invoice_id_factory_invoices_id_fk": {
-          "name": "replacement_invoice_links_replacement_invoice_id_factory_invoices_id_fk",
+        "replacement_invoice_links_replacement_invoice_i_d1626588229a9a1a": {
+          "name": "replacement_invoice_links_replacement_invoice_i_d1626588229a9a1a",
           "tableFrom": "replacement_invoice_links",
           "tableTo": "factory_invoices",
           "columnsFrom": [
@@ -8914,7 +8914,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -8981,7 +8981,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9099,7 +9099,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9194,7 +9194,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9308,7 +9308,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9431,7 +9431,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9575,7 +9575,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9728,7 +9728,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9872,7 +9872,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -9969,7 +9969,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10084,7 +10084,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10305,7 +10305,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10532,7 +10532,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10718,7 +10718,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10839,7 +10839,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -10976,7 +10976,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true
@@ -11109,7 +11109,7 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "serial",
+          "type": "int",
           "primaryKey": false,
           "notNull": true,
           "autoincrement": true

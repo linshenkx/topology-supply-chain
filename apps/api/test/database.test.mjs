@@ -82,6 +82,7 @@ test("database configuration uses bounded integers and secure TLS defaults", asy
     connectTimeoutMs: 5_000,
     pingTimeoutMs: 2_000,
     queryTimeoutMs: 5_000,
+    transactionTimeoutMs: 30_000,
     tls: { enabled: true, rejectUnauthorized: true },
   });
   assert.equal(poolOptions.host, "db.internal");
@@ -105,6 +106,7 @@ test("database configuration accepts explicit TLS policy and rejects unsafe inte
       DB_PING_TIMEOUT_MS: "4000",
       DB_POOL_SIZE: "50",
       DB_QUERY_TIMEOUT_MS: "30000",
+      DB_TRANSACTION_TIMEOUT_MS: "60000",
       DB_SSL: "disabled",
       DB_SSL_REJECT_UNAUTHORIZED: "false",
     }),
@@ -113,6 +115,7 @@ test("database configuration accepts explicit TLS policy and rejects unsafe inte
       connectTimeoutMs: 30_000,
       pingTimeoutMs: 4_000,
       queryTimeoutMs: 30_000,
+      transactionTimeoutMs: 60_000,
       tls: { enabled: false, rejectUnauthorized: false },
     },
   );
@@ -126,6 +129,8 @@ test("database configuration accepts explicit TLS policy and rejects unsafe inte
     { ...validEnvironment, DB_PING_TIMEOUT_MS: "4001" },
     { ...validEnvironment, DB_QUERY_TIMEOUT_MS: "9" },
     { ...validEnvironment, DB_QUERY_TIMEOUT_MS: "30001" },
+    { ...validEnvironment, DB_TRANSACTION_TIMEOUT_MS: "99" },
+    { ...validEnvironment, DB_TRANSACTION_TIMEOUT_MS: "60001" },
     { ...validEnvironment, DB_SSL: "sometimes" },
     { ...validEnvironment, DB_SSL_REJECT_UNAUTHORIZED: "0" },
   ]) {
@@ -535,4 +540,176 @@ test("aborted queued ping stays bounded and releases a late connection", async (
   assert.equal(released, true);
 
   await client.close();
+});
+
+test("transaction pins all statements to one connection and commits before release", async () => {
+  const events = [];
+  const connection = createFakeConnection({
+    async beginTransaction() { events.push("begin"); },
+    async commit() { events.push("commit"); },
+    async rollback() { events.push("rollback"); },
+    async execute(options, params) {
+      events.push(["execute", options.sql, params]);
+      return [{ affectedRows: 1, insertId: 42 }, []];
+    },
+    async query(options, params) {
+      events.push(["query", options.sql, params]);
+      return [[{ id: 42 }], []];
+    },
+    release() { events.push("release"); },
+  });
+  let connections = 0;
+  const client = createClient(createFakePool({
+    async getConnection() { connections += 1; return connection; },
+  }));
+
+  const result = await client.transaction(async (transaction) => {
+    assert.deepEqual(await transaction.execute("INSERT INTO t VALUES (?)", [1]), {
+      affectedRows: 1,
+      insertId: 42,
+    });
+    return transaction.query("SELECT id FROM t WHERE id = ?", [42]);
+  });
+
+  assert.deepEqual(result, [{ id: 42 }]);
+  assert.equal(connections, 1);
+  assert.deepEqual(events.map((event) => Array.isArray(event) ? event[0] : event), [
+    "begin", "execute", "query", "commit", "release",
+  ]);
+  await client.close();
+});
+
+test("transaction rolls back callback failures and marks commit failures unknown", async () => {
+  let rollbacks = 0;
+  let releases = 0;
+  let destroys = 0;
+  const callbackClient = createClient(createFakePool({
+    async getConnection() {
+      return createFakeConnection({
+        async beginTransaction() {},
+        async commit() {},
+        async rollback() { rollbacks += 1; },
+        release() { releases += 1; },
+      });
+    },
+  }));
+  const sentinel = new Error("domain conflict");
+  await assert.rejects(
+    callbackClient.transaction(async () => { throw sentinel; }),
+    (error) => error === sentinel,
+  );
+  assert.equal(rollbacks, 1);
+  assert.equal(releases, 1);
+  await callbackClient.close();
+
+  const commitClient = createClient(createFakePool({
+    async getConnection() {
+      return createFakeConnection({
+        async beginTransaction() {},
+        async commit() { throw new Error("network lost after COMMIT"); },
+        async rollback() { rollbacks += 1; },
+        destroy() { destroys += 1; },
+        release() { releases += 1; },
+      });
+    },
+  }));
+  await assert.rejects(
+    commitClient.transaction(async () => "done"),
+    (error) => {
+      assert.equal(error.code, "DATABASE_TRANSACTION_OUTCOME_UNKNOWN");
+      assert.match(error.message, /must not be retried automatically/u);
+      assert.doesNotMatch(error.message, /network|COMMIT/u);
+      return true;
+    },
+  );
+  assert.equal(destroys, 1);
+  assert.equal(releases, 1);
+  await commitClient.close();
+
+  const timeoutClient = createClient(createFakePool({
+    async getConnection() {
+      return createFakeConnection({
+        async beginTransaction() {},
+        destroy() { destroys += 1; },
+        async rollback() { rollbacks += 1; },
+        release() { releases += 1; },
+      });
+    },
+  }));
+  await assert.rejects(
+    timeoutClient.transaction(async () => {
+      throw new DatabaseClientError("DATABASE_OPERATION_TIMED_OUT", "statement outcome unknown");
+    }),
+    { code: "DATABASE_TRANSACTION_OUTCOME_UNKNOWN" },
+  );
+  assert.equal(destroys, 2);
+  assert.equal(rollbacks, 1);
+  assert.equal(releases, 1);
+  await timeoutClient.close();
+
+  const rollbackClient = createClient(createFakePool({
+    async getConnection() {
+      return createFakeConnection({
+        async beginTransaction() {},
+        destroy() { destroys += 1; },
+        async rollback() { throw new Error("rollback connection lost"); },
+        release() { releases += 1; },
+      });
+    },
+  }));
+  await assert.rejects(
+    rollbackClient.transaction(async () => { throw sentinel; }),
+    { code: "DATABASE_TRANSACTION_OUTCOME_UNKNOWN" },
+  );
+  assert.equal(destroys, 3);
+  assert.equal(releases, 1);
+  await rollbackClient.close();
+});
+
+test("transaction wall-clock deadline bounds connection acquisition", async () => {
+  const client = createClient(createFakePool({
+    getConnection() { return new Promise(() => {}); },
+  }));
+  const startedAt = performance.now();
+  await assert.rejects(
+    client.transaction(async () => "never", { timeoutMs: 100 }),
+    { code: "DATABASE_OPERATION_TIMED_OUT" },
+  );
+  assert.ok(performance.now() - startedAt < 1_000);
+  await client.close();
+});
+
+test("transaction wall-clock deadline destroys never-settling lifecycle phases", async () => {
+  for (const phase of ["begin", "callback", "commit", "rollback"]) {
+    let destroyed = false;
+    let released = false;
+    const never = () => new Promise(() => {});
+    const connection = createFakeConnection({
+      beginTransaction: phase === "begin" ? never : async () => {},
+      commit: phase === "commit" ? never : async () => {},
+      rollback: phase === "rollback" ? never : async () => {},
+      destroy() { destroyed = true; },
+      release() { released = true; },
+    });
+    const client = createClient(createFakePool({
+      async getConnection() { return connection; },
+    }));
+    const startedAt = performance.now();
+    await assert.rejects(
+      client.transaction(
+        phase === "callback"
+          ? never
+          : async () => {
+              if (phase === "rollback") throw new Error("domain failure");
+              return "done";
+            },
+        { timeoutMs: 100 },
+      ),
+      { code: "DATABASE_TRANSACTION_OUTCOME_UNKNOWN" },
+    );
+    assert.ok(performance.now() - startedAt < 1_000, phase);
+    assert.equal(destroyed, true, phase);
+    assert.equal(released, false, phase);
+    await client.close();
+  }
 });

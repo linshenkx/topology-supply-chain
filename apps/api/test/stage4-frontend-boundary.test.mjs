@@ -88,20 +88,35 @@ test("session and purchase reads use v1 while purchase mutations remain legacy",
   assert.doesNotMatch(purchase, /fetch\("\/api\/v1\/purchase-orders", \{ method:/u);
 });
 
-test("account and audit reads use v1 while user mutations and file uploads remain legacy", async () => {
-  const [page, audit, finance, shipping] = await Promise.all([
+test("platform user mutations and file uploads use the typed v1 mutation seam", async () => {
+  const [page, audit, finance, shipping, client] = await Promise.all([
     source("app/page.tsx"),
     source("app/components/AuditWorkspace.tsx"),
     source("app/components/FinanceWorkspace.tsx"),
     source("app/components/ShippingWorkspace.tsx"),
+    source("app/lib/mutation-client.ts"),
   ]);
 
   assert.match(page, /apiJson\("\/api\/v1\/users"\)/u);
-  assert.match(page, /apiJson\("\/api\/users", \{/u);
+  assert.match(page, /mutateJson\("\/api\/v1\/users", "POST"/u);
+  assert.match(page, /mutateJson\("\/api\/v1\/users", "PATCH"/u);
+  assert.match(page, /mutateJson\("\/api\/v1\/users", "DELETE"/u);
   assert.match(audit, /fetch\(`\/api\/v1\/audit-logs\?/u);
   assert.doesNotMatch(audit, /fetch\(`\/api\/audit-logs\?/u);
-  assert.match(finance, /requestJson\("\/api\/files", \{ method:"POST"/u);
-  assert.match(shipping, /jsonRequest\("\/api\/files", \{ method: "POST"/u);
-  assert.doesNotMatch(finance, /\/api\/v1\/files[^\n]*method:"POST"/u);
-  assert.doesNotMatch(shipping, /\/api\/v1\/files[^\n]*method: "POST"/u);
+  assert.match(finance, /uploadPlatformFile/u);
+  assert.match(shipping, /uploadPlatformFile/u);
+  assert.doesNotMatch([page, finance, shipping].join("\n"), /["'`]\/api\/(?:users|files)["'`]/u);
+  assert.match(client, /sessionStorage\.setItem\(id, key\)/u);
+  assert.match(client, /if \(!error\.outcomeUnknown\) sessionStorage\.removeItem/u);
+  assert.match(client, /"NETWORK_OUTCOME_UNKNOWN"/u);
+  assert.match(client, /"x-request-digest": requestDigest/u);
+  assert.match(client, /waitForPlatformFile/u);
+  assert.match(client, /topology:upload:/u);
+  assert.match(client, /state\.fileId/u);
+  assert.match(client, /FILE_SCAN_REJECTED/u);
+  assert.match(finance, /entityType", "purchase_order"/u);
+  assert.match(shipping, /"delivery_batch"/u);
+  assert.match(shipping, /"product_return"/u);
+  const supplierPrice = await source("app/components/SupplierPriceWorkspace.tsx");
+  assert.match(supplierPrice, /entityType", "supplier_sku"/u);
 });

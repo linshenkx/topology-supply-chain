@@ -49,7 +49,7 @@
 
 - 数据库访问层从D1/SQLite迁移到RDS MySQL。
 - 文件访问层从R2迁移到OSS。
-- 后台提醒任务改为ECS定时任务或阿里云任务调度。
+- 后台提醒、邮件与通知通过独立Worker消费事务Outbox，不再暴露浏览器可调用的高权限任务入口。
 - 短信、邮件和OpenAI密钥通过生产环境安全绑定。
 
 这些适配完成前，不应把本地预览作为正式生产系统开放。
@@ -63,7 +63,7 @@
 - 上传和下载接口在`DEPLOY_TARGET=aliyun`时使用OSS；本地预览继续使用原存储绑定。
 - 短信、邮件和定时任务密钥已改为从ECS生产环境变量读取。
 - 已增加上线配置检查命令：`pnpm deploy:check-env`。
-- 已生成Node/ECS Web与独立API运行镜像、双健康检查及同版本协同发布/回滚脚本。
+- 已生成Node/ECS Web、独立API与Worker运行镜像、独立健康检查及同版本协同发布/回滚脚本。
 
 ### 仍在进行
 
@@ -74,16 +74,23 @@
 ## ECS部署文件
 
 - `bootstrap-ubuntu.sh`：初始化Ubuntu ECS、Docker与Nginx。
-- `docker-compose.yml`：运行Web、独立API及一次性数据库迁移容器。
+- `docker-compose.yml`：运行Web、独立API、Worker及一次性数据库迁移容器。
 - `.env.production.template`：生产配置模板，真实文件不得提交到Git。
 - `nginx-scm.conf`：`scm.topologygz.com` HTTPS反向代理。
-- `deploy.sh`：以同一版本构建Web/API，检查配置、执行迁移、发布并等待双服务健康检查。
-- `rollback.sh`：按同一历史镜像版本协同回滚Web与API，不自动回滚数据库迁移。
-- `install-jobs.sh`：安装提醒与邮件队列systemd定时器。
+- `deploy.sh`：以同一版本构建Web/API/Worker，检查配置、执行迁移、发布并等待三服务健康检查。
+- `rollback.sh`：按同一历史镜像版本协同回滚Web、API与Worker，不自动回滚数据库迁移。
+- 回滚到无Worker/fence的旧版本时，脚本仅允许generation 2尚未启用且没有v1写事实的首次切换前撤回。已有写事实默认要求向前修复；只有先停用generation 2、完成maintenance drain/reconcile，并显式设置`LEGACY_ROLLBACK_RECONCILED_GENERATION=2`才可执行受控旧版回滚。
+- `install-jobs.sh`：清理已退休的HTTP定时器并确认Worker就绪。
+
+### 迁移历史不匹配
+
+`deploy.sh`会在停止旧writer之前比较`__drizzle_migrations`中的已应用hash与仓库迁移。任何不匹配都会中止发布；禁止修改历史表、强行改hash或在原库重放fresh baseline。
+
+受控路径是：保留失败输出并完成数据库快照；由数据库负责人确认服务器实际采用的历史SQL；随后选择恢复仓库中的原历史文件并用新的追加迁移承载差异，或在经批准的新库上执行fresh baseline后做可审计、可回退的数据迁移。未完成该评审前不得继续启用generation 2 writer fence。
 
 ### Nginx发布门禁
 
-`deploy.sh`只验证Web与API容器的直连就绪状态。首次安装或每次更新代理配置时，服务器操作人员必须依次执行：
+`deploy.sh`验证Web、API与Worker容器的直连就绪状态。首次安装或每次更新代理配置时，服务器操作人员必须依次执行：
 
 ```bash
 sudo install -m 0644 nginx-scm.conf /etc/nginx/conf.d/scm.conf
@@ -94,6 +101,6 @@ curl -fsS --connect-timeout 2 --max-time 5 https://scm.topologygz.com/api/v1/hea
 
 任一步失败都不得宣告发布成功；其中配置安装、校验与reload需要服务器权限，不由应用发布脚本擅自执行。
 
-生产Web只监听`127.0.0.1:3000`，独立API只监听`127.0.0.1:3001`；两者均只通过Nginx的80和443端口提供公网入口。
-独立API不继承整份`.env.production`；Compose只向其注入MySQL连接及连接池、TLS、超时配置，OSS、短信、邮件和OpenAI密钥继续保持隔离。
+生产Web只监听`127.0.0.1:3000`，独立API只监听`127.0.0.1:3001`，Worker健康端口只监听`127.0.0.1:3002`；只有Web与API通过Nginx的80和443端口提供公网入口。
+独立API不继承整份`.env.production`；Compose只向其注入MySQL、会话签名及OSS所需配置。短信和邮件投递凭据只注入Worker，OpenAI密钥不注入API或Worker。
 RDS使用内网地址，OSS保持私有并使用RAM最小权限账号。

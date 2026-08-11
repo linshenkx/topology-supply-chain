@@ -44,6 +44,11 @@ services:
     environment:
       APP_ENV: production
       DATABASE_URL: "${DATABASE_URL:-}"
+      API_SESSION_SIGNING_KEY: "${API_SESSION_SIGNING_KEY:-}"
+      OTP_SEALING_KEY_ID: "${OTP_SEALING_KEY_ID:-}"
+      OTP_SEALING_KEY: "${OTP_SEALING_KEY:-}"
+      WORKER_INTERNAL_URL: "http://worker:3002"
+      DB_TRANSACTION_TIMEOUT_MS: "${DB_TRANSACTION_TIMEOUT_MS:-30000}"
       DB_CONNECT_TIMEOUT_MS: "${DB_CONNECT_TIMEOUT_MS:-5000}"
       DB_PING_TIMEOUT_MS: "${DB_PING_TIMEOUT_MS:-2000}"
       DB_POOL_SIZE: "${DB_POOL_SIZE:-10}"
@@ -64,6 +69,54 @@ services:
       - "127.0.0.1:3001:3001"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/v1/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "10"
+
+  worker:
+    container_name: topology-scm-worker
+    build:
+      context: ../..
+      dockerfile: Dockerfile.worker
+      target: runner
+    image: topology-scm-worker:${WORKER_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: "${DATABASE_URL:-}"
+      DB_SSL: "${DB_SSL:-enabled}"
+      DB_SSL_REJECT_UNAUTHORIZED: "${DB_SSL_REJECT_UNAUTHORIZED:-true}"
+      WORKER_DB_POOL_SIZE: "${WORKER_DB_POOL_SIZE:-5}"
+      SMS_WEBHOOK_URL: "${SMS_WEBHOOK_URL:-}"
+      SMS_WEBHOOK_API_KEY: "${SMS_WEBHOOK_API_KEY:-}"
+      SMS_WEBHOOK_HEALTH_URL: "${SMS_WEBHOOK_HEALTH_URL:-}"
+      EMAIL_WEBHOOK_URL: "${EMAIL_WEBHOOK_URL:-}"
+      EMAIL_WEBHOOK_API_KEY: "${EMAIL_WEBHOOK_API_KEY:-}"
+      EMAIL_WEBHOOK_HEALTH_URL: "${EMAIL_WEBHOOK_HEALTH_URL:-}"
+      FILE_SCAN_WEBHOOK_URL: "${FILE_SCAN_WEBHOOK_URL:-}"
+      FILE_SCAN_WEBHOOK_API_KEY: "${FILE_SCAN_WEBHOOK_API_KEY:-}"
+      FILE_SCAN_WEBHOOK_HEALTH_URL: "${FILE_SCAN_WEBHOOK_HEALTH_URL:-}"
+      OTP_SEALING_KEYS_JSON: '${OTP_SEALING_KEYS_JSON:-}'
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3002"
+    ports:
+      - "127.0.0.1:3002:3002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/health/ready"]
       interval: 30s
       timeout: 5s
       retries: 3

@@ -4,6 +4,7 @@ import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const dockerfile = readFileSync(new URL("../Dockerfile.api", import.meta.url), "utf8");
+const workerDockerfile = readFileSync(new URL("../Dockerfile.worker", import.meta.url), "utf8");
 const aliyunDockerfile = readFileSync(
   new URL("../Dockerfile.aliyun", import.meta.url),
   "utf8",
@@ -156,9 +157,10 @@ test("legacy production image stages the vendored SheetJS tarball before install
   assert.ok(vendorCopy < install);
 });
 
-test("compose publishes Web and API on separate loopback-only ports", () => {
+test("compose publishes Web, API, and Worker on separate loopback-only ports", () => {
   const app = composeService("app");
   const api = composeService("api");
+  const worker = composeService("worker");
   const migrator = composeService("migrator");
 
   assert.match(app, /image: topology-scm:\$\{APP_IMAGE_TAG:-latest\}/);
@@ -170,6 +172,10 @@ test("compose publishes Web and API on separate loopback-only ports", () => {
   assert.match(api, /PORT: "3001"/);
   assert.match(api, /- "127\.0\.0\.1:3001:3001"/);
   assert.match(api, /\/api\/v1\/health\/ready/);
+  assert.match(worker, /dockerfile: Dockerfile\.worker/);
+  assert.match(worker, /image: topology-scm-worker:\$\{WORKER_IMAGE_TAG:-latest\}/);
+  assert.match(worker, /- "127\.0\.0\.1:3002:3002"/);
+  assert.match(worker, /\/health\/ready/);
   assert.match(migrator, /image: topology-scm-migrator:\$\{APP_IMAGE_TAG:-latest\}/);
 });
 
@@ -179,6 +185,7 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
   assert.doesNotMatch(api, /^\s+(?:env_file|secrets|extends):/m);
   assert.doesNotMatch(api, /^\s+<<:/m);
   assert.deepEqual(composeMappingKeys(api, "environment"), [
+    "API_SESSION_SIGNING_KEY",
     "APP_ENV",
     "DATABASE_URL",
     "DB_CONNECT_TIMEOUT_MS",
@@ -187,6 +194,7 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
     "DB_QUERY_TIMEOUT_MS",
     "DB_SSL",
     "DB_SSL_REJECT_UNAUTHORIZED",
+    "DB_TRANSACTION_TIMEOUT_MS",
     "DEPLOY_TARGET",
     "HOST",
     "NODE_ENV",
@@ -196,7 +204,10 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
     "OSS_ECS_RAM_ROLE",
     "OSS_INTERNAL_ENDPOINT",
     "OSS_REGION",
+    "OTP_SEALING_KEY",
+    "OTP_SEALING_KEY_ID",
     "PORT",
+    "WORKER_INTERNAL_URL",
   ]);
   for (const forbiddenEnvironmentKey of [
     "SESSION_SECRET",
@@ -209,6 +220,10 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
     "ALIYUN_SMS_TEMPLATE_CODE",
     "EMAIL_WEBHOOK_URL",
     "EMAIL_WEBHOOK_API_KEY",
+    "EMAIL_WEBHOOK_HEALTH_URL",
+    "FILE_SCAN_WEBHOOK_URL",
+    "FILE_SCAN_WEBHOOK_API_KEY",
+    "FILE_SCAN_WEBHOOK_HEALTH_URL",
     "OPENAI_API_KEY",
   ]) {
     assert.doesNotMatch(
@@ -222,6 +237,34 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
   assert.match(api, /cap_drop:\n\s+- ALL/);
   assert.match(api, /read_only: true/);
   assert.match(api, /tmpfs:\n\s+- \/tmp:size=64m,mode=1777/);
+});
+
+test("Worker image and compose service isolate delivery credentials from the API", () => {
+  const api = composeService("api");
+  const worker = composeService("worker");
+
+  assert.match(workerDockerfile, /^USER worker$/m);
+  assert.match(workerDockerfile, /^EXPOSE 3002$/m);
+  assert.match(workerDockerfile, /http:\/\/127\.0\.0\.1:3002\/health\/live/);
+  assert.match(workerDockerfile, /^CMD \["node", "apps\/worker\/dist\/server\.js"\]$/m);
+  for (const key of [
+    "SMS_WEBHOOK_URL",
+    "SMS_WEBHOOK_API_KEY",
+    "EMAIL_WEBHOOK_URL",
+    "EMAIL_WEBHOOK_API_KEY",
+    "SMS_WEBHOOK_HEALTH_URL",
+    "EMAIL_WEBHOOK_HEALTH_URL",
+    "FILE_SCAN_WEBHOOK_URL",
+    "FILE_SCAN_WEBHOOK_API_KEY",
+    "FILE_SCAN_WEBHOOK_HEALTH_URL",
+    "OTP_SEALING_KEYS_JSON",
+  ]) {
+    assert.match(worker, new RegExp(`^\\s+${key}:`, "m"));
+    assert.doesNotMatch(api, new RegExp(`^\\s+${key}:`, "m"));
+  }
+  assert.match(worker, /no-new-privileges:true/);
+  assert.match(worker, /cap_drop:\n\s+- ALL/);
+  assert.match(worker, /read_only: true/);
 });
 
 test("nginx routes only the slash-delimited v1 namespace to the API", () => {
@@ -256,7 +299,7 @@ test("nginx forwards correlation and origin metadata but clears identity asserti
   );
 });
 
-test("deploy uses one release tag for the Web, API, and migrator images", () => {
+test("deploy uses one release tag for the Web, API, Worker, and migrator images", () => {
   assert.match(
     deployScript,
     /export COMPOSE_ENV_FILES="\$\{DEPLOY_DIR\}\/\.env\.production"/,
@@ -264,20 +307,22 @@ test("deploy uses one release tag for the Web, API, and migrator images", () => 
   assert.match(deployScript, /export RELEASE_TAG=/);
   assert.match(deployScript, /export APP_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
   assert.match(deployScript, /export API_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
-  assert.match(deployScript, /docker compose build app api migrator/);
+  assert.match(deployScript, /export WORKER_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
+  assert.match(deployScript, /docker compose build app api worker migrator/);
 });
 
-test("deploy keeps migration ordering and starts both runtime services", () => {
-  const build = commandIndex(deployScript, "docker compose build app api migrator");
+test("deploy keeps migration ordering and starts all runtime services", () => {
+  const build = commandIndex(deployScript, "docker compose build app api worker migrator");
   const envCheck = commandIndex(
     deployScript,
     "docker compose --profile migration run --rm migrator node scripts/check-production-env.mjs",
   );
-  const migration = commandIndex(
-    deployScript,
-    "docker compose --profile migration run --rm migrator",
-  );
-  const start = commandIndex(deployScript, "docker compose up -d app api");
+  const history = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/check-mysql-migration-history.mjs");
+  const stop = commandIndex(deployScript, "docker compose stop app api worker");
+  const drain = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/check-write-drain.mjs");
+  const migration = commandIndex(deployScript, "docker compose --profile migration run --rm migrator");
+  const enable = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/set-writer-fences.mjs");
+  const start = commandIndex(deployScript, "docker compose up -d app api worker");
   const webHealth = commandIndex(
     deployScript,
     'if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then',
@@ -286,16 +331,23 @@ test("deploy keeps migration ordering and starts both runtime services", () => {
     deployScript,
     'if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/ready"; then',
   );
+  const workerHealth = commandIndex(
+    deployScript,
+    'if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then',
+  );
 
   assert.ok(build < envCheck, "all release images must be built before validation");
-  assert.ok(envCheck < migration, "production environment must be checked before migration");
-  assert.ok(migration < start, "migration must finish before either runtime service starts");
+  assert.ok(envCheck < history && history < stop, "history must fail closed before stopping writers");
+  assert.ok(stop < drain && drain < migration, "old writers must stop and drain before migration");
+  assert.ok(migration < enable && enable < start, "generation 2 must activate after migration and before startup");
   assert.ok(start < webHealth, "Web readiness must run after both services are switched");
   assert.ok(webHealth < apiHealth, "both readiness gates must run in a deterministic order");
+  assert.ok(apiHealth < workerHealth, "Worker readiness must follow API readiness");
+  assert.match(deployScript, /printf '%s\\n' "\$\{RELEASE_TAG\}" > \.active-release/);
   assert.doesNotMatch(deployScript, /rollback.*(?:schema|migrat)|(?:schema|migrat).*rollback/i);
 });
 
-test("deploy has bounded, independent Web and API readiness gates", () => {
+test("deploy has bounded, independent Web, API, and Worker readiness gates", () => {
   assert.match(deployScript, /for attempt in \{1\.\.30\}; do/);
   assert.match(
     deployScript,
@@ -309,10 +361,14 @@ test("deploy has bounded, independent Web and API readiness gates", () => {
     deployScript,
     /if ! wait_for_service_health "API" "api" "http:\/\/127\.0\.0\.1:3001\/api\/v1\/health\/ready"; then\s+exit 1\s+fi/,
   );
-  assert.equal((deployScript.match(/if ! wait_for_service_health/g) ?? []).length, 2);
+  assert.match(
+    deployScript,
+    /if ! wait_for_service_health "Worker" "worker" "http:\/\/127\.0\.0\.1:3002\/health\/ready"; then\s+exit 1\s+fi/,
+  );
+  assert.equal((deployScript.match(/if ! wait_for_service_health/g) ?? []).length, 3);
 });
 
-test("rollback switches both images to one target tag without touching schema", () => {
+test("rollback switches all runtime images to one target tag without touching schema", () => {
   assert.match(
     rollbackScript,
     /export COMPOSE_ENV_FILES="\$\{DEPLOY_DIR\}\/\.env\.production"/,
@@ -320,12 +376,21 @@ test("rollback switches both images to one target tag without touching schema", 
   assert.match(rollbackScript, /export RELEASE_TAG="\$1"/);
   assert.match(rollbackScript, /export APP_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
   assert.match(rollbackScript, /export API_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
+  assert.match(rollbackScript, /export WORKER_IMAGE_TAG="\$\{RELEASE_TAG\}"/);
   assert.match(rollbackScript, /docker image inspect "topology-scm:\$\{APP_IMAGE_TAG\}"/);
   assert.match(
     rollbackScript,
     /docker image inspect "topology-scm-api:\$\{API_IMAGE_TAG\}"/,
   );
-  assert.match(rollbackScript, /docker compose up -d --no-build app api/);
+  assert.match(
+    rollbackScript,
+    /docker image inspect "topology-scm-worker:\$\{WORKER_IMAGE_TAG\}"/,
+  );
+  assert.match(rollbackScript, /ROLLBACK_SERVICES=\(app api worker\)/);
+  assert.match(rollbackScript, /ROLLBACK_SERVICES=\(app api\)/);
+  assert.match(rollbackScript, /APP_IMAGE_TAG="\$\{ACTIVE_RELEASE_TAG\}" docker compose --profile migration run --rm migrator node scripts\/check-legacy-rollback-safety\.mjs/);
+  assert.match(rollbackScript, /cat \.active-release/);
+  assert.match(rollbackScript, /docker compose up -d --no-build "\$\{ROLLBACK_SERVICES\[@\]\}"/);
   assert.match(
     rollbackScript,
     /if ! wait_for_service_health "Web" "app" "http:\/\/127\.0\.0\.1:3000\/api\/health"; then\s+exit 1\s+fi/,
@@ -334,14 +399,18 @@ test("rollback switches both images to one target tag without touching schema", 
     rollbackScript,
     /if ! wait_for_service_health "API" "api" "http:\/\/127\.0\.0\.1:3001\/api\/v1\/health\/ready"; then\s+exit 1\s+fi/,
   );
-  assert.equal((rollbackScript.match(/if ! wait_for_service_health/g) ?? []).length, 2);
+  assert.match(
+    rollbackScript,
+    /if ! wait_for_service_health "Worker" "worker" "http:\/\/127\.0\.0\.1:3002\/health\/ready"; then\s+exit 1\s+fi/,
+  );
+  assert.equal((rollbackScript.match(/if ! wait_for_service_health/g) ?? []).length, 3);
   assert.match(
     rollbackScript,
     /curl -fsS --connect-timeout 2 --max-time 5 "\$\{health_url\}"/,
   );
   assert.doesNotMatch(
     rollbackScript,
-    /migrator|db:migrate|drizzle-kit|mysql|\.sql|schema/i,
+    /db:migrate|drizzle-kit|\.sql|schema/i,
   );
 
   const webImage = commandIndex(
@@ -352,7 +421,16 @@ test("rollback switches both images to one target tag without touching schema", 
     rollbackScript,
     'if ! docker image inspect "topology-scm-api:${API_IMAGE_TAG}" >/dev/null 2>&1; then',
   );
-  const start = commandIndex(rollbackScript, "docker compose up -d --no-build app api");
+  const workerImage = commandIndex(
+    rollbackScript,
+    'if docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then',
+  );
+  const legacySafety = commandIndex(
+    rollbackScript,
+    'APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm migrator node scripts/check-legacy-rollback-safety.mjs',
+  );
+  const stopWorker = commandIndex(rollbackScript, "docker compose stop worker");
+  const start = commandIndex(rollbackScript, 'docker compose up -d --no-build "${ROLLBACK_SERVICES[@]}"');
   const webHealth = commandIndex(
     rollbackScript,
     'if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then',
@@ -361,17 +439,24 @@ test("rollback switches both images to one target tag without touching schema", 
     rollbackScript,
     'if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/ready"; then',
   );
+  const workerHealth = commandIndex(
+    rollbackScript,
+    'if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then',
+  );
 
-  assert.ok(webImage < apiImage, "both target images must be checked before switching");
-  assert.ok(apiImage < start, "runtime services must not switch before both images exist");
+  assert.ok(webImage < apiImage && apiImage < workerImage, "all target images must be checked before switching");
+  assert.ok(workerImage < legacySafety && legacySafety < stopWorker, "legacy rollback safety must pass before stopping the current Worker");
+  assert.ok(workerImage < start, "optional Worker detection must happen before switching");
   assert.ok(start < webHealth, "rollback readiness must run after both services switch");
   assert.ok(webHealth < apiHealth, "rollback must check both services deterministically");
+  assert.ok(apiHealth < workerHealth, "rollback must check Worker after API");
 });
 
-test("deployment guide documents loopback-only Web and API listeners", () => {
+test("deployment guide documents loopback-only Web, API, and Worker listeners", () => {
   assert.match(deploymentReadme, /Web只监听`127\.0\.0\.1:3000`/);
   assert.match(deploymentReadme, /API只监听`127\.0\.0\.1:3001`/);
-  assert.match(deploymentReadme, /两者均只通过Nginx/);
+  assert.match(deploymentReadme, /Worker健康端口只监听`127\.0\.0\.1:3002`/);
+  assert.match(deploymentReadme, /只有Web与API通过Nginx/);
   assert.match(deploymentReadme, /sudo nginx -t/);
   assert.match(deploymentReadme, /sudo systemctl reload nginx/);
   assert.match(

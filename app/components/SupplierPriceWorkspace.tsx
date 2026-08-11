@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { uploadPlatformFile } from "../lib/mutation-client";
 
 type Toast = (message: string) => void;
 type Supplier = { id: number; name: string; code: string; tier: number };
@@ -8,12 +9,13 @@ type Sku = { id: number; code: string; name: string };
 type Agreement = { id: number; supplierId: number; sku: string; unitPriceTaxIncludedMinor: number; unitPriceTaxExcludedMinor: number; taxRateBps: number; effectiveFrom: string; effectiveTo?: string | null; status: string };
 type Change = { id: number; supplierId: number; sku: string; proposedTaxIncludedMinor: number; proposedTaxExcludedMinor: number; proposedEffectiveFrom: string; decision: string; reason: string };
 type Risk = { relationId: number; supplierId: number; sku: string; periodType: string; period: string; demand: number; capacity: number; excess: number };
-type Payload = { agreements: Agreement[]; requests: Change[]; suppliers: Supplier[]; skus: Sku[]; risks: Risk[] };
+type Relation = { id:number; supplierId:number; factoryId:number; sku:string };
+type Payload = { agreements: Agreement[]; requests: Change[]; suppliers: Supplier[]; skus: Sku[]; relations:Relation[]; risks: Risk[] };
 
 const money = (minor: number) => `¥${(minor / 100).toFixed(2)}`;
 
 export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
-  const [data, setData] = useState<Payload>({ agreements: [], requests: [], suppliers: [], skus: [], risks: [] });
+  const [data, setData] = useState<Payload>({ agreements: [], requests: [], suppliers: [], skus: [], relations:[], risks: [] });
   const [tab, setTab] = useState<"price" | "risk">("price");
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -30,10 +32,13 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
     if (!file) return;
     setBusy(true);
     try {
+      const relation = data.relations.find(item => item.supplierId === Number(form.supplierId) && item.sku === form.sku);
+      if (!relation) throw new Error("请先选择已授权的供应商与SKU关系。");
       const body = new FormData(); body.append("file", file); body.append("category", "price_evidence");
-      const response = await fetch("/api/files", { method: "POST", body }); const result = await response.json();
-      if (!response.ok) throw new Error(result.error || "凭证上传失败");
-      setForm(current => ({ ...current, evidenceFileKey: result.file.objectKey })); toast("价格凭证已上传");
+      body.append("entityType", "supplier_sku"); body.append("entityId", String(relation.id));
+      const result = await uploadPlatformFile<{file:{id:number};usable:boolean}>(body);
+      if (!result.usable) throw new Error("价格凭证已隔离，扫描通过后方可提交价格变更。");
+      setForm(current => ({ ...current, evidenceFileKey: String(result.file.id) }));
     } catch (error) { toast(error instanceof Error ? error.message : "凭证上传失败"); } finally { setBusy(false); }
   };
   const submit = async () => {

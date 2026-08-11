@@ -1,6 +1,6 @@
 import { sql, type SQL } from "drizzle-orm";
 import { isAliyunRuntime } from "../app/lib/runtime-env";
-import { factoryPaymentRequests, invoiceExceptions } from "./schema";
+import { approvalRequests, factoryPaymentRequests, invoiceExceptions, paymentRecords } from "./schema";
 
 type TransactionCapable<TDb> = TDb & {
   transaction?: <T>(callback: (tx: TDb) => Promise<T>) => Promise<T>;
@@ -22,6 +22,34 @@ export function buildInvoiceExceptionRowLock(invoiceExceptionId: number) {
     throw new Error("发票异常单ID不合法。");
   }
   return sql`SELECT ${invoiceExceptions.id} FROM ${invoiceExceptions} WHERE ${invoiceExceptions.id} = ${invoiceExceptionId} FOR UPDATE`;
+}
+
+export function buildApprovalRequestRowLock(approvalRequestId: number) {
+  if (!Number.isSafeInteger(approvalRequestId) || approvalRequestId <= 0) {
+    throw new Error("审批单ID不合法。");
+  }
+  return sql`SELECT ${approvalRequests.id} FROM ${approvalRequests} WHERE ${approvalRequests.id} = ${approvalRequestId} FOR UPDATE`;
+}
+
+export function buildPaymentRecordRowLock(paymentRecordId: number) {
+  if (!Number.isSafeInteger(paymentRecordId) || paymentRecordId <= 0) {
+    throw new Error("付款记录ID不合法。");
+  }
+  return sql`SELECT ${paymentRecords.id} FROM ${paymentRecords} WHERE ${paymentRecords.id} = ${paymentRecordId} FOR UPDATE`;
+}
+
+async function executeRowLock<TDb>(db: TDb, query: SQL, message: string): Promise<void> {
+  const executor = db as SqlExecutor;
+  if (typeof executor.execute !== "function") throw new Error(message);
+  await executor.execute(query);
+}
+
+export function lockApprovalRequestRow<TDb>(db: TDb, approvalRequestId: number) {
+  return executeRowLock(db, buildApprovalRequestRowLock(approvalRequestId), "RDS事务不支持审批行锁。");
+}
+
+export function lockPaymentRecordRow<TDb>(db: TDb, paymentRecordId: number) {
+  return executeRowLock(db, buildPaymentRecordRowLock(paymentRecordId), "RDS事务不支持付款记录行锁。");
 }
 
 function normalizeLockIds(ids: number[], message: string) {

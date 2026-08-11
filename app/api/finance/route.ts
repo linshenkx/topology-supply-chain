@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { getDb } from "../../../db";
 import {
   approvalRequests,
@@ -13,8 +13,8 @@ import {
   replacementInvoiceLinks,
   users,
 } from "../../../db/schema";
-import { insertOne } from "../../../db/insert-one";
-import { withLockedFinancialRows, withLockedInvoiceException, withLockedPaymentRequest } from "../../../db/row-lock";
+import { executeAffected, insertOne } from "../../../db/insert-one";
+import { lockPaymentRecordRow, withLockedFinancialRows, withLockedInvoiceException, withLockedPaymentRequest } from "../../../db/row-lock";
 import { withDbTransaction } from "../../../db/transaction";
 import {
   AccessError,
@@ -25,7 +25,7 @@ import {
 import { writeAudit } from "../../lib/audit";
 import { evaluateExceptionRemediation, evaluatePayableLedger, evaluatePaymentCapacity } from "../../lib/payment-guard";
 import { createReminder } from "../../lib/reminders";
-import { consumeVerifiedStepUp } from "../../lib/step-up";
+import { consumeVerifiedStepUp, databaseObjectVersion, finalRequestDigest, nextDatabaseUpdatedAt } from "../../lib/step-up";
 
 const REJECTION_REASONS = new Set([
   "amount_mismatch",
@@ -46,11 +46,11 @@ export async function GET(request: Request) {
     const db = getDb();
     const [invoices, paymentRequests, payments, verifications, allocations, exceptions, replacementLinks, requestItems, orders] = await Promise.all([
       db.select().from(factoryInvoices).orderBy(desc(factoryInvoices.createdAt)).limit(200),
-      db.select().from(factoryPaymentRequests).orderBy(desc(factoryPaymentRequests.createdAt)).limit(200),
-      db.select().from(paymentRecords).orderBy(desc(paymentRecords.createdAt)).limit(300),
+      db.select({ ...getTableColumns(factoryPaymentRequests), objectVersion: databaseObjectVersion(factoryPaymentRequests.updatedAt) }).from(factoryPaymentRequests).orderBy(desc(factoryPaymentRequests.createdAt)).limit(200),
+      db.select({ ...getTableColumns(paymentRecords), objectVersion: databaseObjectVersion(paymentRecords.updatedAt) }).from(paymentRecords).orderBy(desc(paymentRecords.createdAt)).limit(300),
       db.select().from(invoiceVerifications).orderBy(desc(invoiceVerifications.verifiedAt)).limit(400),
       db.select().from(invoicePaymentAllocations).orderBy(desc(invoicePaymentAllocations.createdAt)).limit(400),
-      db.select().from(invoiceExceptions).orderBy(desc(invoiceExceptions.createdAt)).limit(200),
+      db.select({ ...getTableColumns(invoiceExceptions), objectVersion: databaseObjectVersion(invoiceExceptions.updatedAt) }).from(invoiceExceptions).orderBy(desc(invoiceExceptions.createdAt)).limit(200),
       db.select().from(replacementInvoiceLinks).orderBy(desc(replacementInvoiceLinks.createdAt)).limit(400),
       db.select().from(factoryPaymentRequestItems).orderBy(desc(factoryPaymentRequestItems.id)).limit(500),
       db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt)).limit(300),
@@ -106,28 +106,37 @@ async function releaseInvoiceRisk(
     return Response.json({ success: true, preview: true });
   }
   const db = getDb();
-  const [exception] = await db.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
-  if (!exception || exception.status !== "risk_warning") {
-    return Response.json({ error: "该异常当前不是可解除的工厂风险预警。" }, { status: 409 });
-  }
   const now = new Date().toISOString();
-  await withDbTransaction(db, async tx => {
-    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
-    await tx.update(invoiceExceptions).set({
+  const finalPayload = { action: "release_invoice_risk", invoiceExceptionId, reason, evidenceFileKey };
+  const result = await withLockedInvoiceException(db, invoiceExceptionId, async tx => {
+    const [exception] = await tx.select({
+      ...getTableColumns(invoiceExceptions),
+      objectVersion: databaseObjectVersion(invoiceExceptions.updatedAt),
+    }).from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
+    if (!exception || exception.status !== "risk_warning") {
+      throw new AccessError(409, "该异常当前不是可解除的工厂风险预警。");
+    }
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false,
+      scope: stepUpScope, sessionId: access.sessionId, action: "release_invoice_risk",
+      objectType: "finance:release_invoice_risk", objectId: String(invoiceExceptionId),
+      objectVersion: exception.objectVersion, requestDigest: finalRequestDigest(finalPayload) });
+    const updated = await executeAffected(tx.update(invoiceExceptions).set({
       status: "awaiting_remediation",
       riskReleasedBy: access.userId,
       riskReleasedAt: now,
       riskReleaseReason: reason,
       riskReleaseEvidenceFileKey: evidenceFileKey,
-      updatedAt: now,
-    }).where(eq(invoiceExceptions.id, invoiceExceptionId));
+      updatedAt: nextDatabaseUpdatedAt(invoiceExceptions.updatedAt),
+    }).where(and(eq(invoiceExceptions.id, invoiceExceptionId), eq(invoiceExceptions.updatedAt, exception.updatedAt))));
+    if (updated !== 1) throw new AccessError(409, "异常单版本已经变化，请重新验证。");
+    return { exception };
   });
   await writeAudit(access, {
     action: "release_warning",
     module: "finance",
     entityType: "invoice_exception",
     entityId: invoiceExceptionId,
-    before: exception,
+    before: result.exception,
     after: { reason, evidenceFileKey },
     sensitiveView: true,
     request,
@@ -269,7 +278,10 @@ async function recordRefund(
     paymentRequestIds: [paymentRequestId],
     invoiceExceptionIds: [invoiceExceptionId],
   }, async tx => {
-    const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
+    const [paymentRequest] = await tx.select({
+      ...getTableColumns(factoryPaymentRequests),
+      objectVersion: databaseObjectVersion(factoryPaymentRequests.updatedAt),
+    }).from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
     const [exception] = await tx.select().from(invoiceExceptions).where(eq(invoiceExceptions.id, invoiceExceptionId)).limit(1);
     if (!paymentRequest) throw new AccessError(404, "原请款单不存在。");
     if (!exception || exception.status === "resolved") {
@@ -339,19 +351,28 @@ async function requestRecordCorrection(
     return Response.json({ approval: { id: 0 }, preview: true }, { status: 201 });
   }
   const db = getDb();
-  const [original] = await db.select().from(paymentRecords).where(eq(paymentRecords.id, paymentRecordId)).limit(1);
-  if (!original) return Response.json({ error: "原付款或退款记录不存在。" }, { status: 404 });
-  if (!(["payment", "refund"] as string[]).includes(original.recordType)) {
-    return Response.json({ error: "只能更正原始付款或退款记录。" }, { status: 409 });
-  }
-  if ((original.recordType === "payment" && original.invoiceExceptionId !== null)
-    || (original.recordType === "refund" && !original.invoiceExceptionId)) {
-    return Response.json({ error: "原财务记录的付款/退款分类不一致。" }, { status: 409 });
-  }
   const now = new Date().toISOString();
-  const approval = await withDbTransaction(db, async tx => {
-    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
-    return insertOne<typeof approvalRequests.$inferSelect>(tx.insert(approvalRequests).values({
+  const finalPayload = { action: "request_record_correction", paymentRecordId, reason,
+    proposedPaymentRequestId, proposedAmountMinor, proposedPaidAt, proposedBankReference };
+  const result = await withDbTransaction(db, async tx => {
+    await lockPaymentRecordRow(tx, paymentRecordId);
+    const [original] = await tx.select({
+      ...getTableColumns(paymentRecords),
+      objectVersion: databaseObjectVersion(paymentRecords.updatedAt),
+    }).from(paymentRecords).where(eq(paymentRecords.id, paymentRecordId)).limit(1);
+    if (!original) throw new AccessError(404, "原付款或退款记录不存在。");
+    if (!(["payment", "refund"] as string[]).includes(original.recordType)) {
+      throw new AccessError(409, "只能更正原始付款或退款记录。");
+    }
+    if ((original.recordType === "payment" && original.invoiceExceptionId !== null)
+      || (original.recordType === "refund" && !original.invoiceExceptionId)) {
+      throw new AccessError(409, "原财务记录的付款/退款分类不一致。");
+    }
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false,
+      scope: stepUpScope, sessionId: access.sessionId, action: "request_record_correction",
+      objectType: "finance:request_record_correction", objectId: String(paymentRecordId),
+      objectVersion: original.objectVersion, requestDigest: finalRequestDigest(finalPayload) });
+    const approval = await insertOne<typeof approvalRequests.$inferSelect>(tx.insert(approvalRequests).values({
       requestNo: `AP-FINCORR-${Date.now()}`,
       workflowType: "financial_record_correction",
       entityType: "payment_record",
@@ -370,9 +391,10 @@ async function requestRecordCorrection(
       requestedBy: access.userId,
       smsVerifiedAt: now,
     }), id => tx.select().from(approvalRequests).where(eq(approvalRequests.id, id)).limit(1));
+    return { approval, original };
   });
-  await writeAudit(access, { action: "request_correction", module: "finance", entityType: "payment_record", entityId: original.id, before: original, after: { approvalId: approval.id, reason }, sensitiveView: true, request });
-  return Response.json({ approval }, { status: 201 });
+  await writeAudit(access, { action: "request_correction", module: "finance", entityType: "payment_record", entityId: result.original.id, before: result.original, after: { approvalId: result.approval.id, reason }, sensitiveView: true, request });
+  return Response.json({ approval: result.approval }, { status: 201 });
 }
 
 async function createInvoice(
@@ -559,7 +581,10 @@ async function recordPayment(
   }
   const db = getDb();
   const result = await withLockedPaymentRequest(db, paymentRequestId, async tx => {
-    const [paymentRequest] = await tx.select().from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
+    const [paymentRequest] = await tx.select({
+      ...getTableColumns(factoryPaymentRequests),
+      objectVersion: databaseObjectVersion(factoryPaymentRequests.updatedAt),
+    }).from(factoryPaymentRequests).where(eq(factoryPaymentRequests.id, paymentRequestId)).limit(1);
     if (!paymentRequest) throw new AccessError(404, "请款单不存在。");
     if (!(["generated", "submitted_to_finance", "partially_paid"] as string[]).includes(paymentRequest.status)) {
       throw new AccessError(409, "请款单当前状态不允许登记付款。");
@@ -583,8 +608,11 @@ async function recordPayment(
     if (capacity.wouldExceed) {
       throw new AccessError(409, "本次付款将超过请款金额，禁止登记。");
     }
-
-    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false, scope: stepUpScope });
+    const finalPayload = { action: "record_payment", paymentRequestId, amountMinor, paidAt, bankReference };
+    await consumeVerifiedStepUp(tx, { challengeNo, userId: access.userId, localPreview: false,
+      scope: stepUpScope, sessionId: access.sessionId, action: "record_payment",
+      objectType: "finance:record_payment", objectId: String(paymentRequestId),
+      objectVersion: paymentRequest.objectVersion, requestDigest: finalRequestDigest(finalPayload) });
     const created = await insertOne<typeof paymentRecords.$inferSelect>(tx.insert(paymentRecords).values({
       paymentRequestId,
       amountMinor,
@@ -605,12 +633,16 @@ async function recordPayment(
     if (!ledgerState.withinBounds) {
       throw new AccessError(409, "付款后账本净额越界，已撤销本次付款。");
     }
-    await tx.update(factoryPaymentRequests).set({
+    const updated = await executeAffected(tx.update(factoryPaymentRequests).set({
       status: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? "paid" : "partially_paid",
       paidAt: ledgerState.netPaidAmountMinor >= paymentRequest.totalAmountMinor ? paidAt : null,
       paymentReference: bankReference,
-      updatedAt: new Date().toISOString(),
-    }).where(eq(factoryPaymentRequests.id, paymentRequestId));
+      updatedAt: nextDatabaseUpdatedAt(factoryPaymentRequests.updatedAt),
+    }).where(and(
+      eq(factoryPaymentRequests.id, paymentRequestId),
+      eq(factoryPaymentRequests.updatedAt, paymentRequest.updatedAt),
+    )));
+    if (updated !== 1) throw new AccessError(409, "请款单版本已经变化，请重新验证。");
     return { payment: created, paymentRequest, ledgerState };
   });
   await writeAudit(access, {

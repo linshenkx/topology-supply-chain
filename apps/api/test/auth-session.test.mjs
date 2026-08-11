@@ -182,7 +182,7 @@ test("the session response preserves the legacy contract and de-duplicates effec
   });
 
   await usingAuthApp(
-    { database, environment: PRODUCTION },
+    { database, environment: PRODUCTION, sessionSigningKey: "session-signing-key-for-csrf-backfill-0001" },
     async (app) => {
       const response = await app.inject(sessionRequest());
 
@@ -207,6 +207,7 @@ test("the session response preserves the legacy contract and de-duplicates effec
       assert.equal(response.headers["cache-control"], "private, no-store");
       assert.equal(response.headers.pragma, "no-cache");
       assert.equal(response.headers.vary, "Cookie");
+      assert.match(response.headers["set-cookie"], /topology_csrf=[a-f\d]{64}/u);
     },
   );
 

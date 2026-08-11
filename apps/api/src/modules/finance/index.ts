@@ -50,7 +50,8 @@ const PAYMENT_REQUEST_QUERY = `SELECT
   planned_payment_date AS plannedPaymentDate,
   total_amount_minor AS totalAmountMinor,
   invoice_covered_amount_minor AS invoiceCoveredAmountMinor,
-  status
+  status,
+  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', updated_at) DIV 1000 AS UNSIGNED) AS objectVersion
 FROM factory_payment_requests
 ORDER BY created_at DESC, id DESC
 LIMIT ${PAYMENT_REQUEST_LIMIT}`;
@@ -62,7 +63,8 @@ const PAYMENT_QUERY = `SELECT
   paid_at AS paidAt,
   bank_reference AS bankReference,
   record_type AS recordType,
-  invoice_exception_id AS invoiceExceptionId
+  invoice_exception_id AS invoiceExceptionId,
+  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', updated_at) DIV 1000 AS UNSIGNED) AS objectVersion
 FROM payment_records
 ORDER BY created_at DESC, id DESC
 LIMIT ${PAYMENT_LIMIT}`;
@@ -96,7 +98,8 @@ const EXCEPTION_QUERY = `SELECT
   replacement_covered_amount_minor AS replacementCoveredAmountMinor,
   refunded_amount_minor AS refundedAmountMinor,
   status,
-  reason
+  reason,
+  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', updated_at) DIV 1000 AS UNSIGNED) AS objectVersion
 FROM invoice_exceptions
 ORDER BY created_at DESC, id DESC
 LIMIT ${EXCEPTION_LIMIT}`;
@@ -282,6 +285,7 @@ function paymentRequest(row: DataRow): FinancePaymentRequest {
       "failed",
       "cancelled",
     ]),
+    objectVersion: positiveInteger(row.objectVersion),
   };
 }
 
@@ -299,6 +303,7 @@ function payment(row: DataRow): FinancePaymentRecord {
       "refund",
     ]),
     invoiceExceptionId: nullablePositiveInteger(row.invoiceExceptionId),
+    objectVersion: positiveInteger(row.objectVersion),
   };
 }
 
@@ -339,6 +344,7 @@ function invoiceException(row: DataRow): FinanceInvoiceException {
       "resolved",
     ]),
     reason: string(row.reason),
+    objectVersion: positiveInteger(row.objectVersion),
   };
 }
 

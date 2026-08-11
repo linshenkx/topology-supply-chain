@@ -19,7 +19,8 @@ const APPROVAL_QUERY = `SELECT
   summary,
   high_risk AS highRisk,
   status,
-  requested_at AS requestedAt
+  requested_at AS requestedAt,
+  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', updated_at) DIV 1000 AS UNSIGNED) AS objectVersion
 FROM approval_requests
 ORDER BY requested_at DESC, id DESC
 LIMIT ${APPROVAL_LIMIT}`;
@@ -113,6 +114,7 @@ function approval(row: DataRow): ApprovalListItem {
     highRisk: boolean(row.highRisk),
     status: status as ApprovalListItem["status"],
     requestedAt: string(row.requestedAt),
+    objectVersion: positiveInteger(row.objectVersion),
   };
 }
 

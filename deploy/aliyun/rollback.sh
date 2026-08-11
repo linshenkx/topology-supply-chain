@@ -17,6 +17,7 @@ export COMPOSE_ENV_FILES="${DEPLOY_DIR}/.env.production"
 export RELEASE_TAG="$1"
 export APP_IMAGE_TAG="${RELEASE_TAG}"
 export API_IMAGE_TAG="${RELEASE_TAG}"
+export WORKER_IMAGE_TAG="${RELEASE_TAG}"
 
 wait_for_service_health() {
   local display_name="$1"
@@ -45,7 +46,22 @@ if ! docker image inspect "topology-scm-api:${API_IMAGE_TAG}" >/dev/null 2>&1; t
   exit 1
 fi
 
-docker compose up -d --no-build app api
+if docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then
+  ROLLBACK_SERVICES=(app api worker)
+else
+  echo "目标版本早于Worker/fence边界；先执行generation安全回滚检查。"
+  ACTIVE_RELEASE_TAG="$(cat .active-release 2>/dev/null || true)"
+  if [[ -z "${ACTIVE_RELEASE_TAG}" ]]; then
+    echo "缺少当前活动版本记录，无法确认安全检查使用的是generation-aware migrator。"
+    exit 1
+  fi
+  APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm migrator node scripts/check-legacy-rollback-safety.mjs
+  echo "安全检查通过；停止当前Worker并只恢复Web/API。"
+  docker compose stop worker
+  ROLLBACK_SERVICES=(app api)
+fi
+
+docker compose up -d --no-build "${ROLLBACK_SERVICES[@]}"
 
 if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then
   exit 1
@@ -55,4 +71,11 @@ if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/re
   exit 1
 fi
 
-echo "Web 与 API 已协同回滚到版本 ${RELEASE_TAG}，健康检查通过。"
+if [[ " ${ROLLBACK_SERVICES[*]} " == *" worker "* ]]; then
+  if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then
+    exit 1
+  fi
+fi
+
+printf '%s\n' "${RELEASE_TAG}" > .active-release
+echo "Web、API 与 Worker 已协同回滚到版本 ${RELEASE_TAG}，健康检查通过。"

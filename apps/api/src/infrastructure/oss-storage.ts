@@ -18,7 +18,13 @@ export interface OssEnvironment {
 }
 
 interface OssClient {
+  delete(objectKey: string): Promise<unknown>;
   get(objectKey: string): Promise<{ content?: unknown }>;
+  put(
+    objectKey: string,
+    body: Uint8Array,
+    options?: { headers?: Record<string, string>; meta?: Record<string, string> },
+  ): Promise<unknown>;
 }
 
 interface OssResolvedConfig {
@@ -61,7 +67,13 @@ export interface OssFileStorageOptions {
 }
 
 export interface OssFileStorage {
+  deleteObject(objectKey: string): Promise<void>;
   readObject(objectKey: string): Promise<Uint8Array | null>;
+  writeQuarantinedObject(
+    objectKey: string,
+    body: Uint8Array,
+    metadata: { contentType: string; sha256: string; uploadedBy: number },
+  ): Promise<void>;
 }
 
 export class OssStorageUnavailableError extends Error {
@@ -284,7 +296,8 @@ export function createOssFileStorage(
   const environment = options.env ?? (process.env as OssEnvironment);
   const fetchImplementation = options.fetchImplementation ?? fetch;
   const sdkClientFactory =
-    options.sdkClientFactory ?? ((config: OssSdkConfig) => new OSS(config));
+    options.sdkClientFactory ??
+    ((config: OssSdkConfig) => new OSS(config) as unknown as OssClient);
   let clientPromise: Promise<OssClient> | undefined;
 
   const client = () => {
@@ -303,6 +316,17 @@ export function createOssFileStorage(
   };
 
   return {
+    async deleteObject(objectKey) {
+      if (!objectKey.startsWith("quarantine/") || objectKey.length > 1_024) {
+        return unavailable();
+      }
+      try {
+        await (await client()).delete(objectKey);
+      } catch (error) {
+        if (missingObject(error)) return;
+        throw new OssStorageUnavailableError();
+      }
+    },
     async readObject(objectKey) {
       if (objectKey.length === 0 || objectKey.length > 1_024) {
         return unavailable();
@@ -313,6 +337,31 @@ export function createOssFileStorage(
       } catch (error) {
         if (missingObject(error)) return null;
         if (error instanceof OssStorageUnavailableError) throw error;
+        throw new OssStorageUnavailableError();
+      }
+    },
+    async writeQuarantinedObject(objectKey, body, metadata) {
+      if (
+        !objectKey.startsWith("quarantine/") ||
+        objectKey.length > 1_024 ||
+        body.length === 0 ||
+        body.length > 20 * 1_024 * 1_024 ||
+        !/^[a-f\d]{64}$/u.test(metadata.sha256) ||
+        !Number.isSafeInteger(metadata.uploadedBy) ||
+        metadata.uploadedBy <= 0
+      ) {
+        return unavailable();
+      }
+      try {
+        await (await client()).put(objectKey, body, {
+          headers: { "content-type": metadata.contentType },
+          meta: {
+            "scan-status": "quarantined",
+            sha256: metadata.sha256,
+            "uploaded-by": String(metadata.uploadedBy),
+          },
+        });
+      } catch {
         throw new OssStorageUnavailableError();
       }
     },

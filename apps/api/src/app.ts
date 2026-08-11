@@ -17,7 +17,7 @@ import Fastify, {
   type FastifyServerOptions,
 } from "fastify";
 
-import { createApiErrorResponse } from "./errors.js";
+import { createApiErrorResponse, createErrorResponse } from "./errors.js";
 import {
   SafeLogController,
   safeErrorName,
@@ -127,7 +127,7 @@ export async function buildApp(
 
     void reply
       .status(statusCode)
-      .send(createApiErrorResponse(statusCode, request.id));
+      .send(createErrorResponse(error, statusCode, request.id));
   });
 
   app.get<{ Reply: HealthLiveResponse }>(

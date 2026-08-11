@@ -7,7 +7,7 @@
  * SQLite-only SQL expressions and emulate INSERT ... RETURNING with insertId/select.
  */
 import { sql } from "drizzle-orm";
-import { boolean, datetime, int, mysqlTable, serial, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 const timestamps = {
   createdAt: datetime("created_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
@@ -15,7 +15,7 @@ const timestamps = {
 };
 
 export const factories = mysqlTable("factories", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   name: text("name").notNull(),
   code: varchar("code", { length: 191 }).notNull().unique(),
   status: text("status").notNull().default("active"),
@@ -23,7 +23,7 @@ export const factories = mysqlTable("factories", {
 });
 
 export const suppliers = mysqlTable("suppliers", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 191 }).notNull().unique(),
   name: text("name").notNull(),
   tier: int("tier"),
@@ -50,7 +50,7 @@ export const suppliers = mysqlTable("suppliers", {
 });
 
 export const supplierContacts = mysqlTable("supplier_contacts", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   name: text("name").notNull(),
   phone: text("phone").notNull(),
@@ -63,7 +63,7 @@ export const supplierContacts = mysqlTable("supplier_contacts", {
 });
 
 export const supplierBankAccounts = mysqlTable("supplier_bank_accounts", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   accountName: text("account_name").notNull(),
   bankName: text("bank_name").notNull(),
@@ -74,7 +74,7 @@ export const supplierBankAccounts = mysqlTable("supplier_bank_accounts", {
 });
 
 export const users = mysqlTable("users", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   email: varchar("email", { length: 191 }).notNull().unique(),
   mobile: text("mobile").notNull().default(""),
   name: text("name").notNull(),
@@ -87,7 +87,7 @@ export const users = mysqlTable("users", {
 });
 
 export const purchaseOrders = mysqlTable("purchase_orders", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   orderNo: varchar("order_no", { length: 191 }).notNull().unique(),
   source: text("source").notNull().default("lingxing_excel"),
   sourceFileKey: text("source_file_key"),
@@ -99,7 +99,7 @@ export const purchaseOrders = mysqlTable("purchase_orders", {
 });
 
 export const purchaseImports = mysqlTable("purchase_imports", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   fileKey: text("file_key").notNull(),
   fileName: text("file_name").notNull(),
   detectedOrderNo: text("detected_order_no"),
@@ -111,7 +111,7 @@ export const purchaseImports = mysqlTable("purchase_imports", {
 });
 
 export const purchaseImportDiffs = mysqlTable("purchase_import_diffs", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchaseImportId: int("purchase_import_id").notNull().references(() => purchaseImports.id),
   sheetName: text("sheet_name").notNull(),
   rowKey: text("row_key").notNull(),
@@ -122,7 +122,7 @@ export const purchaseImportDiffs = mysqlTable("purchase_import_diffs", {
 });
 
 export const orderItems = mysqlTable("order_items", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchaseOrderId: int("purchase_order_id").notNull().references(() => purchaseOrders.id),
   sku: varchar("sku", { length: 191 }).notNull(),
   productName: text("product_name").notNull(),
@@ -136,7 +136,7 @@ export const orderItems = mysqlTable("order_items", {
 }, table => [uniqueIndex("order_item_unique").on(table.purchaseOrderId, table.sku, table.supplierId)]);
 
 export const supplierSkus = mysqlTable("supplier_skus", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   sku: varchar("sku", { length: 191 }).notNull(),
@@ -157,7 +157,7 @@ export const supplierSkus = mysqlTable("supplier_skus", {
 }, table => [uniqueIndex("supplier_sku_unique").on(table.factoryId, table.supplierId, table.sku)]);
 
 export const corePriceAgreements = mysqlTable("core_price_agreements", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   sku: varchar("sku", { length: 191 }).notNull(),
   currency: text("currency").notNull().default("CNY"),
@@ -172,7 +172,7 @@ export const corePriceAgreements = mysqlTable("core_price_agreements", {
 });
 
 export const corePriceChangeRequests = mysqlTable("core_price_change_requests", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   currentAgreementId: int("current_agreement_id").references(() => corePriceAgreements.id),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   sku: varchar("sku", { length: 191 }).notNull(),
@@ -191,7 +191,7 @@ export const corePriceChangeRequests = mysqlTable("core_price_change_requests", 
 });
 
 export const factorySupplierDeliverySettings = mysqlTable("factory_supplier_delivery_settings", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   componentSku: varchar("component_sku", { length: 191 }).notNull(),
@@ -201,7 +201,7 @@ export const factorySupplierDeliverySettings = mysqlTable("factory_supplier_deli
 }, table => [uniqueIndex("factory_supplier_sku_buffer_unique").on(table.factoryId, table.supplierId, table.componentSku)]);
 
 export const deliverySettingChanges = mysqlTable("delivery_setting_changes", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   settingId: int("setting_id").notNull().references(() => factorySupplierDeliverySettings.id),
   oldDays: int("old_days").notNull(),
   newDays: int("new_days").notNull(),
@@ -212,7 +212,7 @@ export const deliverySettingChanges = mysqlTable("delivery_setting_changes", {
 });
 
 export const skus = mysqlTable("skus", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 191 }).notNull().unique(),
   name: text("name").notNull(),
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }),
@@ -227,7 +227,7 @@ export const skus = mysqlTable("skus", {
 });
 
 export const skuUnitConversions = mysqlTable("sku_unit_conversions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   skuId: int("sku_id").notNull().references(() => skus.id),
   purchaseUnit: varchar("purchase_unit", { length: 191 }).notNull(),
   stockUnit: text("stock_unit").notNull(),
@@ -239,7 +239,7 @@ export const skuUnitConversions = mysqlTable("sku_unit_conversions", {
 }, table => [uniqueIndex("sku_purchase_unit_unique").on(table.skuId, table.purchaseUnit, table.effectiveFrom)]);
 
 export const productBoms = mysqlTable("product_boms", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   finishedSku: varchar("finished_sku", { length: 191 }).notNull(),
   version: varchar("version", { length: 191 }).notNull(),
   effectiveFrom: varchar("effective_from", { length: 191 }).notNull(),
@@ -255,7 +255,7 @@ export const productBoms = mysqlTable("product_boms", {
 }, table => [uniqueIndex("product_bom_version_unique").on(table.finishedSku, table.version)]);
 
 export const bomComponents = mysqlTable("bom_components", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   bomId: int("bom_id").notNull().references(() => productBoms.id),
   componentSku: varchar("component_sku", { length: 191 }).notNull(),
   itemType: text("item_type", { enum: ["auxiliary", "component"] }).notNull(),
@@ -267,7 +267,7 @@ export const bomComponents = mysqlTable("bom_components", {
 }, table => [uniqueIndex("bom_component_unique").on(table.bomId, table.componentSku)]);
 
 export const skuFactoryDefaults = mysqlTable("sku_factory_defaults", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   sku: varchar("sku", { length: 191 }).notNull().unique(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   selectedBy: int("selected_by").notNull().references(() => users.id),
@@ -275,7 +275,7 @@ export const skuFactoryDefaults = mysqlTable("sku_factory_defaults", {
 });
 
 export const factoryChangeRequests = mysqlTable("factory_change_requests", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   sku: varchar("sku", { length: 191 }).notNull(),
   fromFactoryId: int("from_factory_id").notNull().references(() => factories.id),
   toFactoryId: int("to_factory_id").notNull().references(() => factories.id),
@@ -289,7 +289,7 @@ export const factoryChangeRequests = mysqlTable("factory_change_requests", {
 });
 
 export const purchasePlans = mysqlTable("purchase_plans", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   planNo: varchar("plan_no", { length: 191 }).notNull(),
   version: int("version").notNull().default(1),
   source: text("source").notNull().default("lingxing_excel"),
@@ -304,7 +304,7 @@ export const purchasePlans = mysqlTable("purchase_plans", {
 }, table => [uniqueIndex("purchase_plan_version_unique").on(table.planNo, table.version)]);
 
 export const purchasePlanItems = mysqlTable("purchase_plan_items", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchasePlanId: int("purchase_plan_id").notNull().references(() => purchasePlans.id),
   expectedArrivalDate: varchar("expected_arrival_date", { length: 191 }).notNull(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
@@ -321,7 +321,7 @@ export const purchasePlanItems = mysqlTable("purchase_plan_items", {
 }, table => [uniqueIndex("purchase_plan_summary_key").on(table.purchasePlanId, table.expectedArrivalDate, table.factoryId, table.warehouseId, table.sku)]);
 
 export const purchasePlanSourceRows = mysqlTable("purchase_plan_source_rows", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchasePlanId: int("purchase_plan_id").notNull().references(() => purchasePlans.id),
   sourceRowNo: int("source_row_no").notNull(),
   sourcePlanNo: text("source_plan_no").notNull(),
@@ -331,7 +331,7 @@ export const purchasePlanSourceRows = mysqlTable("purchase_plan_source_rows", {
 });
 
 export const purchasePlanOrderLinks = mysqlTable("purchase_plan_order_links", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchasePlanItemId: int("purchase_plan_item_id").notNull().references(() => purchasePlanItems.id),
   orderItemId: int("order_item_id").notNull().references(() => orderItems.id),
   allocatedQuantity: int("allocated_quantity").notNull(),
@@ -341,7 +341,7 @@ export const purchasePlanOrderLinks = mysqlTable("purchase_plan_order_links", {
 }, table => [uniqueIndex("purchase_plan_order_link_unique").on(table.purchasePlanItemId, table.orderItemId)]);
 
 export const factoryPlanResponses = mysqlTable("factory_plan_responses", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchasePlanId: int("purchase_plan_id").notNull().references(() => purchasePlans.id),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   decision: text("decision", { enum: ["confirmed", "unable"] }).notNull(),
@@ -357,7 +357,7 @@ export const factoryPlanResponses = mysqlTable("factory_plan_responses", {
 });
 
 export const executionOrders = mysqlTable("execution_orders", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionNo: varchar("execution_no", { length: 191 }).notNull().unique(),
   orderItemId: int("order_item_id").notNull().references(() => orderItems.id),
   factoryId: int("factory_id").notNull().references(() => factories.id),
@@ -374,7 +374,7 @@ export const executionOrders = mysqlTable("execution_orders", {
 });
 
 export const productionMaterialLines = mysqlTable("production_material_lines", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionOrderId: int("execution_order_id").notNull().references(() => executionOrders.id),
   bomComponentId: int("bom_component_id").notNull().references(() => bomComponents.id),
   theoreticalQuantity: int("theoretical_quantity").notNull(),
@@ -387,7 +387,7 @@ export const productionMaterialLines = mysqlTable("production_material_lines", {
 });
 
 export const productionReports = mysqlTable("production_reports", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionOrderId: int("execution_order_id").notNull().references(() => executionOrders.id),
   actualFinishedQuantity: int("actual_finished_quantity").notNull(),
   varianceQuantity: int("variance_quantity").notNull(),
@@ -402,7 +402,7 @@ export const productionReports = mysqlTable("production_reports", {
 });
 
 export const coreSupplierOrders = mysqlTable("core_supplier_orders", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   orderNo: varchar("order_no", { length: 191 }).notNull().unique(),
   sourcePurchaseOrderId: int("source_purchase_order_id").notNull().references(() => purchaseOrders.id),
   assemblyFactoryId: int("assembly_factory_id").notNull().references(() => factories.id),
@@ -418,7 +418,7 @@ export const coreSupplierOrders = mysqlTable("core_supplier_orders", {
 });
 
 export const coreOrderReschedules = mysqlTable("core_order_reschedules", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   coreSupplierOrderId: int("core_supplier_order_id").notNull().references(() => coreSupplierOrders.id),
   previousShipDate: text("previous_ship_date").notNull(),
   proposedShipDate: text("proposed_ship_date").notNull(),
@@ -434,7 +434,7 @@ export const coreOrderReschedules = mysqlTable("core_order_reschedules", {
 });
 
 export const coreSupplierOrderItems = mysqlTable("core_supplier_order_items", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   coreSupplierOrderId: int("core_supplier_order_id").notNull().references(() => coreSupplierOrders.id),
   componentSku: varchar("component_sku", { length: 191 }).notNull(),
   quantity: int("quantity").notNull(),
@@ -448,7 +448,7 @@ export const coreSupplierOrderItems = mysqlTable("core_supplier_order_items", {
 }, table => [uniqueIndex("core_supplier_order_item_unique").on(table.coreSupplierOrderId, table.componentSku)]);
 
 export const factoryPaymentTerms = mysqlTable("factory_payment_terms", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   name: text("name").notNull(),
   mode: text("mode", { enum: ["shipment_plus_days", "monthly_cutoff"] }).notNull(),
@@ -463,7 +463,7 @@ export const factoryPaymentTerms = mysqlTable("factory_payment_terms", {
 });
 
 export const factoryPaymentSchedules = mysqlTable("factory_payment_schedules", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   purchaseOrderId: int("purchase_order_id").notNull().references(() => purchaseOrders.id),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   deliveryBatchId: int("delivery_batch_id").notNull().references(() => deliveryBatches.id),
@@ -482,7 +482,7 @@ export const factoryPaymentSchedules = mysqlTable("factory_payment_schedules", {
 });
 
 export const factoryPaymentRequests = mysqlTable("factory_payment_requests", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   requestNo: varchar("request_no", { length: 191 }).notNull().unique(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   actualShipmentDate: text("actual_shipment_date").notNull(),
@@ -502,7 +502,7 @@ export const factoryPaymentRequests = mysqlTable("factory_payment_requests", {
 }, table => [uniqueIndex("factory_payment_request_group_unique").on(table.factoryId, table.plannedPaymentDate)]);
 
 export const factoryPaymentRequestItems = mysqlTable("factory_payment_request_items", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   paymentRequestId: int("payment_request_id").notNull().references(() => factoryPaymentRequests.id),
   paymentScheduleId: int("payment_schedule_id").notNull().references(() => factoryPaymentSchedules.id),
   purchaseOrderId: int("purchase_order_id").notNull().references(() => purchaseOrders.id),
@@ -511,7 +511,7 @@ export const factoryPaymentRequestItems = mysqlTable("factory_payment_request_it
 }, table => [uniqueIndex("payment_request_schedule_unique").on(table.paymentRequestId, table.paymentScheduleId)]);
 
 export const factoryInvoices = mysqlTable("factory_invoices", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   factoryId: int("factory_id").notNull().references(() => factories.id),
   purchaseOrderId: int("purchase_order_id").notNull().references(() => purchaseOrders.id),
   coverageMode: text("coverage_mode", { enum: ["full_order", "delivery_batch"] }).notNull(),
@@ -532,7 +532,7 @@ export const factoryInvoices = mysqlTable("factory_invoices", {
 });
 
 export const notifications = mysqlTable("notifications", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   recipientRole: text("recipient_role", { enum: ["supply_chain", "finance"] }).notNull(),
   type: varchar("type", { length: 191 }).notNull(),
   title: text("title").notNull(),
@@ -544,7 +544,7 @@ export const notifications = mysqlTable("notifications", {
 });
 
 export const deliveryBatches = mysqlTable("delivery_batches", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionOrderId: int("execution_order_id").notNull().references(() => executionOrders.id),
   batchNo: varchar("batch_no", { length: 191 }).notNull(),
   quantity: int("quantity").notNull(),
@@ -560,7 +560,7 @@ export const deliveryBatches = mysqlTable("delivery_batches", {
 }, table => [uniqueIndex("delivery_batch_unique").on(table.executionOrderId, table.batchNo)]);
 
 export const shipmentEvidence = mysqlTable("shipment_evidence", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   deliveryBatchId: int("delivery_batch_id").notNull().references(() => deliveryBatches.id),
   fileKey: text("file_key").notNull(),
   fileName: text("file_name").notNull(),
@@ -568,7 +568,7 @@ export const shipmentEvidence = mysqlTable("shipment_evidence", {
 });
 
 export const shipmentReceipts = mysqlTable("shipment_receipts", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   deliveryBatchId: int("delivery_batch_id").notNull().references(() => deliveryBatches.id),
   receivedQuantity: int("received_quantity").notNull(),
   damagedQuantity: int("damaged_quantity").notNull().default(0),
@@ -580,7 +580,7 @@ export const shipmentReceipts = mysqlTable("shipment_receipts", {
 });
 
 export const productReturns = mysqlTable("product_returns", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   returnNo: varchar("return_no", { length: 191 }).notNull().unique(),
   sourceDeliveryBatchId: int("source_delivery_batch_id").notNull().references(() => deliveryBatches.id),
   warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
@@ -596,7 +596,7 @@ export const productReturns = mysqlTable("product_returns", {
 });
 
 export const productReturnInspections = mysqlTable("product_return_inspections", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   productReturnId: int("product_return_id").notNull().references(() => productReturns.id),
   inspectedQuantity: int("inspected_quantity").notNull(),
   passedQuantity: int("passed_quantity").notNull(),
@@ -608,7 +608,7 @@ export const productReturnInspections = mysqlTable("product_return_inspections",
 });
 
 export const productReturnDispositions = mysqlTable("product_return_dispositions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   productReturnId: int("product_return_id").notNull().references(() => productReturns.id),
   type: varchar("type", { length: 191, enum: ["restock", "rework", "scrap"] }).notNull(),
   quantity: int("quantity").notNull(),
@@ -620,7 +620,7 @@ export const productReturnDispositions = mysqlTable("product_return_dispositions
 }, table => [uniqueIndex("product_return_disposition_unique").on(table.productReturnId, table.type)]);
 
 export const supplyRiskCases = mysqlTable("supply_risk_cases", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   riskNo: varchar("risk_no", { length: 191 }).notNull().unique(),
   assemblyFactoryId: int("assembly_factory_id").notNull().references(() => factories.id),
   sourceSupplierId: int("source_supplier_id").references(() => suppliers.id),
@@ -639,7 +639,7 @@ export const supplyRiskCases = mysqlTable("supply_risk_cases", {
 });
 
 export const exceptions = mysqlTable("exceptions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionOrderId: int("execution_order_id").references(() => executionOrders.id),
   factoryId: int("factory_id").references(() => factories.id),
   type: varchar("type", { length: 191, enum: ["quality_failure", "quality_override", "concession_acceptance", "overproduction", "stocktake_variance", "shortage", "shipment_deviation", "logistics_exception", "warehouse_transfer"] }).notNull(),
@@ -651,7 +651,7 @@ export const exceptions = mysqlTable("exceptions", {
 });
 
 export const approvals = mysqlTable("approvals", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   exceptionId: int("exception_id").notNull().references(() => exceptions.id),
   decision: text("decision", { enum: ["approved", "rejected", "rework"] }).notNull(),
   comment: text("comment").notNull().default(""),
@@ -660,7 +660,7 @@ export const approvals = mysqlTable("approvals", {
 });
 
 export const warehouses = mysqlTable("warehouses", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 191 }).notNull().unique(),
   name: text("name").notNull(),
   type: varchar("type", { length: 191, enum: ["factory", "company", "other"] }).notNull(),
@@ -671,7 +671,7 @@ export const warehouses = mysqlTable("warehouses", {
 });
 
 export const inventory = mysqlTable("inventory", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
   sku: varchar("sku", { length: 191 }).notNull(),
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }).notNull(),
@@ -682,7 +682,7 @@ export const inventory = mysqlTable("inventory", {
 }, table => [uniqueIndex("inventory_warehouse_sku_unique").on(table.warehouseId, table.sku)]);
 
 export const inventoryBatches = mysqlTable("inventory_batches", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   batchNo: varchar("batch_no", { length: 191 }).notNull().unique(),
   warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
   sku: varchar("sku", { length: 191 }).notNull(),
@@ -702,7 +702,7 @@ export const inventoryBatches = mysqlTable("inventory_batches", {
 }, table => [uniqueIndex("inventory_batch_warehouse_unique").on(table.warehouseId, table.batchNo)]);
 
 export const inventoryReservations = mysqlTable("inventory_reservations", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   batchId: int("batch_id").notNull().references(() => inventoryBatches.id),
   entityType: text("entity_type", { enum: ["purchase_order", "production_order", "shipment_plan", "historical"] }).notNull(),
   entityId: int("entity_id"),
@@ -716,7 +716,7 @@ export const inventoryReservations = mysqlTable("inventory_reservations", {
 });
 
 export const stocktakes = mysqlTable("stocktakes", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   stocktakeNo: varchar("stocktake_no", { length: 191 }).notNull().unique(),
   warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
   scope: text("scope", { enum: ["full_warehouse", "sku_sample", "batch"] }).notNull(),
@@ -729,7 +729,7 @@ export const stocktakes = mysqlTable("stocktakes", {
 });
 
 export const stocktakeCounts = mysqlTable("stocktake_counts", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   stocktakeId: int("stocktake_id").notNull().references(() => stocktakes.id),
   batchId: int("batch_id").references(() => inventoryBatches.id),
   sku: varchar("sku", { length: 191 }).notNull(),
@@ -744,7 +744,7 @@ export const stocktakeCounts = mysqlTable("stocktake_counts", {
 }, table => [uniqueIndex("stocktake_count_round_unique").on(table.stocktakeId, table.sku, table.batchId, table.countRound)]);
 
 export const stocktakeAdjustments = mysqlTable("stocktake_adjustments", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   stocktakeId: int("stocktake_id").notNull().references(() => stocktakes.id),
   stocktakeCountId: int("stocktake_count_id").notNull().references(() => stocktakeCounts.id),
   varianceQuantity: int("variance_quantity").notNull(),
@@ -758,7 +758,7 @@ export const stocktakeAdjustments = mysqlTable("stocktake_adjustments", {
 });
 
 export const inventoryMovements = mysqlTable("inventory_movements", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
   sku: varchar("sku", { length: 191 }).notNull(),
   type: varchar("type", { length: 191, enum: ["inbound", "shipment", "transfer_out", "transfer_in", "adjustment"] }).notNull(),
@@ -769,7 +769,7 @@ export const inventoryMovements = mysqlTable("inventory_movements", {
 });
 
 export const inventoryTransfers = mysqlTable("inventory_transfers", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   transferNo: varchar("transfer_no", { length: 191 }).notNull().unique(),
   fromWarehouseId: int("from_warehouse_id").notNull().references(() => warehouses.id),
   toWarehouseId: int("to_warehouse_id").notNull().references(() => warehouses.id),
@@ -786,7 +786,7 @@ export const inventoryTransfers = mysqlTable("inventory_transfers", {
 });
 
 export const qualityRules = mysqlTable("quality_rules", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   scope: text("scope", { enum: ["sku", "item_type"] }).notNull(),
   sku: varchar("sku", { length: 191 }),
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }),
@@ -799,7 +799,7 @@ export const qualityRules = mysqlTable("quality_rules", {
 });
 
 export const qualityInspections = mysqlTable("quality_inspections", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   executionOrderId: int("execution_order_id").notNull().references(() => executionOrders.id),
   stage: text("stage", { enum: ["incoming", "finished_goods"] }).notNull(),
   inspectionMethod: text("inspection_method", { enum: ["sampling", "full"] }).notNull(),
@@ -827,7 +827,7 @@ export const qualityInspections = mysqlTable("quality_inspections", {
 });
 
 export const defectCatalog = mysqlTable("defect_catalog", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   code: varchar("code", { length: 191 }).notNull().unique(),
   name: text("name").notNull(),
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }),
@@ -840,7 +840,7 @@ export const defectCatalog = mysqlTable("defect_catalog", {
 });
 
 export const inspectionDefects = mysqlTable("inspection_defects", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   inspectionId: int("inspection_id").notNull().references(() => qualityInspections.id),
   defectId: int("defect_id").notNull().references(() => defectCatalog.id),
   quantity: int("quantity").notNull(),
@@ -849,7 +849,7 @@ export const inspectionDefects = mysqlTable("inspection_defects", {
 }, table => [uniqueIndex("inspection_defect_unique").on(table.inspectionId, table.defectId)]);
 
 export const defectImages = mysqlTable("defect_images", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   inspectionDefectId: int("inspection_defect_id").notNull().references(() => inspectionDefects.id),
   fileKey: text("file_key").notNull(),
   fileName: text("file_name").notNull(),
@@ -857,7 +857,7 @@ export const defectImages = mysqlTable("defect_images", {
 });
 
 export const nonconformanceDispositions = mysqlTable("nonconformance_dispositions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   inspectionId: int("inspection_id").notNull().references(() => qualityInspections.id),
   type: varchar("type", { length: 191, enum: ["rework", "return", "scrap", "concession"] }).notNull(),
   quantity: int("quantity").notNull(),
@@ -870,7 +870,7 @@ export const nonconformanceDispositions = mysqlTable("nonconformance_disposition
 });
 
 export const inspectionImages = mysqlTable("inspection_images", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   inspectionId: int("inspection_id").notNull().references(() => qualityInspections.id),
   fileKey: text("file_key").notNull(),
   fileName: text("file_name").notNull(),
@@ -878,7 +878,7 @@ export const inspectionImages = mysqlTable("inspection_images", {
 });
 
 export const userRoles = mysqlTable("user_roles", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id),
   roleCode: text("role_code").notNull(),
   effectiveFrom: varchar("effective_from", { length: 191 }).notNull(),
@@ -891,7 +891,7 @@ export const userRoles = mysqlTable("user_roles", {
 });
 
 export const invoiceVerifications = mysqlTable("invoice_verifications", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   invoiceId: int("invoice_id").notNull().references(() => factoryInvoices.id),
   verifierRole: varchar("verifier_role", { length: 191, enum: ["supply_chain", "finance"] }).notNull(),
   decision: text("decision", { enum: ["approved", "rejected"] }).notNull(),
@@ -901,7 +901,7 @@ export const invoiceVerifications = mysqlTable("invoice_verifications", {
 }, table => [uniqueIndex("invoice_role_verification_unique").on(table.invoiceId, table.verifierRole)]);
 
 export const invoicePaymentAllocations = mysqlTable("invoice_payment_allocations", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   invoiceId: int("invoice_id").notNull().references(() => factoryInvoices.id),
   paymentRequestId: int("payment_request_id").notNull().references(() => factoryPaymentRequests.id),
   allocatedAmountMinor: int("allocated_amount_minor").notNull(),
@@ -911,7 +911,7 @@ export const invoicePaymentAllocations = mysqlTable("invoice_payment_allocations
 }, table => [uniqueIndex("invoice_payment_request_unique").on(table.invoiceId, table.paymentRequestId)]);
 
 export const invoiceExceptions = mysqlTable("invoice_exceptions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   invoiceId: int("invoice_id").notNull().references(() => factoryInvoices.id),
   exceptionType: text("exception_type", { enum: ["red_invoice", "voided"] }).notNull(),
   affectedAmountMinor: int("affected_amount_minor").notNull(),
@@ -930,7 +930,7 @@ export const invoiceExceptions = mysqlTable("invoice_exceptions", {
 });
 
 export const replacementInvoiceLinks = mysqlTable("replacement_invoice_links", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   invoiceExceptionId: int("invoice_exception_id").notNull().references(() => invoiceExceptions.id),
   replacementInvoiceId: int("replacement_invoice_id").notNull().references(() => factoryInvoices.id),
   coveredAmountMinor: int("covered_amount_minor").notNull(),
@@ -939,7 +939,7 @@ export const replacementInvoiceLinks = mysqlTable("replacement_invoice_links", {
 }, table => [uniqueIndex("replacement_invoice_unique").on(table.invoiceExceptionId, table.replacementInvoiceId)]);
 
 export const paymentRecords = mysqlTable("payment_records", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   paymentRequestId: int("payment_request_id").notNull().references(() => factoryPaymentRequests.id),
   amountMinor: int("amount_minor").notNull(),
   paidAt: text("paid_at").notNull(),
@@ -954,7 +954,7 @@ export const paymentRecords = mysqlTable("payment_records", {
 });
 
 export const auditLogs = mysqlTable("audit_logs", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   actorUserId: int("actor_user_id").references(() => users.id),
   action: text("action").notNull(),
   module: text("module").notNull(),
@@ -972,7 +972,7 @@ export const auditLogs = mysqlTable("audit_logs", {
 });
 
 export const supplierPerformanceWeightVersions = mysqlTable("supplier_performance_weight_versions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   tier: int("tier").notNull(),
   effectiveFrom: varchar("effective_from", { length: 191 }).notNull(),
   deliveryWeightBps: int("delivery_weight_bps").notNull(),
@@ -987,7 +987,7 @@ export const supplierPerformanceWeightVersions = mysqlTable("supplier_performanc
 }, table => [uniqueIndex("supplier_performance_weight_tier_date_unique").on(table.tier, table.effectiveFrom)]);
 
 export const supplierPerformanceReviews = mysqlTable("supplier_performance_reviews", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   supplierId: int("supplier_id").notNull().references(() => suppliers.id),
   quarter: varchar("quarter", { length: 191 }).notNull(),
   reviewType: varchar("review_type", { length: 191, enum: ["satisfaction", "sampling"] }).notNull(),
@@ -999,7 +999,7 @@ export const supplierPerformanceReviews = mysqlTable("supplier_performance_revie
 }, table => [uniqueIndex("supplier_performance_review_unique").on(table.supplierId, table.quarter, table.reviewType, table.evaluatorUserId)]);
 
 export const approvalRequests = mysqlTable("approval_requests", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   requestNo: varchar("request_no", { length: 191 }).notNull().unique(),
   workflowType: text("workflow_type").notNull(),
   entityType: text("entity_type").notNull(),
@@ -1018,7 +1018,7 @@ export const approvalRequests = mysqlTable("approval_requests", {
 });
 
 export const aiConversations = mysqlTable("ai_conversations", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id),
   title: text("title").notNull(),
   status: text("status", { enum: ["active", "closed"] }).notNull().default("active"),
@@ -1027,7 +1027,7 @@ export const aiConversations = mysqlTable("ai_conversations", {
 });
 
 export const aiMessages = mysqlTable("ai_messages", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   conversationId: int("conversation_id").notNull().references(() => aiConversations.id),
   role: text("role", { enum: ["user", "assistant"] }).notNull(),
   content: text("content").notNull(),
@@ -1037,7 +1037,7 @@ export const aiMessages = mysqlTable("ai_messages", {
 });
 
 export const aiOperationDrafts = mysqlTable("ai_operation_drafts", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   conversationId: int("conversation_id").notNull().references(() => aiConversations.id),
   operationType: text("operation_type").notNull(),
   payloadJson: text("payload_json").notNull(),
@@ -1049,7 +1049,7 @@ export const aiOperationDrafts = mysqlTable("ai_operation_drafts", {
 });
 
 export const fileObjects = mysqlTable("file_objects", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   objectKey: varchar("object_key", { length: 191 }).notNull().unique(),
   fileName: text("file_name").notNull(),
   contentType: text("content_type").notNull(),
@@ -1061,12 +1061,14 @@ export const fileObjects = mysqlTable("file_objects", {
   factoryId: int("factory_id").references(() => factories.id),
   supplierId: int("supplier_id").references(() => suppliers.id),
   sensitive: boolean("sensitive").notNull().default(false),
+  scanStatus: varchar("scan_status", { length: 191, enum: ["quarantined", "clean", "rejected"] }).notNull().default("quarantined"),
+  contentSha256: varchar("content_sha256", { length: 191 }).notNull().default(""),
   retainUntil: text("retain_until"),
   createdAt: datetime("created_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 });
 
 export const importBatches = mysqlTable("import_batches", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   importNo: varchar("import_no", { length: 191 }).notNull().unique(),
   type: varchar("type", { length: 191 }).notNull(),
   fileObjectId: int("file_object_id").references(() => fileObjects.id),
@@ -1086,7 +1088,7 @@ export const importBatches = mysqlTable("import_batches", {
 });
 
 export const importStagingRows = mysqlTable("import_staging_rows", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   importBatchId: int("import_batch_id").notNull().references(() => importBatches.id),
   sheetName: text("sheet_name").notNull(),
   sourceRowNo: int("source_row_no").notNull(),
@@ -1099,7 +1101,7 @@ export const importStagingRows = mysqlTable("import_staging_rows", {
 });
 
 export const reminderSchedules = mysqlTable("reminder_schedules", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   reminderType: text("reminder_type").notNull(),
   entityType: text("entity_type").notNull(),
   entityId: int("entity_id").notNull(),
@@ -1119,7 +1121,7 @@ export const reminderSchedules = mysqlTable("reminder_schedules", {
 });
 
 export const notificationMessages = mysqlTable("notification_messages", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   recipientUserId: int("recipient_user_id").references(() => users.id),
   recipientRole: text("recipient_role"),
   recipientFactoryId: int("recipient_factory_id").references(() => factories.id),
@@ -1140,7 +1142,7 @@ export const notificationMessages = mysqlTable("notification_messages", {
 });
 
 export const authCredentials = mysqlTable("auth_credentials", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull().unique().references(() => users.id),
   passwordHash: text("password_hash").notNull(),
   passwordSalt: text("password_salt").notNull(),
@@ -1151,7 +1153,7 @@ export const authCredentials = mysqlTable("auth_credentials", {
 });
 
 export const authChallenges = mysqlTable("auth_challenges", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   challengeNo: varchar("challenge_no", { length: 191 }).notNull().unique(),
   userId: int("user_id").notNull().references(() => users.id),
   purpose: text("purpose", { enum: ["login", "high_risk", "phone_change"] }).notNull(),
@@ -1162,11 +1164,18 @@ export const authChallenges = mysqlTable("auth_challenges", {
   expiresAt: text("expires_at").notNull(),
   attempts: int("attempts").notNull().default(0),
   verifiedAt: text("verified_at"),
+  sessionId: int("session_id").references(() => authSessions.id),
+  action: text("action"),
+  objectType: varchar("object_type", { length: 191 }),
+  objectId: varchar("object_id", { length: 191 }),
+  objectVersion: int("object_version"),
+  requestDigest: varchar("request_digest", { length: 191 }),
+  consumedAt: text("consumed_at"),
   ...timestamps,
 });
 
 export const trustedDevices = mysqlTable("trusted_devices", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id),
   deviceId: varchar("device_id", { length: 191 }).notNull(),
   deviceName: text("device_name").notNull().default(""),
@@ -1179,7 +1188,7 @@ export const trustedDevices = mysqlTable("trusted_devices", {
 }, table => [uniqueIndex("trusted_user_device_unique").on(table.userId, table.deviceId)]);
 
 export const authSessions = mysqlTable("auth_sessions", {
-  id: serial("id").primaryKey(),
+  id: int("id").autoincrement().primaryKey(),
   userId: int("user_id").notNull().references(() => users.id),
   tokenHash: varchar("token_hash", { length: 191 }).notNull().unique(),
   deviceId: varchar("device_id", { length: 191 }).notNull(),
@@ -1190,3 +1199,49 @@ export const authSessions = mysqlTable("auth_sessions", {
   lastSeenAt: datetime("last_seen_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   createdAt: datetime("created_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
 });
+
+export const writerFences = mysqlTable("writer_fences", {
+  resource: varchar("resource", { length: 191 }).primaryKey(),
+  owner: varchar("owner", { length: 191 }).notNull(),
+  enabled: boolean("enabled").notNull().default(true),
+  generation: int("generation").notNull().default(1),
+  updatedAt: datetime("updated_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+});
+
+export const commandIdempotency = mysqlTable("command_idempotency", {
+  id: int("id").autoincrement().primaryKey(),
+  commandName: varchar("command_name", { length: 191 }).notNull(),
+  actorScope: varchar("actor_scope", { length: 191 }).notNull(),
+  idempotencyKey: varchar("idempotency_key", { length: 191 }).notNull(),
+  requestDigest: varchar("request_digest", { length: 191 }).notNull(),
+  status: text("status", { enum: ["pending", "completed", "unknown"] }).notNull().default("pending"),
+  responseStatus: int("response_status"),
+  responseJson: text("response_json"),
+  expiresAt: text("expires_at").notNull(),
+  ...timestamps,
+}, table => [uniqueIndex("command_idempotency_scope_key_unique").on(table.commandName, table.actorScope, table.idempotencyKey)]);
+
+export const outboxMessages = mysqlTable("outbox_messages", {
+  id: int("id").autoincrement().primaryKey(),
+  topic: varchar("topic", { length: 191 }).notNull(),
+  aggregateType: varchar("aggregate_type", { length: 191 }).notNull(),
+  aggregateId: varchar("aggregate_id", { length: 191 }).notNull(),
+  deduplicationKey: varchar("deduplication_key", { length: 191 }).notNull().unique(),
+  payloadJson: text("payload_json").notNull(),
+  status: text("status", { enum: ["pending", "processing", "completed", "dead"] }).notNull().default("pending"),
+  availableAt: text("available_at").notNull(),
+  attempts: int("attempts").notNull().default(0),
+  maxAttempts: int("max_attempts").notNull().default(8),
+  lockedBy: text("locked_by"),
+  lockedAt: text("locked_at"),
+  lastErrorCode: text("last_error_code"),
+  completedAt: text("completed_at"),
+  ...timestamps,
+});
+
+export const resourceVersions = mysqlTable("resource_versions", {
+  resourceType: varchar("resource_type", { length: 191 }).notNull(),
+  resourceId: varchar("resource_id", { length: 191 }).notNull(),
+  version: int("version").notNull().default(1),
+  updatedAt: datetime("updated_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex("resource_versions_identity_unique").on(table.resourceType, table.resourceId)]);

@@ -1,9 +1,10 @@
-import { proxyDevelopmentApiV1Get } from "../../../lib/v1-development-bridge";
+import { proxyDevelopmentApiV1Get, proxyDevelopmentApiV1Mutation } from "../../../lib/v1-development-bridge";
 
 const STAGE4_READ_PATHS = new Set<string>([
   "/api/v1/approvals",
   "/api/v1/audit-logs",
   "/api/v1/files",
+  "/api/v1/files/status",
   "/api/v1/finance",
   "/api/v1/imports/diff",
   "/api/v1/inventory",
@@ -28,6 +29,11 @@ const LONG_RUNNING_READ_PATHS = new Set<string>([
   "/api/v1/audit-logs",
   "/api/v1/files",
   "/api/v1/supplier-performance",
+]);
+const WRITE_PATHS = new Set<string>([
+  "/api/v1/auth/login", "/api/v1/auth/verify", "/api/v1/auth/logout",
+  "/api/v1/auth/step-up/request", "/api/v1/auth/step-up/verify",
+  "/api/v1/users", "/api/v1/files", "/api/v1/notifications/read",
 ]);
 
 /**
@@ -57,3 +63,17 @@ export async function GET(request: Request) {
     unavailableMessage: "API service unavailable",
   });
 }
+
+async function mutation(request: Request) {
+  const pathname = new URL(request.url).pathname;
+  if (!WRITE_PATHS.has(pathname)) return Response.json({ error: "Not Found" }, { status: 404 });
+  return proxyDevelopmentApiV1Mutation(request, {
+    path: pathname as `/api/v1/${string}`,
+    requestTimeoutMs: pathname === "/api/v1/files" ? 30_000 : 10_000,
+    unavailableMessage: "API service unavailable",
+  });
+}
+
+export const POST = mutation;
+export const PATCH = mutation;
+export const DELETE = mutation;

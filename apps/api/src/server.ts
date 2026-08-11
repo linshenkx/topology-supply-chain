@@ -1,6 +1,7 @@
 import type { FastifyInstance } from "fastify";
 
 import { buildRuntimeApp } from "./runtime.js";
+import { loadDomainRegistrationManifests } from "./platform/registrations.js";
 import { safeErrorName } from "./safe-logging.js";
 
 const defaultHost = "0.0.0.0";
@@ -49,7 +50,11 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 }
 
 try {
-  app = await buildRuntimeApp();
+  app = await buildRuntimeApp({
+    registrationManifests: await loadDomainRegistrationManifests(
+      process.env.DOMAIN_REGISTRATION_MODULES,
+    ),
+  });
   for (const signal of ["SIGTERM", "SIGINT"] as const) {
     process.once(signal, () => {
       void shutdown(signal);
