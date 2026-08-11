@@ -82,29 +82,61 @@ function fakeDatabase({
     { id: 1, supplierId: 11 },
     { id: 2, supplierId: 22 },
   ],
+  filterRelated = true,
   returns = [productReturnRow(2), productReturnRow(1)],
   shipments = [shipmentRow(1), shipmentRow(2)],
 } = {}) {
   const queries = [];
+  const shipmentById = new Map(shipments.map((row) => [row.id, row]));
+  const executionById = new Map(executions.map((row) => [row.id, row]));
+  const itemById = new Map(items.map((row) => [row.id, row]));
   return {
     queries,
     async query(sql, params = []) {
       queries.push({ sql, params });
-      if (sql.includes("FROM product_returns AS returns")) return returns;
+      if (sql.includes("FROM product_returns AS returns")) {
+        const hasFactoryScope = sql.includes(
+          "authorized_execution.factory_id = ?",
+        );
+        const hasSupplierScope = sql.includes(
+          "authorized_item.supplier_id = ?",
+        );
+        const factoryId = hasFactoryScope ? params[0] : null;
+        const supplierId = hasSupplierScope
+          ? params[hasFactoryScope ? 1 : 0]
+          : null;
+        return returns
+          .filter((row) => {
+            if (!hasFactoryScope && !hasSupplierScope) return true;
+            const shipment = shipmentById.get(row.sourceDeliveryBatchId);
+            const execution = shipment
+              ? executionById.get(shipment.executionOrderId)
+              : undefined;
+            if (execution === undefined) return false;
+            if (hasFactoryScope && execution.factoryId === factoryId) {
+              return true;
+            }
+            return (
+              hasSupplierScope &&
+              itemById.get(execution.orderItemId)?.supplierId === supplierId
+            );
+          })
+          .slice(0, 200);
+      }
       if (sql.includes("FROM delivery_batches AS shipments")) {
-        return shipments.filter((row) => params.includes(row.id));
-      }
-      if (sql.includes("FROM execution_orders AS execution")) {
-        return executions.filter((row) => params.includes(row.id));
-      }
-      if (sql.includes("FROM order_items AS item")) {
-        return items.filter((row) => params.includes(row.id));
+        return filterRelated
+          ? shipments.filter((row) => params.includes(row.id))
+          : shipments;
       }
       if (sql.includes("FROM product_return_inspections AS inspections")) {
-        return inspections.filter((row) => params.includes(row.productReturnId));
+        return filterRelated
+          ? inspections.filter((row) => params.includes(row.productReturnId))
+          : inspections;
       }
       if (sql.includes("FROM product_return_dispositions AS dispositions")) {
-        return dispositions.filter((row) => params.includes(row.productReturnId));
+        return filterRelated
+          ? dispositions.filter((row) => params.includes(row.productReturnId))
+          : dispositions;
       }
       throw new Error(`Unexpected SQL: ${sql}`);
     },
@@ -169,11 +201,13 @@ test("internal roles receive stable enriched returns with bounded child SQL", as
         database.queries[0].sql,
         /ORDER BY returns\.created_at DESC, returns\.id DESC\s+LIMIT 200$/u,
       );
-      assert.equal(
-        database.queries.some(({ sql }) =>
-          sql.includes("FROM execution_orders AS execution"),
-        ),
-        false,
+      assert.doesNotMatch(database.queries[0].sql, /authorized_execution/u);
+      assert.deepEqual(database.queries[0].params, []);
+      assert.match(
+        database.queries.find(({ sql }) =>
+          sql.includes("FROM delivery_batches AS shipments"),
+        ).sql,
+        /ORDER BY shipments\.id ASC\s+LIMIT 201$/u,
       );
       assert.match(
         database.queries.find(({ sql }) =>
@@ -181,21 +215,31 @@ test("internal roles receive stable enriched returns with bounded child SQL", as
         ).sql,
         /ORDER BY inspections\.product_return_id ASC, inspections\.id ASC\s+LIMIT 1001$/u,
       );
+      assert.match(
+        database.queries.find(({ sql }) =>
+          sql.includes("FROM product_return_dispositions"),
+        ).sql,
+        /ORDER BY dispositions\.product_return_id ASC, dispositions\.id ASC\s+LIMIT 601$/u,
+      );
     } finally {
       await app.close();
     }
   }
 });
 
-test("factory and supplier scopes preserve the return authorization chain", async () => {
+test("role-bound scopes ignore cross-role bindings and union valid mixed roles", async () => {
   const cases = [
     {
-      context: { factoryId: 1, supplierId: null, roles: ["factory"] },
+      context: { factoryId: 1, supplierId: 22, roles: ["factory"] },
       expected: [1],
+      expectedParams: [1],
+      usesItems: false,
     },
     {
-      context: { factoryId: null, supplierId: 22, roles: ["supplier_qc"] },
+      context: { factoryId: 1, supplierId: 22, roles: ["supplier_qc"] },
       expected: [2],
+      expectedParams: [22],
+      usesItems: true,
     },
     {
       context: {
@@ -204,10 +248,12 @@ test("factory and supplier scopes preserve the return authorization chain", asyn
         roles: ["factory", "supplier_qc"],
       },
       expected: [2, 1],
+      expectedParams: [1, 22],
+      usesItems: true,
     },
   ];
 
-  for (const { context, expected } of cases) {
+  for (const { context, expected, expectedParams, usesItems } of cases) {
     const database = fakeDatabase();
     const app = await createApp({
       context: { ...context, localPreview: false },
@@ -223,26 +269,84 @@ test("factory and supplier scopes preserve the return authorization chain", asyn
         response.json().returns.map((row) => row.id),
         expected,
       );
-      const executionQuery = database.queries.find(({ sql }) =>
-        sql.includes("FROM execution_orders AS execution"),
+      const returnQuery = database.queries[0];
+      assert.match(returnQuery.sql, /WHERE EXISTS \(/u);
+      assert.match(
+        returnQuery.sql,
+        /INNER JOIN execution_orders AS authorized_execution/u,
       );
-      assert.ok(executionQuery);
-      assert.match(executionQuery.sql, /WHERE execution\.id IN \(\?, \?\)/u);
-      assert.deepEqual(executionQuery.params, [1, 2]);
+      assert.equal(
+        returnQuery.sql.includes(
+          "INNER JOIN order_items AS authorized_item",
+        ),
+        usesItems,
+      );
+      assert.ok(
+        returnQuery.sql.indexOf("WHERE EXISTS") <
+          returnQuery.sql.indexOf("ORDER BY returns.created_at"),
+      );
+      assert.deepEqual(returnQuery.params, expectedParams);
     } finally {
       await app.close();
     }
   }
 });
 
-test("external identities without matching organization scope receive an empty set", async (t) => {
-  const database = fakeDatabase();
+test("external roles require their own valid binding and unrelated roles cannot use spoofed bindings", async () => {
+  const contexts = [
+    { factoryId: null, supplierId: 22, roles: ["factory"] },
+    { factoryId: 0, supplierId: 22, roles: ["factory"] },
+    { factoryId: 1, supplierId: null, roles: ["supplier_qc"] },
+    { factoryId: 1, supplierId: 1.5, roles: ["supplier_qc"] },
+    { factoryId: 1, supplierId: 22, roles: ["receiver"] },
+    { factoryId: 1, supplierId: 22, roles: ["finance"] },
+  ];
+
+  for (const context of contexts) {
+    const database = fakeDatabase();
+    const app = await createApp({
+      context: { ...context, localPreview: false },
+      database,
+    });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/returns",
+      });
+      assert.equal(response.statusCode, 403, JSON.stringify(context));
+      assert.deepEqual(database.queries, []);
+      assertPrivateNoStore(response);
+    } finally {
+      await app.close();
+    }
+  }
+});
+
+test("external authorization is applied before LIMIT so global noise cannot starve visible returns", async (t) => {
+  const noiseIds = Array.from({ length: 200 }, (_, index) => 201 - index);
+  const database = fakeDatabase({
+    executions: [
+      ...noiseIds.map((id) => ({ id, factoryId: 2, orderItemId: id })),
+      { id: 1, factoryId: 1, orderItemId: 1 },
+    ],
+    inspections: [],
+    dispositions: [],
+    items: [
+      ...noiseIds.map((id) => ({ id, supplierId: 22 })),
+      { id: 1, supplierId: 11 },
+    ],
+    returns: [
+      ...noiseIds.map((id) => productReturnRow(id)),
+      productReturnRow(1),
+    ],
+    shipments: [...noiseIds.map((id) => shipmentRow(id)), shipmentRow(1)],
+  });
   const app = await createApp({
     context: {
-      factoryId: null,
-      supplierId: null,
+      factoryId: 1,
+      supplierId: 22,
       localPreview: false,
-      roles: ["supplier_qc"],
+      roles: ["factory"],
     },
     database,
   });
@@ -250,10 +354,12 @@ test("external identities without matching organization scope receive an empty s
 
   const response = await app.inject({ method: "GET", url: "/api/v1/returns" });
   assert.equal(response.statusCode, 200);
-  assert.deepEqual(response.json(), { returns: [] });
-  assert.equal(
-    database.queries.some(({ sql }) => sql.includes("FROM order_items AS item")),
-    false,
+  assert.deepEqual(response.json().returns.map((row) => row.id), [1]);
+  const returnQuery = database.queries[0];
+  assert.deepEqual(returnQuery.params, [1]);
+  assert.ok(
+    returnQuery.sql.indexOf("authorized_execution.factory_id = ?") <
+      returnQuery.sql.indexOf("LIMIT 200"),
   );
 });
 
@@ -322,6 +428,47 @@ test("real serializer preserves nullable return fields and a missing shipment as
   assert.equal(record.sourceShipment, null);
   assert.equal(record.dispositions[0].reviewedBy, null);
   assert.equal(record.dispositions[0].reviewedAt, null);
+});
+
+test("source shipments and child rows fail closed when a query escapes visible returns", async () => {
+  const databases = [
+    fakeDatabase({
+      returns: [productReturnRow(1)],
+      shipments: [shipmentRow(1), shipmentRow(2)],
+      inspections: [],
+      dispositions: [],
+      filterRelated: false,
+    }),
+    fakeDatabase({
+      returns: [productReturnRow(1)],
+      shipments: [shipmentRow(1)],
+      inspections: [inspectionRow(2)],
+      dispositions: [],
+      filterRelated: false,
+    }),
+    fakeDatabase({
+      returns: [productReturnRow(1)],
+      shipments: [shipmentRow(1)],
+      inspections: [],
+      dispositions: [dispositionRow(2)],
+      filterRelated: false,
+    }),
+  ];
+
+  for (const database of databases) {
+    const app = await createApp({ database });
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/api/v1/returns",
+      });
+      assert.equal(response.statusCode, 503);
+      assert.equal(response.json().message, "Internal Server Error");
+      assertPrivateNoStore(response);
+    } finally {
+      await app.close();
+    }
+  }
 });
 
 test("missing database and malformed parent or child rows return sanitized 503", async () => {

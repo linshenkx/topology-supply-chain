@@ -93,8 +93,11 @@ type ProductReturnBase = Omit<
   ProductReturn,
   "dispositions" | "inspections" | "sourceShipment"
 >;
-type ExecutionScopeRow = { id: number; factoryId: number; orderItemId: number };
-type ItemScopeRow = { id: number; supplierId: number | null };
+type ReturnsScope =
+  | { kind: "internal" }
+  | { kind: "factory"; factoryId: number }
+  | { kind: "supplier"; supplierId: number }
+  | { kind: "factory_supplier"; factoryId: number; supplierId: number };
 
 export interface ReturnsModuleOptions {
   authenticate: (request: FastifyRequest) => Promise<ReturnsAccessContext>;
@@ -263,21 +266,6 @@ function returnDisposition(row: DataRow): ProductReturnDisposition {
   };
 }
 
-function executionScope(row: DataRow): ExecutionScopeRow {
-  return {
-    id: positiveInteger(row.id),
-    factoryId: positiveInteger(row.factoryId),
-    orderItemId: positiveInteger(row.orderItemId),
-  };
-}
-
-function itemScope(row: DataRow): ItemScopeRow {
-  return {
-    id: positiveInteger(row.id),
-    supplierId: nullablePositiveInteger(row.supplierId),
-  };
-}
-
 function placeholders(count: number): string {
   if (!Number.isSafeInteger(count) || count <= 0 || count > RETURN_LIMIT) {
     return invalidData();
@@ -285,20 +273,36 @@ function placeholders(count: number): string {
   return Array.from({ length: count }, () => "?").join(", ");
 }
 
-function positiveOrganizationId(value: number | null): number | null {
-  return Number.isSafeInteger(value) && value !== null && value > 0
-    ? value
-    : null;
+function organizationId(value: number | null): number {
+  if (!Number.isSafeInteger(value) || value === null || value <= 0) {
+    throw new ReturnsForbiddenError();
+  }
+  return value;
 }
 
-function ensureRole(context: ReturnsAccessContext): void {
+function resolveScope(context: ReturnsAccessContext): ReturnsScope {
   if (!context.roles.some((role) => ALLOWED_ROLES.has(role))) {
     throw new ReturnsForbiddenError();
   }
-}
+  if (context.roles.some((role) => INTERNAL_ROLES.has(role))) {
+    return { kind: "internal" };
+  }
 
-function isInternal(context: ReturnsAccessContext): boolean {
-  return context.roles.some((role) => INTERNAL_ROLES.has(role));
+  const hasFactoryRole = context.roles.includes("factory");
+  const hasSupplierRole = context.roles.includes("supplier_qc");
+  const factoryId = hasFactoryRole
+    ? organizationId(context.factoryId)
+    : undefined;
+  const supplierId = hasSupplierRole
+    ? organizationId(context.supplierId)
+    : undefined;
+
+  if (factoryId !== undefined && supplierId !== undefined) {
+    return { kind: "factory_supplier", factoryId, supplierId };
+  }
+  if (factoryId !== undefined) return { kind: "factory", factoryId };
+  if (supplierId !== undefined) return { kind: "supplier", supplierId };
+  throw new ReturnsForbiddenError();
 }
 
 async function relatedRows<Value>(
@@ -316,12 +320,58 @@ async function relatedRows<Value>(
 
 async function readReturns(
   database: QueryExecutor,
-  access: ReturnsAccessContext,
+  scope: ReturnsScope,
 ): Promise<ProductReturn[]> {
+  let where = "";
+  let params: readonly number[] = [];
+
+  if (scope.kind === "factory") {
+    where = `
+WHERE EXISTS (
+  SELECT 1
+  FROM delivery_batches AS authorized_shipment
+  INNER JOIN execution_orders AS authorized_execution
+    ON authorized_execution.id = authorized_shipment.execution_order_id
+  WHERE authorized_shipment.id = returns.source_delivery_batch_id
+    AND authorized_execution.factory_id = ?
+)`;
+    params = [scope.factoryId];
+  } else if (scope.kind === "supplier") {
+    where = `
+WHERE EXISTS (
+  SELECT 1
+  FROM delivery_batches AS authorized_shipment
+  INNER JOIN execution_orders AS authorized_execution
+    ON authorized_execution.id = authorized_shipment.execution_order_id
+  INNER JOIN order_items AS authorized_item
+    ON authorized_item.id = authorized_execution.order_item_id
+  WHERE authorized_shipment.id = returns.source_delivery_batch_id
+    AND authorized_item.supplier_id = ?
+)`;
+    params = [scope.supplierId];
+  } else if (scope.kind === "factory_supplier") {
+    where = `
+WHERE EXISTS (
+  SELECT 1
+  FROM delivery_batches AS authorized_shipment
+  INNER JOIN execution_orders AS authorized_execution
+    ON authorized_execution.id = authorized_shipment.execution_order_id
+  INNER JOIN order_items AS authorized_item
+    ON authorized_item.id = authorized_execution.order_item_id
+  WHERE authorized_shipment.id = returns.source_delivery_batch_id
+    AND (
+      authorized_execution.factory_id = ?
+      OR authorized_item.supplier_id = ?
+    )
+)`;
+    params = [scope.factoryId, scope.supplierId];
+  }
+
   const returnRows = await database.query<DataRow>(
-    `${RETURN_COLUMNS}
+    `${RETURN_COLUMNS}${where}
 ORDER BY returns.created_at DESC, returns.id DESC
 LIMIT ${RETURN_LIMIT}`,
+    params,
   );
   if (returnRows.length > RETURN_LIMIT) return invalidData();
   const records = returnRows.map(productReturn);
@@ -343,69 +393,7 @@ LIMIT ${RETURN_LIMIT + 1}`,
   const shipmentIdSet = new Set(shipmentIds);
   if (shipments.some((row) => !shipmentIdSet.has(row.id))) invalidData();
   const shipmentById = new Map(shipments.map((row) => [row.id, row]));
-
-  let visible = records;
-  if (!isInternal(access)) {
-    const executionIds = Array.from(
-      new Set(shipments.map((shipment) => shipment.executionOrderId)),
-    );
-    const executions = await relatedRows(
-      database,
-      executionIds.length === 0
-        ? ""
-        : `SELECT
-  execution.id,
-  execution.factory_id AS factoryId,
-  execution.order_item_id AS orderItemId
-FROM execution_orders AS execution
-WHERE execution.id IN (${placeholders(executionIds.length)})
-ORDER BY execution.id ASC
-LIMIT ${RETURN_LIMIT + 1}`,
-      executionIds,
-      RETURN_LIMIT,
-      executionScope,
-    );
-    const executionIdSet = new Set(executionIds);
-    if (executions.some((row) => !executionIdSet.has(row.id))) invalidData();
-    const executionById = new Map(executions.map((row) => [row.id, row]));
-    const supplierId = positiveOrganizationId(access.supplierId);
-    const itemIds =
-      supplierId === null
-        ? []
-        : Array.from(new Set(executions.map((row) => row.orderItemId)));
-    const items = await relatedRows(
-      database,
-      itemIds.length === 0
-        ? ""
-        : `SELECT item.id, item.supplier_id AS supplierId
-FROM order_items AS item
-WHERE item.id IN (${placeholders(itemIds.length)})
-ORDER BY item.id ASC
-LIMIT ${RETURN_LIMIT + 1}`,
-      itemIds,
-      RETURN_LIMIT,
-      itemScope,
-    );
-    const itemIdSet = new Set(itemIds);
-    if (items.some((row) => !itemIdSet.has(row.id))) invalidData();
-    const itemById = new Map(items.map((row) => [row.id, row]));
-    const factoryId = positiveOrganizationId(access.factoryId);
-
-    visible = records.filter((record) => {
-      const shipment = shipmentById.get(record.sourceDeliveryBatchId);
-      const execution = shipment
-        ? executionById.get(shipment.executionOrderId)
-        : undefined;
-      if (execution === undefined) return false;
-      if (factoryId !== null && execution.factoryId === factoryId) return true;
-      return (
-        supplierId !== null &&
-        itemById.get(execution.orderItemId)?.supplierId === supplierId
-      );
-    });
-  }
-
-  const visibleIds = visible.map((record) => record.id);
+  const visibleIds = records.map((record) => record.id);
   const inspections = await relatedRows(
     database,
     visibleIds.length === 0
@@ -438,7 +426,7 @@ LIMIT ${DISPOSITION_LIMIT + 1}`,
     return invalidData();
   }
 
-  return visible.map((record) => ({
+  return records.map((record) => ({
     ...record,
     sourceShipment: shipmentById.get(record.sourceDeliveryBatchId) ?? null,
     inspections: inspections.filter(
@@ -479,10 +467,10 @@ export async function registerReturnsModule(
     },
     async (request) => {
       const access = await options.authenticate(request);
-      ensureRole(access);
+      const scope = resolveScope(access);
       if (access.localPreview) return { returns: [], preview: true };
       if (options.database === undefined) throw new ReturnsUnavailableError();
-      return { returns: await readReturns(options.database, access) };
+      return { returns: await readReturns(options.database, scope) };
     },
   );
 }
