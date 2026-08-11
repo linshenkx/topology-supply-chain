@@ -63,23 +63,36 @@
 - 上传和下载接口在`DEPLOY_TARGET=aliyun`时使用OSS；本地预览继续使用原存储绑定。
 - 短信、邮件和定时任务密钥已改为从ECS生产环境变量读取。
 - 已增加上线配置检查命令：`pnpm deploy:check-env`。
+- 已生成Node/ECS Web与独立API运行镜像、双健康检查及同版本协同发布/回滚脚本。
 
 ### 仍在进行
 
 - 将29处SQLite `INSERT ... RETURNING`改为MySQL的`insertId + SELECT`兼容写法。
 - 统一MySQL日期时间序列化与事务处理。
 - 将数据库入口从D1切换到RDS连接池。
-- 生成Node/ECS运行镜像、健康检查、定时任务和回滚脚本。
 
 ## ECS部署文件
 
 - `bootstrap-ubuntu.sh`：初始化Ubuntu ECS、Docker与Nginx。
-- `docker-compose.yml`：运行应用及一次性数据库迁移容器。
+- `docker-compose.yml`：运行Web、独立API及一次性数据库迁移容器。
 - `.env.production.template`：生产配置模板，真实文件不得提交到Git。
 - `nginx-scm.conf`：`scm.topologygz.com` HTTPS反向代理。
-- `deploy.sh`：检查配置、执行迁移、发布并等待健康检查。
-- `rollback.sh`：按历史镜像版本回滚。
+- `deploy.sh`：以同一版本构建Web/API，检查配置、执行迁移、发布并等待双服务健康检查。
+- `rollback.sh`：按同一历史镜像版本协同回滚Web与API，不自动回滚数据库迁移。
 - `install-jobs.sh`：安装提醒与邮件队列systemd定时器。
 
-生产应用只监听`127.0.0.1:3000`，公网仅开放Nginx的80和443端口。
+### Nginx发布门禁
+
+`deploy.sh`只验证Web与API容器的直连就绪状态。首次安装或每次更新代理配置时，服务器操作人员必须依次执行：
+
+```bash
+sudo install -m 0644 nginx-scm.conf /etc/nginx/conf.d/scm.conf
+sudo nginx -t
+sudo systemctl reload nginx
+curl -fsS --connect-timeout 2 --max-time 5 https://scm.topologygz.com/api/v1/health/ready
+```
+
+任一步失败都不得宣告发布成功；其中配置安装、校验与reload需要服务器权限，不由应用发布脚本擅自执行。
+
+生产Web只监听`127.0.0.1:3000`，独立API只监听`127.0.0.1:3001`；两者均只通过Nginx的80和443端口提供公网入口。
 RDS使用内网地址，OSS保持私有并使用RAM最小权限账号。

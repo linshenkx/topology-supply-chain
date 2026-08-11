@@ -63,14 +63,46 @@ test("the application authorization path no longer reads proxy identity headers"
   assert.doesNotMatch(authz, /oai-authenticated-user-email/i);
 });
 
-test("Nginx clears every supported proxy identity header in both locations", () => {
+function nginxProxyLocations(nginx) {
+  const locations = [];
+  const locationPattern = /\blocation\s+[^\{]+\{/gu;
+
+  for (const match of nginx.matchAll(locationPattern)) {
+    const start = match.index;
+    const openBrace = nginx.indexOf("{", start);
+    let depth = 0;
+
+    for (let index = openBrace; index < nginx.length; index += 1) {
+      if (nginx[index] === "{") depth += 1;
+      if (nginx[index] === "}") depth -= 1;
+      if (depth === 0) {
+        const location = nginx.slice(start, index + 1);
+        if (/\bproxy_pass\s+/u.test(location)) locations.push(location);
+        break;
+      }
+    }
+  }
+
+  return locations;
+}
+
+test("Nginx clears every supported identity header in every proxy location", () => {
   const nginx = fs.readFileSync(new URL("../deploy/aliyun/nginx-scm.conf", import.meta.url), "utf8");
+  const proxyLocations = nginxProxyLocations(nginx);
+
+  assert.ok(proxyLocations.length > 0, "at least one proxy location must exist");
+
   for (const header of [
     "oai-authenticated-user-email",
     "oai-authenticated-user-full-name",
     "oai-authenticated-user-full-name-encoding",
   ]) {
-    const matches = nginx.match(new RegExp(`proxy_set_header\\s+${header}\\s+\"\";`, "gi"));
-    assert.equal(matches?.length, 2, `${header} must be cleared in both proxy locations`);
+    for (const location of proxyLocations) {
+      assert.match(
+        location,
+        new RegExp(`proxy_set_header\\s+${header}\\s+\"\";`, "iu"),
+        `${header} must be cleared in every proxy location`,
+      );
+    }
   }
 });

@@ -32,6 +32,42 @@ services:
         max-size: 20m
         max-file: "10"
 
+  api:
+    container_name: topology-scm-api
+    build:
+      context: ../..
+      dockerfile: Dockerfile.api
+      target: runner
+    image: topology-scm-api:${API_IMAGE_TAG:-latest}
+    restart: unless-stopped
+    init: true
+    environment:
+      APP_ENV: production
+      DEPLOY_TARGET: aliyun
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: "3001"
+    ports:
+      - "127.0.0.1:3001:3001"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/v1/health/ready"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    logging:
+      driver: json-file
+      options:
+        max-size: 20m
+        max-file: "10"
+
   migrator:
     build:
       context: ../..
