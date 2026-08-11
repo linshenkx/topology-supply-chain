@@ -31,3 +31,26 @@ export {
   type MasterDataSkuItemType,
   type MasterDataUnitConversion,
 } from "./master-data.js";
+export {
+  financeResponseSchema,
+  financeSchemaId,
+  type FinanceInvoice,
+  type FinanceInvoiceException,
+  type FinanceInvoicePaymentAllocation,
+  type FinanceInvoiceStatus,
+  type FinanceInvoiceVerification,
+  type FinancePaymentRecord,
+  type FinancePaymentRequest,
+  type FinancePaymentRequestItem,
+  type FinancePaymentRequestStatus,
+  type FinancePurchaseOrder,
+  type FinanceReplacementInvoiceLink,
+  type FinanceResponse,
+} from "./finance.js";
+export {
+  approvalsResponseSchema,
+  approvalsSchemaId,
+  type ApprovalListItem,
+  type ApprovalStatus,
+  type ApprovalsResponse,
+} from "./approvals.js";
