@@ -1,11 +1,17 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as XLSX from "xlsx";
 
 import {
   createSupplierPerformanceXlsxExporter,
   SupplierPerformanceXlsxUnavailableError,
 } from "../dist/infrastructure/supplier-performance-xlsx.js";
+import {
+  assertTwoSheetXlsxPackage,
+  readStoredZip,
+  workbookSheetNames,
+  worksheetCells,
+  worksheetDimension,
+} from "./xlsx-test-helpers.mjs";
 
 function ranking(overrides = {}) {
   return {
@@ -42,15 +48,23 @@ test("supplier performance XLSX uses fixed columns and neutralizes formulas", as
     watermark: "  +cmd|' /C calc'!A0",
   });
 
-  const workbook = XLSX.read(bytes, { type: "array" });
-  assert.deepEqual(workbook.SheetNames, ["导出说明", "绩效排名"]);
-  const explanation = workbook.Sheets["导出说明"];
-  const data = workbook.Sheets["绩效排名"];
-  assert.ok(explanation);
-  assert.ok(data);
-  assert.equal(data["!ref"], "A1:K2");
+  const files = readStoredZip(bytes);
+  assertTwoSheetXlsxPackage(files);
   assert.deepEqual(
-    XLSX.utils.sheet_to_json(data, { header: 1, raw: true })[0],
+    workbookSheetNames(files.get("xl/workbook.xml").toString("utf8")),
+    ["导出说明", "绩效排名"],
+  );
+  const explanationXml = files
+    .get("xl/worksheets/sheet1.xml")
+    .toString("utf8");
+  const dataXml = files.get("xl/worksheets/sheet2.xml").toString("utf8");
+  const explanation = worksheetCells(explanationXml);
+  const data = worksheetCells(dataXml);
+  assert.equal(worksheetDimension(dataXml), "A1:K2");
+  assert.deepEqual(
+    Array.from({ length: 11 }, (_, index) =>
+      data.get(`${String.fromCharCode(65 + index)}1`),
+    ),
     [
       "排名",
       "供应商",
@@ -65,15 +79,12 @@ test("supplier performance XLSX uses fixed columns and neutralizes formulas", as
       "水印",
     ],
   );
-  assert.match(data.B2.v, /^'=HYPERLINK/u);
-  assert.match(data.K2.v, /^'\s{2}\+cmd/u);
-  assert.match(explanation.A2.v, /^'\s{2}\+cmd/u);
-  assert.equal(data.B2.f, undefined);
-  assert.equal(data.K2.f, undefined);
-  assert.equal(explanation.A2.f, undefined);
-  assert.equal(data.F2.v, "待业务数据形成");
-  assert.equal(data.I2.v, "不适用/待评价");
-  assert.doesNotMatch(JSON.stringify(workbook), /must-not-be-exported/u);
+  assert.match(data.get("B2"), /^'=HYPERLINK/u);
+  assert.match(data.get("K2"), /^'\s{2}\+cmd/u);
+  assert.match(explanation.get("A2"), /^'\s{2}\+cmd/u);
+  assert.equal(data.get("F2"), "待业务数据形成");
+  assert.equal(data.get("I2"), "不适用/待评价");
+  assert.doesNotMatch(explanationXml + dataXml, /<f(?:\s|>)|must-not-be-exported/u);
 });
 
 test("supplier performance XLSX enforces row, cell, and value bounds with sanitized errors", async () => {

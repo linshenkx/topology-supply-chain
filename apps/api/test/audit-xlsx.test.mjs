@@ -1,11 +1,16 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import * as XLSX from "xlsx";
 
 import {
   AuditXlsxUnavailableError,
   createAuditXlsxExporter,
 } from "../dist/infrastructure/audit-xlsx.js";
+import {
+  assertTwoSheetXlsxPackage,
+  readStoredZip,
+  workbookSheetNames,
+  worksheetCells,
+} from "./xlsx-test-helpers.mjs";
 
 const auditRow = {
   id: 1,
@@ -34,20 +39,23 @@ test("audit XLSX exporter creates bounded sheets and neutralizes formulas", () =
     watermark: "导出人：admin@example.com",
   });
 
-  const workbook = XLSX.read(bytes, { type: "array" });
-  assert.deepEqual(workbook.SheetNames, ["导出说明", "操作日志"]);
-  const explanation = workbook.Sheets["导出说明"];
-  const data = workbook.Sheets["操作日志"];
-  assert.ok(explanation);
-  assert.ok(data);
-  assert.equal(explanation.B3.v, '{"actor":"=attacker"}');
-  assert.equal(explanation.B3.f, undefined);
-  assert.match(data.B2.v, /^'=HYPERLINK/u);
-  assert.match(data.E2.v, /^'\+cmd/u);
-  assert.match(data.F2.v, /^'@SUM/u);
-  assert.equal(data.B2.f, undefined);
-  assert.equal(data.E2.f, undefined);
-  assert.equal(data.F2.f, undefined);
+  const files = readStoredZip(bytes);
+  assertTwoSheetXlsxPackage(files);
+  assert.deepEqual(
+    workbookSheetNames(files.get("xl/workbook.xml").toString("utf8")),
+    ["导出说明", "操作日志"],
+  );
+  const explanationXml = files
+    .get("xl/worksheets/sheet1.xml")
+    .toString("utf8");
+  const dataXml = files.get("xl/worksheets/sheet2.xml").toString("utf8");
+  const explanation = worksheetCells(explanationXml);
+  const data = worksheetCells(dataXml);
+  assert.equal(explanation.get("B3"), '{"actor":"=attacker"}');
+  assert.match(data.get("B2"), /^'=HYPERLINK/u);
+  assert.match(data.get("E2"), /^'\+cmd/u);
+  assert.match(data.get("F2"), /^'@SUM/u);
+  assert.doesNotMatch(explanationXml + dataXml, /<f(?:\s|>)/u);
 });
 
 test("audit XLSX exporter rejects excessive rows and cell sizes", () => {

@@ -1,5 +1,6 @@
 const MAX_EXCEL_ROWS = 1_048_576;
 const MAX_EXCEL_COLUMNS = 16_384;
+const MAX_EXCEL_CELL_CHARACTERS = 32_767;
 const MAX_SHEETS = 255;
 const MAX_ZIP_ENTRIES = 65_535;
 const MAX_ZIP_UINT32 = 0xffff_ffff;
@@ -9,8 +10,9 @@ const ZIP_VERSION = 20;
 const DOS_TIME = 0;
 const DOS_DATE = 0x0021;
 const INVALID_XML_CHARACTER =
-  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uFFFE\uFFFF]/u;
+  /[\u0000-\u0008\u000B\u000C\u000E-\u001F\uD800-\uDFFF\uFFFE\uFFFF]/u;
 const INVALID_SHEET_NAME_CHARACTER = /[\\/*?:[\]]/u;
+const FORMULA_PREFIX = /^[=+\-@]/u;
 
 export type XlsxCell = number | string;
 
@@ -61,6 +63,12 @@ function escapeXml(value: string): string {
   });
 }
 
+function safeCellText(value: string): string {
+  const neutralized = FORMULA_PREFIX.test(value.trimStart()) ? `'${value}` : value;
+  if (neutralized.length > MAX_EXCEL_CELL_CHARACTERS) return unavailable();
+  return neutralized;
+}
+
 function columnReference(columnIndex: number): string {
   let value = columnIndex + 1;
   let result = "";
@@ -101,7 +109,6 @@ function validateSheet(sheet: XlsxSheet, names: Set<string>): void {
     INVALID_SHEET_NAME_CHARACTER.test(sheet.name) ||
     sheet.name.startsWith("'") ||
     sheet.name.endsWith("'") ||
-    names.has(sheet.name) ||
     INVALID_XML_CHARACTER.test(sheet.name) ||
     !Number.isSafeInteger(sheet.rowCount) ||
     sheet.rowCount < 1 ||
@@ -112,7 +119,9 @@ function validateSheet(sheet: XlsxSheet, names: Set<string>): void {
   ) {
     return unavailable();
   }
-  names.add(sheet.name);
+  const normalizedName = sheet.name.toLowerCase();
+  if (names.has(normalizedName)) return unavailable();
+  names.add(normalizedName);
 
   if (sheet.columnWidths === undefined) return;
   if (sheet.columnWidths.length > sheet.columnCount) return unavailable();
@@ -164,7 +173,7 @@ function worksheetXml(sheet: XlsxSheet, maximumBytes: number): Buffer {
       }
       if (typeof cell !== "string") return unavailable();
       builder.append(
-        `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(cell)}</t></is></c>`,
+        `<c r="${reference}" t="inlineStr"><is><t xml:space="preserve">${escapeXml(safeCellText(cell))}</t></is></c>`,
       );
     }
     builder.append("</row>");

@@ -1,8 +1,27 @@
 import assert from "node:assert/strict";
+import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
 import test from "node:test";
 
 const dockerfile = readFileSync(new URL("../Dockerfile.api", import.meta.url), "utf8");
+const aliyunDockerfile = readFileSync(
+  new URL("../Dockerfile.aliyun", import.meta.url),
+  "utf8",
+);
+const rootPackage = JSON.parse(
+  readFileSync(new URL("../package.json", import.meta.url), "utf8"),
+);
+const apiPackage = JSON.parse(
+  readFileSync(new URL("../apps/api/package.json", import.meta.url), "utf8"),
+);
+const lockfile = readFileSync(new URL("../pnpm-lock.yaml", import.meta.url), "utf8");
+const workspace = readFileSync(
+  new URL("../pnpm-workspace.yaml", import.meta.url),
+  "utf8",
+);
+const sheetJsTarball = readFileSync(
+  new URL("../vendor/xlsx-0.20.3.tgz", import.meta.url),
+);
 const compose = readFileSync(
   new URL("../deploy/aliyun/docker-compose.yml", import.meta.url),
   "utf8",
@@ -99,7 +118,11 @@ test("API image runs the expected artifact as a non-root process", () => {
 test("API image deploys only the API production closure", () => {
   assert.match(
     dockerfile,
-    /pnpm --filter @topology\/api deploy --prod \/prod\/apps\/api/,
+    /pnpm --filter @topology\/api deploy --prod --no-optional \/prod\/apps\/api/,
+  );
+  assert.match(
+    dockerfile,
+    /pnpm install --frozen-lockfile --ignore-scripts --no-optional --prod=false/,
   );
   assert.match(
     dockerfile,
@@ -107,6 +130,30 @@ test("API image deploys only the API production closure", () => {
   );
   assert.doesNotMatch(dockerfile, /COPY --from=builder[^\n]*\/app\/node_modules/);
   assert.doesNotMatch(dockerfile, /COPY --from=builder[^\n]*\/app\/packages/);
+});
+
+test("workspace dependency policy excludes vulnerable XLSX and fast-uri releases", () => {
+  assert.equal(rootPackage.dependencies.xlsx, "file:vendor/xlsx-0.20.3.tgz");
+  assert.equal(apiPackage.dependencies.xlsx, undefined);
+  assert.match(workspace, /^overrides:\n  fast-uri@3: 3\.1\.5$/m);
+  assert.doesNotMatch(lockfile, /xlsx@0\.18\.5|fast-uri@3\.1\.4/u);
+  assert.match(lockfile, /xlsx@file:vendor\/xlsx-0\.20\.3\.tgz/u);
+  assert.match(lockfile, /fast-uri@3\.1\.5/u);
+  assert.equal(
+    createHash("sha256").update(sheetJsTarball).digest("hex"),
+    "8dc73fc3b00203e72d176e85b50938627c7b086e607c682e8d3c22c02bb99fe8",
+  );
+});
+
+test("legacy production image stages the vendored SheetJS tarball before install", () => {
+  const vendorCopy = aliyunDockerfile.indexOf(
+    "COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz",
+  );
+  const install = aliyunDockerfile.indexOf(
+    "RUN pnpm install --frozen-lockfile --ignore-scripts",
+  );
+  assert.notEqual(vendorCopy, -1);
+  assert.ok(vendorCopy < install);
 });
 
 test("compose publishes Web and API on separate loopback-only ports", () => {

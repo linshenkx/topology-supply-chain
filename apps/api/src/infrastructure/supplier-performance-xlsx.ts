@@ -7,7 +7,6 @@ import {
 const MAX_EXPORT_ROWS = 500;
 const MAX_CELL_CHARACTERS = 32_000;
 const MAX_WORKBOOK_BYTES = 25 * 1_024 * 1_024;
-const FORMULA_PREFIX = /^[=+\-@]/u;
 const QUARTER_PATTERN = /^[0-9]{4}-Q[1-4]$/u;
 
 const HEADERS = [
@@ -38,7 +37,7 @@ function unavailable(): never {
 function safeText(value: unknown): string {
   const text = value === null || value === undefined ? "" : String(value);
   if (text.length > MAX_CELL_CHARACTERS) return unavailable();
-  return FORMULA_PREFIX.test(text.trimStart()) ? `'${text}` : text;
+  return text;
 }
 
 function boundedNumber(
