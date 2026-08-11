@@ -121,3 +121,35 @@ export {
   type ImportDiffJsonValue,
   type ImportDiffResponse,
 } from "./imports.js";
+export {
+  usersResponseSchema,
+  usersSchemaId,
+  type ManagedUser,
+  type UserAccountStatus,
+  type UserRoleAssignment,
+  type UserRoleAssignmentStatus,
+  type UsersResponse,
+} from "./users.js";
+export {
+  auditLogSchema,
+  auditLogsExportResponseSchema,
+  auditLogsQuerySchema,
+  auditLogsResponseSchema,
+  auditLogsSchemaId,
+  type AuditLog,
+  type AuditLogsQuery,
+  type AuditLogsResponse,
+} from "./audit-logs.js";
+export {
+  notificationsResponseSchema,
+  notificationsSchemaId,
+  type Notification,
+  type NotificationChannel,
+  type NotificationsResponse,
+  type NotificationStatus,
+} from "./notifications.js";
+export {
+  fileDownloadQuerySchema,
+  fileDownloadResponseSchema,
+  type FileDownloadQuery,
+} from "./files.js";
