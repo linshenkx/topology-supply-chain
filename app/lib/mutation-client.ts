@@ -13,7 +13,17 @@ type CorePlatformMutationPath =
   | "/api/v1/auth/step-up/verify"
   | "/api/v1/users"
   | "/api/v1/files"
-  | "/api/v1/notifications/read";
+  | "/api/v1/notifications/read"
+  | "/api/v1/approvals"
+  | "/api/v1/inventory"
+  | "/api/v1/inventory/transfers"
+  | "/api/v1/production-orders"
+  | "/api/v1/quality-inspections"
+  | "/api/v1/stocktakes"
+  | "/api/v1/shipments"
+  | "/api/v1/returns"
+  | "/api/v1/finance"
+  | "/api/v1/warehouses";
 
 export type PlatformMutationPath = CorePlatformMutationPath | R2MutationPath;
 
@@ -52,6 +62,16 @@ const COMMAND_BY_PATH: Readonly<Record<CorePlatformMutationPath, string>> = {
   "/api/v1/users": "users.assign-role",
   "/api/v1/files": "files.upload",
   "/api/v1/notifications/read": "notifications.mark-read",
+  "/api/v1/approvals": "approvals.decide",
+  "/api/v1/inventory": "inventory.reserve",
+  "/api/v1/inventory/transfers": "inventory.transfer.request",
+  "/api/v1/production-orders": "manufacturing.order.create",
+  "/api/v1/quality-inspections": "quality.inspection.submit",
+  "/api/v1/stocktakes": "inventory.stocktake.open",
+  "/api/v1/shipments": "logistics.shipment.command",
+  "/api/v1/returns": "returns.command",
+  "/api/v1/finance": "finance.command",
+  "/api/v1/warehouses": "warehouses.command",
 };
 
 function commandName(path: PlatformMutationPath, method: MutationMethod): string {
@@ -60,6 +80,9 @@ function commandName(path: PlatformMutationPath, method: MutationMethod): string
   if (path === "/api/v1/users") {
     return method === "POST" ? "users.assign-role" : method === "PATCH" ? "users.unlock" : "users.revoke-role";
   }
+  if (path === "/api/v1/inventory/transfers" && method === "PATCH") return "inventory.transfer.transition";
+  if (path === "/api/v1/production-orders" && method === "PATCH") return "manufacturing.order.transition";
+  if (path === "/api/v1/stocktakes" && method === "PATCH") return "inventory.stocktake.transition";
   return COMMAND_BY_PATH[path as CorePlatformMutationPath];
 }
 
@@ -153,10 +176,12 @@ async function decode<Result>(
     message?: string;
   };
   if (!response.ok) {
-    const code = body.code ?? "REQUEST_FAILED";
+    const proxyOutcomeUnknown = response.status === 502 || response.status === 504 ||
+      (response.status >= 500 && (body.code === undefined || body.code === "REQUEST_FAILED"));
+    const code = proxyOutcomeUnknown ? "NETWORK_OUTCOME_UNKNOWN" : body.code ?? "REQUEST_FAILED";
     const message = body.message ?? body.error ?? `请求失败（${response.status}）`;
     throw new MutationError(
-      code === "COMMAND_OUTCOME_UNKNOWN"
+      code === "COMMAND_OUTCOME_UNKNOWN" || code === "NETWORK_OUTCOME_UNKNOWN"
         ? `${message} 请勿创建新请求；仅可使用幂等键 ${idempotencyKey} 对账或重放。`
         : message,
       code,

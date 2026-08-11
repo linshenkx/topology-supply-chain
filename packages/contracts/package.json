@@ -13,6 +13,10 @@
     "./r2-writes": {
       "types": "./dist/r2-writes.d.ts",
       "import": "./dist/r2-writes.js"
+    },
+    "./r3-fulfillment-writes": {
+      "types": "./dist/r3-fulfillment-writes.d.ts",
+      "import": "./dist/r3-fulfillment-writes.js"
     }
   },
   "files": [

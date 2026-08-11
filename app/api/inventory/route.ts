@@ -15,6 +15,7 @@ import {
 } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { findInventoryFreeze } from "../../lib/inventory-freeze";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 export async function GET(request: Request) {
   try {
@@ -80,6 +81,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/inventory");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "factory"]);

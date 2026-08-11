@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { mutateJson } from "../lib/mutation-client";
 
 type Quantity = { availableQuantity: string; lockedQuantity: string; defectiveQuantity: string; pendingInspectionQuantity: string };
 type Count = { id: number; batchId: number | null; sku: string; countRound: number; availableQuantity: number; lockedQuantity: number; defectiveQuantity: number; pendingInspectionQuantity: number };
@@ -35,9 +36,11 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
     event.preventDefault(); setBusy(true);
     try {
       const targets = create.targets.split(/[,，\n]/).map(value => value.trim()).filter(Boolean);
-      const payload = { warehouseId: Number(create.warehouseId), scope: create.scope, dueDate: create.dueDate, assignedFactoryId: create.assignedFactoryId ? Number(create.assignedFactoryId) : undefined, skus: create.scope === "sku_sample" ? targets : undefined, batchIds: create.scope === "batch" ? targets.map(Number) : undefined };
-      const response = await fetch("/api/stocktakes", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "创建盘点任务失败");
+      const payload = { warehouseId: Number(create.warehouseId), scope: create.scope, dueDate: create.dueDate,
+        ...(create.assignedFactoryId ? { assignedFactoryId: Number(create.assignedFactoryId) } : {}),
+        ...(create.scope === "sku_sample" ? { skus: targets } : {}),
+        ...(create.scope === "batch" ? { batchIds: targets.map(Number) } : {}) };
+      await mutateJson("/api/v1/stocktakes", "POST", payload);
       toast("盘点任务已创建，相关库存已冻结"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "创建盘点任务失败"); } finally { setBusy(false); }
   }
@@ -47,8 +50,9 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
     if (!q || Object.values(q).some(value => value === "")) return toast("请完整填写四类库存数量");
     setBusy(true);
     try {
-      const response = await fetch("/api/stocktakes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: task.id, action: "submit_count", batchId: target.batchId, sku: target.sku, ...Object.fromEntries(Object.entries(q).filter(([key]) => key !== "sku").map(([key, value]) => [key, Number(value)])) }) });
-      const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "保存盘点数量失败");
+      await mutateJson("/api/v1/stocktakes", "PATCH", { id: task.id, action: "submit_count",
+        ...(target.batchId === null ? {} : { batchId: target.batchId }), sku: target.sku,
+        ...Object.fromEntries(Object.entries(q).filter(([key]) => key !== "sku").map(([key, value]) => [key, Number(value)])) });
       toast("盘点数量已保存"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "保存盘点数量失败"); } finally { setBusy(false); }
   }
@@ -56,8 +60,7 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
   async function finishRound() {
     if (!task) return; setBusy(true);
     try {
-      const response = await fetch("/api/stocktakes", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id: task.id, action: "finish_round", ...dates }) });
-      const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "结束本轮盘点失败");
+      const body = await mutateJson<{status:string},Record<string,unknown>>("/api/v1/stocktakes", "PATCH", { id: task.id, action: "finish_round", ...dates });
       toast(body.status === "recount" ? "初盘存在差异，已进入复盘" : body.status === "pending_approval" ? "复盘差异已提交供应链审批" : "盘点已完成并解除冻结"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "结束本轮盘点失败"); } finally { setBusy(false); }
   }

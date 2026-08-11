@@ -26,6 +26,7 @@ import {
 } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { calculatePlannedPaymentDate } from "../../lib/business-rules";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 function localDate(value: string) {
   const date = new Date(value);
@@ -93,6 +94,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/shipments");
   try {
     const access = await requireAccess(request);
     const body = (await request.json()) as {

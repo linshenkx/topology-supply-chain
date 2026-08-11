@@ -26,6 +26,7 @@ import { writeAudit } from "../../lib/audit";
 import { evaluateExceptionRemediation, evaluatePayableLedger, evaluatePaymentCapacity } from "../../lib/payment-guard";
 import { createReminder } from "../../lib/reminders";
 import { consumeVerifiedStepUp, databaseObjectVersion, finalRequestDigest, nextDatabaseUpdatedAt } from "../../lib/step-up";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 const REJECTION_REASONS = new Set([
   "amount_mismatch",
@@ -70,6 +71,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/finance");
   try {
     const access = await requireAccess(request);
     const body = (await request.json()) as Record<string, unknown>;

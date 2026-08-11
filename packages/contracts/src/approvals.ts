@@ -15,6 +15,8 @@ export interface ApprovalListItem {
   status: ApprovalStatus;
   requestedAt: string;
   objectVersion: number;
+  approvalOwner: "r1" | "r2" | "r3" | "unknown";
+  stepUpObjectType: "approval" | "r2:approval_request";
 }
 
 export interface ApprovalsResponse {
@@ -43,6 +45,8 @@ export const approvalsResponseSchema = {
           "status",
           "requestedAt",
           "objectVersion",
+          "approvalOwner",
+          "stepUpObjectType",
         ],
         properties: {
           id: { type: "integer", minimum: 1 },
@@ -56,6 +60,8 @@ export const approvalsResponseSchema = {
           },
           requestedAt: { type: "string", minLength: 1 },
           objectVersion: { type: "integer", minimum: 1 },
+          approvalOwner: { type: "string", enum: ["r1", "r2", "r3", "unknown"] },
+          stepUpObjectType: { type: "string", enum: ["approval", "r2:approval_request"] },
         },
       },
     },

@@ -11,6 +11,7 @@ import {
   mutationAffectedExactlyOnce,
   planInventoryTransferDeductions,
 } from "../../../lib/inventory-transfer-guard";
+import { retiredPlatformRoute } from "../../../lib/retired-writer";
 
 function transferNo() {
   return `TR${new Date().toISOString().replace(/\D/g, "").slice(2, 14)}${Math.floor(Math.random() * 900 + 100)}`;
@@ -25,6 +26,7 @@ async function allowedWarehouseIds(access: Awaited<ReturnType<typeof requireAcce
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/inventory/transfers");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "factory"]);
@@ -56,6 +58,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/inventory/transfers");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "factory"]);

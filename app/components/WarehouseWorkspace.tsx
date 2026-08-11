@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { mutateJson } from "../lib/mutation-client";
 
 type Factory = { id: number; name: string };
 type Blockers = { inventory: number; reservations: number; transfers: number; unfinishedBusiness: number };
@@ -27,9 +28,7 @@ export default function WarehouseWorkspace({ toast }: Props) {
   async function submit(payload: Record<string, unknown>, success: string) {
     setBusy(true);
     try {
-      const response = await fetch("/api/warehouses", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "操作失败");
+      await mutateJson("/api/v1/warehouses", "POST", payload);
       toast(success, "success"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "操作失败", "error"); }
     finally { setBusy(false); }
@@ -44,7 +43,7 @@ export default function WarehouseWorkspace({ toast }: Props) {
       <select value={form.type} onChange={event => setForm({ ...form, type: event.target.value })}><option value="company">公司仓</option><option value="factory">组装工厂仓</option><option value="other">其他仓库</option></select>
       {form.type === "factory" && <select value={form.factoryId} onChange={event => setForm({ ...form, factoryId: event.target.value })}><option value="">选择所属工厂</option>{factories.map(row => <option key={row.id} value={row.id}>{row.name}</option>)}</select>}
       <input placeholder="地址" value={form.address} onChange={event => setForm({ ...form, address: event.target.value })} />
-      <button className="primary" disabled={busy} onClick={() => void submit({ action: "create", ...form }, "仓库已创建").then(() => setForm({ code: "", name: "", type: "company", factoryId: "", address: "" }))}>新增仓库</button>
+      <button className="primary" disabled={busy} onClick={() => void submit({ action: "create", code: form.code, name: form.name, type: form.type, address: form.address, ...(form.factoryId ? { factoryId: Number(form.factoryId) } : {}) }, "仓库已创建").then(() => setForm({ code: "", name: "", type: "company", factoryId: "", address: "" }))}>新增仓库</button>
     </div>
     <div className="warehouse-table-wrap"><table className="warehouse-table"><thead><tr><th>仓库</th><th>类型与归属</th><th>地址</th><th>停用阻碍</th><th>状态/操作</th></tr></thead><tbody>{warehouses.map(row => {
       const factory = factories.find(item => item.id === row.factoryId)?.name;

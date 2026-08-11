@@ -10,6 +10,7 @@ import { createReminder } from "../../lib/reminders";
 import { withDbTransaction } from "../../../db/transaction";
 import { evaluatePayableLedger, evaluateRefundCorrection } from "../../lib/payment-guard";
 import { consumeVerifiedStepUp, databaseObjectVersion, finalRequestDigest, nextDatabaseUpdatedAt } from "../../lib/step-up";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 export async function GET(request: Request) {
   try {
@@ -28,6 +29,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/approvals");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "finance"]);

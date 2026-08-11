@@ -13,16 +13,19 @@ import type { AccessContext } from "../auth/index.js";
 const ALLOWED_ROLES = new Set(["admin", "supply_chain", "finance"]);
 const APPROVAL_LIMIT = 100;
 const APPROVAL_QUERY = `SELECT
-  id,
-  request_no AS requestNo,
-  workflow_type AS workflowType,
-  summary,
-  high_risk AS highRisk,
-  status,
-  requested_at AS requestedAt,
-  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', updated_at) DIV 1000 AS UNSIGNED) AS objectVersion
-FROM approval_requests
-ORDER BY requested_at DESC, id DESC
+  a.id,
+  a.request_no AS requestNo,
+  a.workflow_type AS workflowType,
+  a.summary,
+  a.high_risk AS highRisk,
+  a.status,
+  a.requested_at AS requestedAt,
+  CAST(TIMESTAMPDIFF(MICROSECOND, '1970-01-01 00:00:00', a.updated_at) DIV 1000 AS UNSIGNED) AS approvalVersion,
+  rv.version AS resourceVersion
+FROM approval_requests a
+LEFT JOIN resource_versions rv
+  ON rv.resource_type = 'approval_request' AND rv.resource_id = CAST(a.id AS CHAR)
+ORDER BY a.requested_at DESC, a.id DESC
 LIMIT ${APPROVAL_LIMIT}`;
 
 type ApprovalAccessContext = Pick<
@@ -106,15 +109,26 @@ function approval(row: DataRow): ApprovalListItem {
     return unavailable();
   }
 
+  const workflowType = string(row.workflowType);
+  const resourceVersion = row.resourceVersion === null || row.resourceVersion === undefined
+    ? null : positiveInteger(row.resourceVersion);
+  const owner: ApprovalListItem["approvalOwner"] = workflowType === "user_role_change"
+    ? "r1"
+    : resourceVersion !== null
+      ? "r2"
+      : new Set(["warehouse_transfer", "warehouse_merge", "stocktake_variance", "production_variance", "shipment_deviation", "financial_record_correction"]).has(workflowType)
+        ? "r3" : "unknown";
   return {
     id: positiveInteger(row.id),
     requestNo: string(row.requestNo),
-    workflowType: string(row.workflowType),
+    workflowType,
     summary: string(row.summary),
     highRisk: boolean(row.highRisk),
     status: status as ApprovalListItem["status"],
     requestedAt: string(row.requestedAt),
-    objectVersion: positiveInteger(row.objectVersion),
+    objectVersion: resourceVersion ?? positiveInteger(row.approvalVersion),
+    approvalOwner: owner,
+    stepUpObjectType: owner === "r2" ? "r2:approval_request" : "approval",
   };
 }
 

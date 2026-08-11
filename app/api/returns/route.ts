@@ -14,6 +14,7 @@ import { insertOne } from "../../../db/insert-one";
 import { withDbTransaction } from "../../../db/transaction";
 import { accessErrorResponse, isInternal, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 export async function GET(request: Request) {
   try {
@@ -41,6 +42,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/returns");
   try {
     const access = await requireAccess(request);
     const body = (await request.json()) as Record<string, unknown>;

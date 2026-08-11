@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { mutateJson } from "../lib/mutation-client";
 
 type Material = { id: number; theoreticalQuantity: number; issuedQuantity: number; consumedQuantity: number; lossQuantity: number; deviationStatus: string; component?: { componentSku: string; componentName: string } };
 type Order = { id: number; executionNo: string; plannedQuantity: number; completedQuantity: number; status: string; plannedStartDate?: string; plannedFinishDate?: string; item?: { sku: string; productName: string }; purchaseOrder?: { orderNo: string }; factory?: { name: string }; bom?: { id: number; version: string }; materials: Material[]; reports: Array<{ result: string; actualFinishedQuantity: number }> };
@@ -36,11 +37,11 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
     }
     setForm(next);
   }
-  async function send(method: "POST" | "PATCH", payload: unknown, success: string) {
-    const response = await fetch("/api/production-orders", { method, headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-    const body = await response.json();
-    if (!response.ok) return toast(body.error ?? "操作失败");
-    toast(success); await load();
+  async function send(method: "POST" | "PATCH", payload: Record<string, unknown>, success: string) {
+    try {
+      await mutateJson("/api/v1/production-orders", method, payload);
+      toast(success); await load();
+    } catch (error) { toast(error instanceof Error ? error.message : "操作失败"); }
   }
   async function create() {
     await send("POST", { ...form, orderItemId: Number(form.orderItemId), factoryId: Number(form.factoryId), bomId: Number(form.bomId), plannedQuantity: Number(form.plannedQuantity) }, "生产单已创建");
@@ -54,7 +55,7 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
   async function complete(order: Order) {
     const entered = window.prompt("请输入实际完工数量", String(order.completedQuantity || order.plannedQuantity));
     if (entered === null) return;
-    await send("PATCH", { id: order.id, action: "complete", actualFinishedQuantity: Number(entered), lines: linePayload(order) }, "完工报告已提交；如有偏差将自动进入审批");
+    await send("PATCH", { id: order.id, action: "complete", actualFinishedQuantity: Number(entered), materials: linePayload(order) }, "完工报告已提交；如有偏差将自动进入审批");
   }
 
   return <section className="production-workspace">
@@ -71,7 +72,7 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
     </div>}
     {loading ? <div className="empty">正在加载…</div> : data.orders.length === 0 ? <div className="empty">暂无生产单，可从已导入的成品采购明细创建。</div> : <div className="production-list">{data.orders.map(order => <article key={order.id} className="production-card">
       <div className="production-row"><div><strong>{order.executionNo}</strong><small>{order.purchaseOrder?.orderNo} · {order.item?.sku} · {order.item?.productName}</small></div><div>{order.factory?.name}<small>BOM {order.bom?.version ?? "-"}</small></div><div>计划 {order.plannedQuantity}<small>完成 {order.completedQuantity}</small></div><span className={`status ${order.status}`}>{STATUS[order.status] ?? order.status}</span><div className="row-actions">{order.status === "planned" && <button onClick={() => void send("PATCH", { id: order.id, action: "start" }, "生产已开始")}>开工</button>}<button onClick={() => openMaterials(order)}>物料</button>{["planned", "in_production"].includes(order.status) && <button className="primary" onClick={() => void complete(order)}>完工</button>}</div></div>
-      {expanded === order.id && <div className="material-editor"><div className="material-head"><span>物料</span><span>理论/预留</span><span>实际领料</span><span>实际消耗</span><span>损耗</span><span>偏差</span></div>{order.materials.map(line => { const value = values[line.id] ?? { issuedQuantity: 0, consumedQuantity: 0, lossQuantity: 0 }; return <div className="material-line" key={line.id}><span>{line.component?.componentSku}<small>{line.component?.componentName}</small></span><span>{line.theoreticalQuantity}</span>{(["issuedQuantity", "consumedQuantity", "lossQuantity"] as const).map(key => <input key={key} type="number" min="0" value={value[key]} onChange={e => setValues(all => ({ ...all, [line.id]: { ...value, [key]: Number(e.target.value) } }))} />)}<span>{line.deviationStatus === "pending_approval" ? "待审批" : "正常"}</span></div>})}<div className="form-actions"><button className="primary" onClick={() => void send("PATCH", { id: order.id, action: "materials", lines: linePayload(order) }, "物料实绩已保存")}>保存实绩</button></div></div>}
+      {expanded === order.id && <div className="material-editor"><div className="material-head"><span>物料</span><span>理论/预留</span><span>实际领料</span><span>实际消耗</span><span>损耗</span><span>偏差</span></div>{order.materials.map(line => { const value = values[line.id] ?? { issuedQuantity: 0, consumedQuantity: 0, lossQuantity: 0 }; return <div className="material-line" key={line.id}><span>{line.component?.componentSku}<small>{line.component?.componentName}</small></span><span>{line.theoreticalQuantity}</span>{(["issuedQuantity", "consumedQuantity", "lossQuantity"] as const).map(key => <input key={key} type="number" min="0" value={value[key]} onChange={e => setValues(all => ({ ...all, [line.id]: { ...value, [key]: Number(e.target.value) } }))} />)}<span>{line.deviationStatus === "pending_approval" ? "待审批" : "正常"}</span></div>})}<div className="form-actions"><button className="primary" onClick={() => void send("PATCH", { id: order.id, action: "materials", materials: linePayload(order) }, "物料实绩已保存")}>保存实绩</button></div></div>}
     </article>)}</div>}
   </section>;
 }

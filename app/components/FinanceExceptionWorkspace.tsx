@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { finalRequestDigest, mutateJson } from "../lib/mutation-client";
 
 type Invoice = { id:number; invoiceNo:string; amountTaxIncludedMinor:number; status:string };
-type Exception = { id:number; invoiceId:number; exceptionType:string; affectedAmountMinor:number; replacementCoveredAmountMinor:number; refundedAmountMinor:number; replacementDeadline:string; status:string; reason:string };
+type Exception = { id:number; invoiceId:number; exceptionType:string; affectedAmountMinor:number; replacementCoveredAmountMinor:number; refundedAmountMinor:number; replacementDeadline:string; status:string; reason:string; objectVersion:number };
 type Payment = { id:number; paymentRequestId:number; amountMinor:number; paidAt:string; bankReference:string; recordType:string; objectVersion:number };
 type PaymentRequest = { id:number; requestNo:string };
 type Data = { invoices:Invoice[]; exceptions:Exception[]; payments:Payment[]; paymentRequests:PaymentRequest[]; replacementLinks:Array<{id:number;invoiceExceptionId:number;replacementInvoiceId:number;coveredAmountMinor:number;status:string}> };
@@ -33,7 +33,7 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
   async function post(body:Record<string,unknown>, message:string) {
     setBusy(true);
     try {
-      await json("/api/finance", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) });
+      await mutateJson("/api/v1/finance", "POST", body);
       toast(message); await refresh(); return true;
     } catch (error) { toast(error instanceof Error ? error.message : "操作失败"); return false; }
     finally { setBusy(false); }
@@ -76,10 +76,21 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
     const remaining = row.affectedAmountMinor-row.replacementCoveredAmountMinor-row.refundedAmountMinor;
     const amount = Number(window.prompt(`本次退款到账金额（元），剩余 ${money(remaining)}`, String(remaining/100)));
     if (!amount) return;
-    const receivedAt = window.prompt("退款到账日期（YYYY-MM-DD）", new Date().toISOString().slice(0,10));
+    const paidAt = window.prompt("退款到账日期（YYYY-MM-DD）", new Date().toISOString().slice(0,10));
     const bankReference = window.prompt("退款银行流水号");
-    if (!receivedAt || !bankReference) return;
-    await post({ action:"record_refund", invoiceExceptionId:row.id, paymentRequestId, amountMinor:Math.round(amount*100), receivedAt, bankReference }, "退款到账记录已保存");
+    if (!paidAt || !bankReference) return;
+    try {
+      const finalPayload = { action:"record_refund", invoiceExceptionId:row.id, paymentRequestId,
+        amountMinor:Math.round(amount*100), paidAt, bankReference:bankReference.trim() };
+      const requestDigest = await finalRequestDigest(finalPayload);
+      const request = await mutateJson<{challengeNo:string;previewCode?:string;mobile?:string},Record<string,unknown>>(
+        "/api/v1/auth/step-up/request", "POST", { action:"record_refund", objectType:"finance:record_refund",
+          objectId:String(row.id), objectVersion:row.objectVersion, requestDigest });
+      const code = window.prompt(request.previewCode ? `本地预览验证码：${request.previewCode}` : `验证码已发送至 ${request.mobile || "绑定手机"}，请输入6位验证码`);
+      if (!code) return;
+      await mutateJson("/api/v1/auth/step-up/verify", "POST", { challengeNo:request.challengeNo, code });
+      await post({ ...finalPayload, challengeNo:request.challengeNo }, "退款到账记录已保存");
+    } catch (error) { toast(error instanceof Error ? error.message : "手机验证失败"); }
   }
 
   async function correct(row:Payment) {

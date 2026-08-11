@@ -8,7 +8,7 @@ async function source(path) {
   return readFile(new URL(path, repositoryRoot), "utf8");
 }
 
-test("finance and approval reads use v1 while mutations remain on legacy routes", async () => {
+test("finance and approval reads and R3 mutations use v1", async () => {
   const [page, finance, exceptions] = await Promise.all([
     source("app/page.tsx"),
     source("app/components/FinanceWorkspace.tsx"),
@@ -16,23 +16,15 @@ test("finance and approval reads use v1 while mutations remain on legacy routes"
   ]);
 
   assert.match(page, /apiJson\("\/api\/v1\/approvals"\)/u);
-  assert.match(
-    page,
-    /apiJson\("\/api\/approvals", \{[\s\S]*?method: "POST"/u,
-  );
+  assert.match(page, /mutateJson\("\/api\/v1\/approvals", "POST"/u);
   assert.match(finance, /requestJson\("\/api\/v1\/finance"\)/u);
-  assert.match(
-    finance,
-    /requestJson\("\/api\/finance", \{ method:"POST"/u,
-  );
+  assert.match(finance, /mutateJson\("\/api\/v1\/finance", "POST"/u);
   assert.match(exceptions, /json\("\/api\/v1\/finance"\)/u);
-  assert.match(
-    exceptions,
-    /json\("\/api\/finance", \{ method:"POST"/u,
-  );
+  assert.match(exceptions, /mutateJson\("\/api\/v1\/finance", "POST"/u);
+  assert.doesNotMatch([page, finance, exceptions].join("\n"), /["'`]\/api\/(?:approvals|finance)["'`]/u);
 });
 
-test("inventory and logistics reads use v1 while mutations remain on legacy routes", async () => {
+test("inventory and logistics reads and R3 mutations use v1", async () => {
   const [inventory, stocktakes, warehouses, shipping] = await Promise.all([
     source("app/components/InventoryWorkspace.tsx"),
     source("app/components/StocktakeWorkspace.tsx"),
@@ -41,18 +33,21 @@ test("inventory and logistics reads use v1 while mutations remain on legacy rout
   ]);
 
   assert.match(inventory, /fetch\("\/api\/v1\/inventory"/u);
-  assert.match(inventory, /fetch\("\/api\/inventory", \{ method: "POST"/u);
+  assert.match(inventory, /mutateJson(?:<[^\n]+>)?\(\s*"\/api\/v1\/inventory", "POST"/u);
+  assert.match(inventory, /mutateJson\("\/api\/v1\/inventory\/transfers", "PATCH"/u);
   assert.match(stocktakes, /fetch\("\/api\/v1\/stocktakes"/u);
-  assert.match(stocktakes, /fetch\("\/api\/stocktakes", \{ method: "POST"/u);
+  assert.match(stocktakes, /mutateJson\("\/api\/v1\/stocktakes", "POST"/u);
   assert.match(warehouses, /fetch\("\/api\/v1\/warehouses"/u);
-  assert.match(warehouses, /fetch\("\/api\/warehouses", \{ method: "POST"/u);
+  assert.match(warehouses, /mutateJson\("\/api\/v1\/warehouses", "POST"/u);
   assert.match(shipping, /jsonRequest\("\/api\/v1\/shipments"\)/u);
-  assert.match(shipping, /post\("\/api\/shipments"/u);
+  assert.match(shipping, /post\("\/api\/v1\/shipments"/u);
   assert.match(shipping, /jsonRequest\("\/api\/v1\/returns"\)/u);
-  assert.match(shipping, /post\("\/api\/returns"/u);
+  assert.match(shipping, /post\("\/api\/v1\/returns"/u);
+  assert.doesNotMatch([inventory, stocktakes, warehouses, shipping].join("\n"),
+    /["'`]\/api\/(?:inventory|stocktakes|warehouses|shipments|returns)(?:["'`/])/u);
 });
 
-test("production stays legacy while R2 supplier mutations use the typed v1 adapter", async () => {
+test("production and R2 supplier mutations use their typed v1 adapters", async () => {
   const [production, suppliers, prices, performance, r2Client] = await Promise.all([
     source("app/components/ProductionWorkspace.tsx"),
     source("app/components/SupplierWorkspace.tsx"),
@@ -62,7 +57,8 @@ test("production stays legacy while R2 supplier mutations use the typed v1 adapt
   ]);
 
   assert.match(production, /fetch\("\/api\/v1\/production-orders"/u);
-  assert.match(production, /fetch\("\/api\/production-orders", \{ method/u);
+  assert.match(production, /mutateJson\("\/api\/v1\/production-orders", method/u);
+  assert.doesNotMatch(production, /["'`]\/api\/production-orders["'`]/u);
   assert.match(suppliers, /fetch\("\/api\/v1\/suppliers"\)/u);
   assert.match(suppliers, /fetch\("\/api\/v1\/supplier-skus"\)/u);
   assert.match(suppliers, /writeSupplier/u);

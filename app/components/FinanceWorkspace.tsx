@@ -47,7 +47,7 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
 
   async function post(body:Record<string,unknown>, success:string) {
     setBusy(true);
-    try { await requestJson("/api/finance", { method:"POST", headers:{"content-type":"application/json"}, body:JSON.stringify(body) }); toast(success); await refresh(); return true; }
+    try { await mutateJson("/api/v1/finance", "POST", body); toast(success); await refresh(); return true; }
     catch (error) { toast(error instanceof Error ? error.message : "操作失败"); return false; }
     finally { setBusy(false); }
   }
@@ -57,7 +57,7 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
     form.append("entityType", "purchase_order"); form.append("entityId", String(purchaseOrderId));
     const result = await uploadPlatformFile<{ file:{ id:number; scanStatus:string }; usable:boolean }>(form);
     if (!result.usable) throw new Error("文件已进入安全隔离区；扫描通过前不能用于发票登记。");
-    return String(result.file.id);
+    return result.file.id;
   }
 
   async function createInvoice(event:FormEvent<HTMLFormElement>) {
@@ -65,8 +65,14 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
     setBusy(true);
     try {
       const purchaseOrderId = Number(form.get("purchaseOrderId"));
-      const fileKey = await upload(file, purchaseOrderId);
-      const ok = await post({ action:"create_invoice", factoryId:Number(form.get("factoryId")), purchaseOrderId, invoiceNo:form.get("invoiceNo"), invoiceType:form.get("invoiceType"), coverageMode:form.get("coverageMode"), amountTaxIncludedMinor:Math.round(Number(form.get("amount"))*100), taxAmountMinor:Math.round(Number(form.get("taxAmount"))*100), expectedAmountMinor:Math.round(Number(form.get("expectedAmount"))*100), issuedAt:form.get("issuedAt"), fileKey }, "发票已登记，等待供应链与财务双重核验");
+      const fileId = await upload(file, purchaseOrderId);
+      const coverageMode = String(form.get("coverageMode") ?? "");
+      const ok = await post({ action:"create_invoice", factoryId:Number(form.get("factoryId")), purchaseOrderId,
+        invoiceNo:String(form.get("invoiceNo") ?? ""), invoiceType:String(form.get("invoiceType") ?? ""),
+        coverageMode, amountTaxIncludedMinor:Math.round(Number(form.get("amount"))*100),
+        taxAmountMinor:Math.round(Number(form.get("taxAmount"))*100),
+        ...(coverageMode === "delivery_batch" ? { expectedAmountMinor:Math.round(Number(form.get("expectedAmount"))*100) } : {}),
+        issuedAt:String(form.get("issuedAt") ?? ""), fileId }, "发票已登记，等待供应链与财务双重核验");
       if (ok) { setInvoiceOpen(false); event.currentTarget.reset(); }
     } catch (error) { toast(error instanceof Error ? error.message : "发票登记失败"); setBusy(false); }
   }

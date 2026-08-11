@@ -380,6 +380,8 @@ type ApprovalItem = {
   id: number; requestNo: string; workflowType: string; summary: string;
   highRisk: boolean; status: string; requestedAt: string;
   objectVersion: number;
+  approvalOwner: "r1" | "r2" | "r3" | "unknown";
+  stepUpObjectType: "approval" | "r2:approval_request";
 };
 
 const roleLabels: Record<string, string> = {
@@ -505,7 +507,9 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
       const requestDigest = await finalRequestDigest({ id: selected.id, decision, comment: comment.trim() });
       const data = await mutateJson<{ challengeNo:string; mobile?:string; previewCode?:string }, Record<string, unknown>>(
         "/api/v1/auth/step-up/request", "POST",
-        { action: "review", objectType: "approval", objectId: String(selected.id), objectVersion: selected.objectVersion, requestDigest },
+        { action: selected.approvalOwner === "r2" ? (decision === "approved" ? "approve" : "reject") : "review",
+          objectType: selected.stepUpObjectType, objectId: String(selected.id),
+          objectVersion: selected.objectVersion, requestDigest },
       );
       setChallengeNo(data.challengeNo);
       setMaskedMobile(data.mobile || "");
@@ -521,9 +525,9 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
   const submit = async () => {
     if (!selected) return;
     try {
-      await apiJson("/api/approvals", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: selected.id, decision, comment, challengeNo: selected.highRisk ? challengeNo : undefined }),
+      await mutateJson("/api/v1/approvals", "POST", {
+        id: selected.id, decision, comment,
+        ...(selected.highRisk ? { challengeNo } : {}),
       });
       toast(decision === "approved" ? "审批已通过并记录操作日志" : "审批已拒绝并记录操作日志");
       setSelected(null); await refresh();
@@ -634,6 +638,7 @@ export default function Home() {
   const [qualityOpen, setQualityOpen] = useState(false);
   const [sessionName, setSessionName] = useState("陈文超");
   const [sessionRole, setSessionRole] = useState("供应链管理员");
+  const [sessionRoles, setSessionRoles] = useState<string[]>([]);
   const visible = useMemo(() => filter === "全部" ? orders : orders.filter(o => o.status === filter), [filter]);
   const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2400); };
   useEffect(() => {
@@ -643,6 +648,7 @@ export default function Home() {
         if (!payload?.user) return;
         setSessionName(payload.user.name);
         setSessionRole(payload.user.roles.join("、"));
+        setSessionRoles(payload.user.roles);
         setSessionState("ready");
       })
       .catch(() => setSessionState("login"));
@@ -697,7 +703,7 @@ export default function Home() {
           <b>{approvalCount} 项待审批</b>
         </section>
 
-        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityPanel toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} /> : active === "工厂协同" ? <CollaborationPanel toast={toast} /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : active === "AI助手" ? <BackofficePanel module={active} toast={toast} /> : <>
+        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityPanel toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} roles={sessionRoles} /> : active === "工厂协同" ? <CollaborationPanel toast={toast} /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : active === "AI助手" ? <BackofficePanel module={active} toast={toast} /> : <>
         <section className="focus">
           <div><span className="eyebrow">三级供应网络 · 今日概况</span><h2>订单正在有序推进，<b>3 项供应风险</b>需要处理</h2><p>组装工厂负责下属供应商交付；供应链部门制定政策、查看备料并监控断供风险。</p></div>
           <div className="focus-number"><strong>87<small>%</small></strong><span>本月准时交付率</span><i>↑ 4.2%</i></div>

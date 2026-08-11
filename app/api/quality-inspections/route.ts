@@ -14,6 +14,7 @@ import {
 } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { evaluateInspection } from "../../lib/business-rules";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 const DEFAULT_PASS_RATE_BPS = 9500;
 
@@ -48,6 +49,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/quality-inspections");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supplier_qc", "company_qc"]);

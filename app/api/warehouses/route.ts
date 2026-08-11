@@ -4,6 +4,7 @@ import { approvalRequests, factories, inventoryBatches, inventoryReservations, i
 import { insertOne } from "../../../db/insert-one";
 import { accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 type Blockers = { inventory: number; reservations: number; transfers: number; unfinishedBusiness: number };
 
@@ -44,6 +45,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/warehouses");
   try {
     const access = await requireAccess(request); requireRole(access, ["admin", "supply_chain"]);
     const body = await request.json() as Record<string, unknown>;

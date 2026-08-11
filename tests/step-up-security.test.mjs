@@ -132,11 +132,14 @@ test("finance actions no longer trust a client smsVerified boolean", () => {
 
 test("approval proofs are bound to the selected approval and consumed server-side", () => {
   const route = read("app/api/approvals/route.ts");
+  const handler = read("apps/api/src/r3/approval-handler.ts");
   const page = read("app/page.tsx");
   assert.doesNotMatch(route, /body\.smsVerified/);
-  assert.match(route, /scope: `approval:\$\{approval\.id\}`/);
+  assert.match(handler, /objectType: "approval"/);
+  assert.match(handler, /objectId: String\(id\)/);
+  assert.match(handler, /consumeStepUpClaim/);
   assert.match(page, /objectVersion: selected\.objectVersion, requestDigest/);
-  assert.match(page, /challengeNo: selected\.highRisk \? challengeNo/);
+  assert.match(page, /\.\.\.\(selected\.highRisk \? \{ challengeNo \} : \{\}\)/);
 });
 
 test("approval proof consumption and pending-state CAS share the claim transaction", () => {

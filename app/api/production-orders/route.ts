@@ -8,6 +8,7 @@ import {
 import { accessErrorResponse, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { assertProductionWarehouse, finalizeProductionInventory } from "../../lib/production-finalization";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 const now = () => new Date().toISOString();
 const deviationBps = (actual: number, expected: number) => expected <= 0 ? (actual > 0 ? 10000 : 0) : Math.round(Math.abs(actual - expected) * 10000 / expected);
@@ -53,6 +54,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/production-orders");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "factory"]);
@@ -93,6 +95,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/production-orders");
   try {
     const access = await requireAccess(request);
     requireRole(access, ["admin", "supply_chain", "factory"]);

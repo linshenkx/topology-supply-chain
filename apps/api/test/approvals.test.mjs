@@ -25,7 +25,8 @@ const approvalRows = [
     highRisk: 1,
     status: "pending",
     requestedAt: "2026-08-11T08:00:00.000Z",
-    objectVersion: 1_786_435_200_000,
+    approvalVersion: 1_786_435_200_000,
+    resourceVersion: null,
     payloadJson: '{"proposedBankReference":"must-not-leak"}',
     requestedBy: 999,
   },
@@ -37,7 +38,8 @@ const approvalRows = [
     highRisk: 0,
     status: "approved",
     requestedAt: "2026-08-10T08:00:00.000Z",
-    objectVersion: 1_786_348_800_000,
+    approvalVersion: 1_786_348_800_000,
+    resourceVersion: null,
     reviewComment: "must-not-leak-review-comment",
   },
 ];
@@ -123,7 +125,9 @@ test("internal roles retain the company-wide bounded approval list", async () =>
           highRisk: Boolean(row.highRisk),
           status: row.status,
           requestedAt: row.requestedAt,
-          objectVersion: row.objectVersion,
+          objectVersion: row.approvalVersion,
+          approvalOwner: "r3",
+          stepUpObjectType: "approval",
         })),
       });
       assert.equal(response.json().approvals[0].payloadJson, undefined);
@@ -132,7 +136,7 @@ test("internal roles retain the company-wide bounded approval list", async () =>
       assert.deepEqual(database.queries[0].params, []);
       assert.match(
         database.queries[0].sql,
-        /ORDER BY requested_at DESC, id DESC\s+LIMIT 100$/u,
+        /ORDER BY a\.requested_at DESC, a\.id DESC\s+LIMIT 100$/u,
       );
       assert.match(database.queries[0].sql, /TIMESTAMPDIFF\(MICROSECOND/u);
       assert.equal(database.executeCalls, 0);

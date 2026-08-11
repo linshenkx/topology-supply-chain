@@ -5,6 +5,7 @@ import { approvalRequests, factories, inventoryBatches, reminderSchedules, stock
 import { accessErrorResponse, isInternal, requireAccess, requireRole } from "../../lib/authz";
 import { writeAudit } from "../../lib/audit";
 import { createReminder } from "../../lib/reminders";
+import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 const ACTIVE = ["frozen", "first_count", "recount", "pending_approval"] as const;
 const number = (value: unknown) => Math.trunc(Number(value));
@@ -35,6 +36,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/stocktakes");
   try {
     const access = await requireAccess(request); requireRole(access, ["admin", "supply_chain"]);
     const body = await request.json() as { warehouseId?: number; scope?: "full_warehouse" | "sku_sample" | "batch"; dueDate?: string; assignedFactoryId?: number; skus?: string[]; batchIds?: number[] };
@@ -62,6 +64,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  if (request.method.length >= 0) return retiredPlatformRoute("/api/v1/stocktakes");
   try {
     const access = await requireAccess(request); requireRole(access, ["admin", "supply_chain", "factory"]);
     const body = await request.json() as { id?: number; action?: "submit_count" | "finish_round"; batchId?: number | null; sku?: string; availableQuantity?: number; lockedQuantity?: number; defectiveQuantity?: number; pendingInspectionQuantity?: number; estimatedProductionDate?: string; estimatedExpiryDate?: string };

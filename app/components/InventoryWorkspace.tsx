@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import StocktakeWorkspace from "./StocktakeWorkspace";
 import WarehouseWorkspace from "./WarehouseWorkspace";
+import { mutateJson } from "../lib/mutation-client";
 
 type Warehouse = { id: number; name: string; status: string };
 type Batch = { id: number; batchNo: string; warehouseId: number; sku: string; expiryDate?: string; productionDateEstimated: boolean; expiryDateEstimated: boolean; availableQuantity: number; lockedQuantity: number; defectiveQuantity: number; pendingInspectionQuantity: number; quarantineQuantity: number; ownership: string; expiryStatus: string };
@@ -40,9 +41,12 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
   async function submitReservation(event: React.FormEvent) {
     event.preventDefault(); setBusy(true);
     try {
-      const response = await fetch("/api/inventory", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ batchId: Number(reserve.batchId), entityType: reserve.entityType, entityId: reserve.entityType === "historical" ? undefined : Number(reserve.entityId), requestedQuantity: Number(reserve.requestedQuantity), priority: Number(reserve.priority) }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "库存预留失败");
+      const body = await mutateJson<{reservation?:{shortageQuantity?:number}},Record<string,unknown>>(
+        "/api/v1/inventory", "POST",
+        { batchId: Number(reserve.batchId), entityType: reserve.entityType,
+          ...(reserve.entityType === "historical" ? {} : { entityId: Number(reserve.entityId) }),
+          requestedQuantity: Number(reserve.requestedQuantity), priority: Number(reserve.priority) },
+      );
       const gap = body.reservation?.shortageQuantity ?? 0;
       toast(gap ? `已部分预留，仍有 ${gap} 件库存缺口` : "库存已成功预留");
       setReserve(current => ({ ...current, requestedQuantity: "", entityId: "" })); await load();
@@ -53,9 +57,7 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
   async function submitTransfer(event: React.FormEvent) {
     event.preventDefault(); setBusy(true);
     try {
-      const response = await fetch("/api/inventory/transfers", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...transfer, fromWarehouseId: Number(transfer.fromWarehouseId), toWarehouseId: Number(transfer.toWarehouseId), quantity: Number(transfer.quantity) }) });
-      const body = await response.json();
-      if (!response.ok) throw new Error(body.error ?? "调拨申请失败");
+      await mutateJson("/api/v1/inventory/transfers", "POST", { ...transfer, fromWarehouseId: Number(transfer.fromWarehouseId), toWarehouseId: Number(transfer.toWarehouseId), quantity: Number(transfer.quantity) });
       toast("调拨申请已提交，等待供应链审批"); setTransfer({ fromWarehouseId: "", toWarehouseId: "", sku: "", quantity: "", reason: "" }); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "调拨申请失败"); }
     finally { setBusy(false); }
@@ -64,8 +66,7 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
   async function transferAction(id: number, action: "ship" | "receive") {
     setBusy(true);
     try {
-      const response = await fetch("/api/inventory/transfers", { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ id, action }) });
-      const body = await response.json(); if (!response.ok) throw new Error(body.error ?? "调拨操作失败");
+      await mutateJson("/api/v1/inventory/transfers", "PATCH", { id, action });
       toast(action === "ship" ? "已登记实际发出，调出仓库存已扣减" : "已确认收货，调入仓库存已增加"); await load();
     } catch (error) { toast(error instanceof Error ? error.message : "调拨操作失败"); }
     finally { setBusy(false); }
