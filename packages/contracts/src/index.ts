@@ -153,3 +153,34 @@ export {
   fileDownloadResponseSchema,
   type FileDownloadQuery,
 } from "./files.js";
+export {
+  productionOrdersResponseSchema,
+  productionOrdersSchemaId,
+  type ProductionBom,
+  type ProductionBomComponent,
+  type ProductionFactory,
+  type ProductionMaterialLine,
+  type ProductionOrder,
+  type ProductionOrderItem,
+  type ProductionOrderOption,
+  type ProductionOrderOptions,
+  type ProductionOrdersResponse,
+  type ProductionPurchaseOrder,
+  type ProductionReport,
+  type ProductionSku,
+} from "./production-orders.js";
+export {
+  qualityInspectionsResponseSchema,
+  qualityInspectionsSchemaId,
+  type QualityInspection,
+  type QualityInspectionsResponse,
+} from "./quality-inspections.js";
+export {
+  returnsResponseSchema,
+  returnsSchemaId,
+  type DeliveryBatch,
+  type ProductReturn,
+  type ProductReturnDisposition,
+  type ProductReturnInspection,
+  type ReturnsResponse,
+} from "./returns.js";
