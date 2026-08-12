@@ -1,5 +1,5 @@
 allowBuilds:
-  '@alicloud/openapi-core': set this to true or false
+  '@alicloud/openapi-core': false
   esbuild: true
   sharp: true
   workerd: true

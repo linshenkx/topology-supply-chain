@@ -84,9 +84,11 @@
 
 ### 迁移历史不匹配
 
-`deploy.sh`会在停止旧writer之前比较`__drizzle_migrations`中的已应用hash与仓库迁移。任何不匹配都会中止发布；禁止修改历史表、强行改hash或在原库重放fresh baseline。
+MySQL migration基线已冻结为`0000`至`0004`的唯一append-only manifest。`deploy.sh`会在停止旧writer之前同时校验仓库SQL hash、snapshot hash、journal顺序/时间戳，以及`__drizzle_migrations`中的`hash + created_at`严格前缀。任何文件改写、未知hash、时间戳错位、空洞或额外history都会中止发布；禁止修改历史表、强行改hash或在原库重放fresh baseline。
 
-受控路径是：保留失败输出并完成数据库快照；由数据库负责人确认服务器实际采用的历史SQL；随后选择恢复仓库中的原历史文件并用新的追加迁移承载差异，或在经批准的新库上执行fresh baseline后做可审计、可回退的数据迁移。未完成该评审前不得继续启用generation 2 writer fence。
+生产前必须由数据库负责人只读导出`SELECT id, hash, created_at FROM __drizzle_migrations ORDER BY created_at, id`并与下列顺序核对：`0000=7d881b148166d64865a3062ff36898888eeef9c5f87fb650f9533c27fb576f7c@1785334745281`、`0001=425efc9f6fd7baa04a80bd6bc03a39716201af5916ae9a62c103e098f52e1577@1785662406202`、`0002=8d2878f9b5e2068343db0d12437b2d92a479cbcb23e0dc668d1395ba703a2a64@1786464478157`、`0003=f7fb8dcf1ff6185cebd866a39836b0c5ef7b56a7e96ccc8fe438aa572b96df41@1786512000000`、`0004=974aefb885e265e082f4f1a6006b2cd77472cf63183ca1746d0fc83885bf9ecd@1786521600000`。空history仅允许空业务schema。
+
+Git初始字节的`0000=9570b573c500297d7c17b505852858a87756b67c6e491c7830823c30c00ec26f`与`0001=91700499032fb516feb8d335053bab5c74e967fa5559d22ab3daf5589c4f607d`不是受支持的已应用lineage：MySQL 8会把其`SERIAL`主键展开为`BIGINT UNSIGNED`，首个指向`INT`外键即以不兼容失败，Drizzle不会写入完成history。若生产导出出现这些hash或其他hash，必须停止、保留输出与快照并做数据库取证/经批准的数据迁移；不得把它们改写成canonical hash。未完成核对前不得继续启用generation 2 writer fence。
 
 ### Nginx发布门禁
 
