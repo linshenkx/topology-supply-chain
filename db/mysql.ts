@@ -5,7 +5,6 @@ import { toMysqlDateTime } from "../app/lib/business-rules";
 
 declare global {
   // Reuse the pool during development hot reloads and across route invocations.
-  // eslint-disable-next-line no-var
   var topologyMysqlPool: Pool | undefined;
 }
 

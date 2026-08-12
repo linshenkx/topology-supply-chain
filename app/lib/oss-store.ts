@@ -1,7 +1,6 @@
 import OSS from "ali-oss";
 
 declare global {
-  // eslint-disable-next-line no-var
   var topologyOssClientPromise: Promise<OSS> | undefined;
 }
 

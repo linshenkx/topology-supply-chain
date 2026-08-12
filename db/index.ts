@@ -41,7 +41,6 @@ function getProductionDb() {
     productionDb = createProductionDb();
   }
   if (!productionDb) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
     throw new Error("RDS适配器尚未初始化。请使用initializeProductionDb()启动Node服务。");
   }
   return productionDb;
