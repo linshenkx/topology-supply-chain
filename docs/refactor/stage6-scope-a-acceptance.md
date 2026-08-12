@@ -2,14 +2,16 @@
 
 ## 1. 结论
 
-**NO-GO**。
+**GO**。
 
-验收对象是 exact SHA `9e2a8f70acebc35b6924860b9597ebe0b3421903`。Scope A 的迁移冻结、旧读收口、统一命令内核、写并发、显式 writer activation 与 rollback compatibility 等核心改造已得到较强的自动化和真实 MySQL 8 证据；但发现以下阻断项，验收任务未修改实现：
+最终验收对象是 exact SHA `b15e5bdee98230796ba7d42fe35f24dcce057ba5`，其父为本报告原 NO-GO docs-only 提交 `f38ffab0fa9c4959b6f503f9e78733812a866000`，再前一提交为原验收实现基线 `9e2a8f70acebc35b6924860b9597ebe0b3421903`。
 
-1. **Important — Web/app 的权威生产 Compose 配置没有 `cap_drop: [ALL]`。** `deploy/aliyun/docker-compose.yml` 中 app 服务从第 2 行开始，配置了 `security_opt`（第 24 行）和 `read_only`（第 26 行），但没有 `cap_drop`；同一文件的 API（第 79 行）和 Worker（第 127 行）均有。手工给 Web 容器施加 `--cap-drop ALL` 后镜像可以运行，只证明镜像兼容该约束，不能证明实际发布路径会施加该约束。该结果不满足本次硬门禁“API/Worker/Web runtime 均 non-root、read-only、cap-drop”。
-2. **必需环境门禁未闭环 — Web 的 production health 未得到绿色证据。** 在不读取生产凭据、不联网部署的约束下，Web production 容器接入本地真实 MySQL 后 `/api/health` 返回 `503`，其中 `application=ok`、`database=ok`、`objectStorage=failed`。这是正确的 fail-closed 表现，但不能被表述为 production health 已通过；需要在发布环境以正式 OSS/RAM Role 完成。
+原 NO-GO 的两个阻断点已做极窄差量复验并闭合，未重跑未受影响的全量矩阵：
 
-依据停止条件，存在 Important 或必需门禁未证明即判 NO-GO，不自行修复，也不进入 Scope B。
+1. `b15e5bd` 仅在 `deploy/aliyun/docker-compose.yml` 为 Web/app 增加 `cap_drop: [ALL]`，并增加对应 `tests/api-deployment-boundary.test.mjs` 边界测试。最终 Compose 展开模型中 Web/API/Worker 均为 non-root Dockerfile user、`no-new-privileges`、`cap_drop=ALL`、read-only、`/tmp` tmpfs；定向测试 16/16 通过，既有 API/Worker 边界未回退。
+2. 全本地 TLS/DNS mock 下，未增加 `OSS_ENDPOINT`、未修改生产代码，Web 通过真实 `ali-oss@6.23.0` production health 路径访问 OSS 风格 FQDN；临时 CA 正常校验证书 SAN，SDK 发出 `GET /?bucketInfo=` 后 `/api/health` 为 200，三项检查均为 `ok`。停止本地 OSS backend、保留同一 FQDN TLS gateway 防止外网回落后，SDK 获得本地 502，Web health 正确返回 503，响应不包含 AK、SK、FQDN、request id 或错误细节。
+
+因此当前 Scope A 代码验收为 GO。真实阿里云 OSS/RAM Role、RDS TLS、外部 provider、Nginx/DNS/ECS 路径和人工角色 UAT 仍是发布时外部门禁；本结论不代表已经完成生产部署或生产 UAT。
 
 ## 2. 验收基线与环境
 
@@ -17,14 +19,15 @@
 |---|---|
 | 仓库 | `codex-software` 隔离 worktree |
 | worktree | `C:\Users\15588\.codex\worktrees\0d56\codex-software` |
-| HEAD | `9e2a8f70acebc35b6924860b9597ebe0b3421903` |
+| HEAD | `b15e5bdee98230796ba7d42fe35f24dcce057ba5` |
+| 父链 | `b15e5bd` → `f38ffab`（原 docs-only NO-GO）→ `9e2a8f7`（原实现基线） |
 | 工作状态（验收前） | detached HEAD、clean |
 | 唯一写者核对 | 无本 worktree 相关进程、无 `.lock`；主工作树位于 `D:\Dev`，不在本隔离目录写入 |
 | OS / Shell | Windows / PowerShell；bash `5.0.17` 用于脚本语法检查 |
 | Node / pnpm | Node `v24.19.0`；pnpm `11.9.0`；满足 `node >=22.13.0` |
 | Docker | Server `29.6.2` |
 | MySQL | `mysql:8.4`，实际版本 `8.4.11`，`REPEATABLE-READ` |
-| 对比基准 | Scope A 集成提交 `fa2581c`；其后至 HEAD 共 8 个提交，77 files，`+4198/-1031` |
+| 对比基准 | 原全量证据基线为 `9e2a8f7`；差量实现 `b15e5bd` 相对 `f38ffab` 仅修改 Compose 与对应边界测试两文件 |
 
 验收前已完整阅读 `docs/refactor` 下与目标架构、实施计划、逐提交审查、Stage 6 closure 直接相关的文档，包括 00–05、implementation notes、overall audit、27 份逐提交 review、3 份 segment review、Stage 1–6 notes 与完整 Stage 5 计划。结论以当前 HEAD 为准；后续提交已经修复的旧 finding 不机械重复。
 
@@ -45,7 +48,7 @@
 | 普通 deploy fence 零变化；空 allowlist fail closed；partial activation 只改目标；未激活时健康但副作用暂停 | 显式激活事务化、可重复、按资源；Worker disabled fence 保持 ready 并暂停消费 | deployment MySQL 5/5；Worker MySQL 4/4；手工 runtime 中 Worker disabled 且 ready 200 | PASS |
 | manifest 与 5 migrations/35 commands/29 resources 一致；rollback generation 安全 | release manifest 由 canonical 集合生成；pre-Scope-A/跨 generation 拒绝，同 generation exact contract 才允许 | release-deployment-safety tests；真实 deployment integration；源码审查 | PASS |
 | clean frozen install、TS/tests/build/audit/diff-check；区分 changed/global lint 基线 | install、TS、API/Worker/legacy tests、Aliyun build、audit、diff-check 通过；changed lint 0 errors/94 warnings，global lint 28 errors/116 warnings，28 errors 与 Stage 1 记录基线一致 | 第 6 节命令结果 | PASS（lint 债务保留，不将 warning 声称为清零） |
-| API/Worker/Web Docker build/runtime：non-root、read-only、cap-drop、health、request-id、生产闭包 | 三镜像均构建；手工施加约束时 user 为 `api`/`worker`/`nextjs`，rootfs 只读、`cap_drop=ALL`；API/Worker health 200，request-id 回传；实际 Compose 的 Web 未配置 cap-drop；Web production OSS health 未绿 | 三镜像 build/run/inspect；Compose config；health 请求 | **FAIL / NO-GO** |
+| API/Worker/Web Docker build/runtime：non-root、read-only、cap-drop、health、request-id、生产闭包 | 三镜像均构建；user 为 `api`/`worker`/`nextjs`；最终 Compose 对三者均强制 no-new-privileges、`cap_drop=ALL`、read-only、`/tmp` tmpfs；API/Worker 既有 health 与 request-id 证据保持；Web 真实 ali-oss SDK 本地 TLS 正向 200、backend 停止后脱敏 503 | 原三镜像 build/run/inspect；`b15e5bd` 定向边界测试 16/16；Compose JSON 展开；本地 TLS/DNS OSS mock health 正负请求 | PASS |
 | UAT 使用真实 Fastify inject/现有角色矩阵，不虚构人工生产 UAT | internal/factory/supplier_qc/receiver/finance 等正负权限、scope、preview/production fail-closed 由自动化覆盖；未执行人工生产 UAT | API 239 tests 和 MySQL platform integration | 自动化部分 PASS；人工/环境项待发布前完成 |
 
 ## 4. 结构与 LOC 量化
@@ -66,7 +69,7 @@
 
 ### 4.2 组件、依赖和 Scope B
 
-- `fa2581c..HEAD` 没有修改 `package.json`、`pnpm-lock.yaml`、API/Worker package、三份 Dockerfile或 `deploy/aliyun/docker-compose.yml`，因此 closure 没有新增运行组件或生产依赖。
+- `fa2581c..9e2a8f7` 没有修改 `package.json`、`pnpm-lock.yaml`、API/Worker package、三份 Dockerfile或 `deploy/aliyun/docker-compose.yml`，因此原 closure 没有新增运行组件或生产依赖。差量 `b15e5bd` 只修改 Compose 的 Web capability drop 与对应边界测试，不增加组件或依赖。
 - R2/R3 既有路径集合和 writer identity 集合未增长。release manifest 中 R2/R3 文本计数增加来自把既有 35 commands / 29 resources 集中为 canonical manifest，不是新增阶段/模块。
 - 未实现 PurchaseReceipt/采购收货入库、BOM 真实库存预留/领料/消耗、质检后库存放行/隔离、Receiver/LegalEntity 模型、真实银行指令或新业务状态机。
 
@@ -186,7 +189,8 @@ bash -n scripts/activate-writers.sh
 
 docker compose --env-file deploy/aliyun/.env.production.template \
   -f deploy/aliyun/docker-compose.yml config --no-interpolate
-# exit 0；解析结果显示 API/Worker 有 cap_drop=ALL，app 无 cap_drop
+# 原 `9e2a8f7` 验收时 exit 0，曾显示 API/Worker 有 cap_drop=ALL、app 缺失；
+# `b15e5bd` 差量复验后的最终展开见 6.4，三服务现均为 ALL
 
 docker build -f Dockerfile.api --target runner \
   -t codex-scopea-wave4-acceptance-api:9e2a8f70 .
@@ -205,9 +209,67 @@ docker run ... --read-only --cap-drop ALL --security-opt no-new-privileges:true 
 |---|---|---:|---|---|
 | API | `api` (uid 1001) | true | ALL | live 200；ready 200 |
 | Worker | `worker` (uid 1001) | true | ALL | live 200；ready 200（fence disabled） |
-| Web | `nextjs` (uid 1001) | true | ALL（仅手工施加） | production 503；application/db ok，OSS failed |
+| Web | `nextjs` (uid 1001) | true | ALL；`b15e5bd` 后也由 Compose 强制 | 原验收无 OSS 环境为 503；差量本地 TLS/ali-oss 正向 200、停 backend 后脱敏 503 |
 
 API 对 `x-request-id: scopea-acceptance-request-001` 的 404 响应返回相同 header，并在 JSON body 中返回同一 requestId。生产闭包抽查：API 镜像含 Fastify/mysql2、不含 Next；Worker 含 mysql2、不含 Fastify/Next；Web standalone 含 Next、不含 API/Worker 源目录。三容器 `/app` 写探针均因 read-only filesystem 失败。
+
+### 6.4 `b15e5bd` 极窄差量复验
+
+```text
+git rev-parse HEAD
+# b15e5bdee98230796ba7d42fe35f24dcce057ba5
+
+git rev-parse HEAD^
+# f38ffab0fa9c4959b6f503f9e78733812a866000
+
+git diff --name-status f38ffab..b15e5bd
+# M deploy/aliyun/docker-compose.yml
+# M tests/api-deployment-boundary.test.mjs
+
+node --test tests/api-deployment-boundary.test.mjs
+# 16 pass / 0 fail / 0 skip
+
+bash -n deploy/aliyun/deploy.sh
+bash -n deploy/aliyun/rollback.sh
+bash -n scripts/activate-writers.sh
+# 三者 exit 0
+
+docker compose --env-file deploy/aliyun/.env.production.template \
+  -f deploy/aliyun/docker-compose.yml config --no-interpolate --format json
+# exit 0；app/api/worker 均展开为 no-new-privileges、cap_drop=ALL、read_only=true、/tmp tmpfs；
+# 三者均只发布到 127.0.0.1；Dockerfile USER 分别为 nextjs/api/worker
+
+docker build -f Dockerfile.aliyun --target runner \
+  -t codex-scopea-wave4-revalidation-web:b15e5bd .
+# PASS；Next 16.2.11；TypeScript PASS；47 routes
+```
+
+本地 OSS SDK production health 验证拓扑：
+
+```text
+Web (nextjs, read-only, cap-drop ALL)
+  -> TLS/DNS gateway alias:
+     codex-scopea-wave4-revalidation-bucket.oss-cn-hangzhou.aliyuncs.com:443
+  -> local OSS backend:8080
+
+MySQL: mysql:8.4，位于同一独立 Docker network
+TLS: 临时 CA；server SAN 覆盖 bucket FQDN 与 OSS endpoint FQDN
+Web env: 临时 AK/SK、OSS_INTERNAL_ENDPOINT=false、NODE_EXTRA_CA_CERTS=<临时 CA>
+生产代码: 未新增 OSS_ENDPOINT，未修改
+```
+
+正向证据：
+
+```text
+ali-oss user-agent: aliyun-sdk-nodejs/6.23.0 Node.js 22.23.2 on Linux 64-bit
+request: GET /?bucketInfo= HTTP/1.1
+Web /api/health: 200
+{"status":"ok","runtime":"aliyun","checks":{"application":"ok","database":"ok","objectStorage":"ok"},...}
+```
+
+负向证据：停止本地 OSS backend，但保留同一 FQDN TLS gateway，使 DNS 不可能回落到公网；gateway 本地记录 ali-oss 请求为 502。Web `/api/health` 返回 503，body 仅含 `application=ok`、`database=ok`、`objectStorage=failed`。检查确认 body 不含临时 AK、SK、`aliyuncs.com`、mock request id、主机/连接/证书/stack/message/upstream 等错误细节。
+
+执行透明度说明：最初探索使用单容器同时承担 FQDN alias 和 OSS 响应；停止该容器后 Docker alias 随之消失，一次使用纯临时假 AK/SK 的探针意外解析到公网 OSS 并得到 `NoSuchBucket`，该结果立即作废且未作为验收证据。随后改为“常驻本地 TLS/DNS gateway + 可停止 backend”的两层模型，以上最终正负证据均来自该全本地模型；未使用生产凭据、未传输业务数据、未做部署。
 
 ## 7. 发布/回滚和 Nginx 边界
 
@@ -215,7 +277,7 @@ API 对 `x-request-id: scopea-acceptance-request-001` 的 404 响应返回相同
 - `activate-writers.sh` 要求非空资源 allowlist、release/generation/contract 对齐、drain=0、reconciliation hash/diff=0、approval/reason、observability 与 live drain；事务只锁定目标资源并支持幂等。
 - `rollback.sh` 要求 current/target release manifest、镜像事实与 DB facts/fences 一致；pre-Scope-A、跨 generation/schema/contract rollback 均拒绝；同 generation exact compatibility 才允许。
 - Nginx 仅在同域把 `/api/v1/` 发给独立 API，并设置 `X-Request-ID`、`X-Forwarded-*`，清空所有外部 `oai-authenticated-user-*` 身份头；Web 路由保持在 3000。
-- Compose 端口只绑定 `127.0.0.1`；API/Worker read-only、cap-drop、no-new-privileges。Web 缺失 cap-drop 是本报告的 Important finding。
+- Compose 端口只绑定 `127.0.0.1`；Web/API/Worker 均为 non-root Dockerfile user、read-only、cap-drop ALL、no-new-privileges 和独立 `/tmp` tmpfs。原 Web capability Important finding 已由 `b15e5bd` 关闭。
 
 ## 8. UAT 证据边界
 
@@ -232,7 +294,7 @@ API 对 `x-request-id: scopea-acceptance-request-001` 的 404 响应返回相同
 - 真实 Nginx TLS 证书、DNS、ECS/SLB 路径；
 - 实际发布窗口中的 observability、drain/reconciliation/approval evidence。
 
-这些必须作为发布前人工/环境门禁；尤其 Web production health 仍未绿色，按本次停止条件支持 NO-GO。
+这些必须作为发布前人工/环境门禁，但不是当前 Scope A 代码阻断。差量复验已经证明 Web production health 代码路径在真实 ali-oss SDK、正常 TLS 校验、本地 MySQL 和全本地 DNS/网络 mock 下可以 200，并在 OSS backend 失败时正确、脱敏地 503；这不替代真实云环境门禁。
 
 ## 9. 旧 review finding 的最终状态
 
@@ -244,7 +306,7 @@ API 对 `x-request-id: scopea-acceptance-request-001` 的 404 响应返回相同
 | rollback 未核对 R2/R3 release facts/generation | `6fa2924` | 已关闭；同 generation exact contract 才允许 |
 | 平台/R2/R3 三套命令执行器重复 | `9e2a8f7` | 已关闭；3→1，总非空 LOC 597→397 |
 | Receiver/LegalEntity 等模型只具条件性边界 | 未在 Scope A 实现 | 正确保留为 Scope B 排除项，不误报为 Scope A 完成 |
-| Web production Compose 缺 `cap_drop` | 未修复 | **新确认/仍开放，Important，NO-GO** |
+| Web production Compose 缺 `cap_drop` | `b15e5bd` | 已关闭；最终 Compose 展开为 `cap_drop=ALL`，定向边界测试 16/16 |
 
 ## 10. Scope B 排除项
 
@@ -268,6 +330,8 @@ API 对 `x-request-id: scopea-acceptance-request-001` 的 404 响应返回相同
 
 最终核对：前缀 `codex-scopea-wave4-acceptance-` 的 containers/images/volumes/networks 均为 `0`；端口 `33306`、`33307`、`33000`、`33001`、`33002` 均不再监听。未删除任何未知 Docker 资源。
 
+差量复验仅创建 `codex-scopea-wave4-revalidation-*` 前缀资源：Web、MySQL、TLS gateway、OSS backend 四个容器，一个 Web image tag，一个独立 network，以及同前缀的临时证书/CA/配置文件。正向、负向路径结束后全部删除；最终 containers/images/volumes/networks 均为 `0`，临时文件为 `0`，本地端口 `33100` 不再监听。未删除共享基础镜像或任何未知资源。
+
 ## 12. 停止说明
 
-结论已经由 Important 配置缺口和未闭环的 production Web health 门禁确定为 **NO-GO**。本验收任务没有修代码、没有修改测试/配置/脚本/package/lock/migration/业务逻辑，没有 push、merge、deploy，也没有使用生产凭据。后续应由实现任务修复 Web/app 的权威 Compose capability drop，并在受控发布环境补齐 production health 证据后，再从新的 exact SHA 发起独立复验。
+`b15e5bd` 的极窄差量已关闭原两个代码验收阻断点，最终结论为 **GO**。本验收任务没有修改生产实现、测试、配置、脚本、package、lock、migration 或业务逻辑；唯一仓库写入是更新本报告。没有 push、merge、deploy，没有使用生产凭据，也没有实现 Scope B。发布团队仍须在受控环境完成真实阿里云 OSS/RAM Role、RDS TLS、外部 provider、Nginx/DNS/ECS/SLB、observability/drain/reconciliation/approval evidence 和人工角色 UAT，方可发布。
