@@ -3,7 +3,7 @@ import test from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 
 import { createAuditWriter } from "../dist/infrastructure/audit.js";
-import { createDatabaseClient } from "../dist/infrastructure/database.js";
+import { createDatabaseClient, DatabaseClientError } from "../dist/infrastructure/database.js";
 import { consumeStepUpClaim } from "../dist/platform/approvals.js";
 import { executeCommand } from "../dist/platform/commands.js";
 import { enqueueOutbox } from "../dist/platform/outbox.js";
@@ -140,8 +140,89 @@ test("MySQL 8 write foundation is atomic, serialized, fenced, and replayable", {
     (error) => error.code === "IDEMPOTENCY_KEY_REUSED",
   );
 
+  const unknownKey = `mysql-unknown-${suffix}`;
+  const unknownResource = `unknown-${suffix}`;
+  let unknownRuns = 0;
+  const unknownOptions = {
+    ...commandOptions,
+    payload: { id: 79 },
+    request: request(unknownKey),
+    async run({ transaction }) {
+      unknownRuns += 1;
+      await transaction.execute(
+        `INSERT INTO resource_versions (resource_type, resource_id, version, updated_at)
+         VALUES ('integration', ?, 1, CURRENT_TIMESTAMP(3))`,
+        [unknownResource],
+      );
+      return { success: true, resource: unknownResource };
+    },
+  };
+  const commitThenUnknown = {
+    async transaction(callback) {
+      await db.transaction(callback);
+      throw new DatabaseClientError(
+        "DATABASE_TRANSACTION_OUTCOME_UNKNOWN",
+        "injected after successful commit",
+      );
+    },
+  };
+  await assert.rejects(
+    executeCommand({ ...unknownOptions, database: commitThenUnknown }),
+    (error) => error.code === "COMMAND_OUTCOME_UNKNOWN" &&
+      !error.message.includes("injected"),
+  );
+  const recovered = await executeCommand({ ...unknownOptions, database: db });
+  assert.equal(recovered.body.command.replayed, true);
+  assert.equal(unknownRuns, 1);
+
+  const failedKey = `mysql-business-rollback-${suffix}`;
+  const failedResource = `business-rollback-${suffix}`;
+  await assert.rejects(
+    executeCommand({
+      ...commandOptions,
+      payload: { id: 80 },
+      request: request(failedKey),
+      async run({ transaction }) {
+        await transaction.execute(
+          `INSERT INTO resource_versions (resource_type, resource_id, version, updated_at)
+           VALUES ('integration', ?, 1, CURRENT_TIMESTAMP(3))`,
+          [failedResource],
+        );
+        await createAuditWriter({ database: transaction })({
+          access: { localPreview: false, userId },
+          action: "business_rollback_probe",
+          module: "platform",
+          entityType: "integration",
+          entityId: failedResource,
+        });
+        await enqueueOutbox(transaction, {
+          topic: "notification.dispatch",
+          aggregateType: "integration",
+          aggregateId: failedResource,
+          deduplicationKey: `business-rollback:${suffix}`,
+          payload: { approvalId: 1, recipientRole: "admin", type: "probe" },
+        });
+        throw new Error("injected business failure");
+      },
+    }),
+    /injected business failure/u,
+  );
+  const [businessRollback] = await db.query(
+    `SELECT
+       (SELECT COUNT(*) FROM resource_versions WHERE resource_type = 'integration' AND resource_id = ?) AS versions,
+       (SELECT COUNT(*) FROM audit_logs WHERE entity_id = ?) AS audits,
+       (SELECT COUNT(*) FROM outbox_messages WHERE deduplication_key = ?) AS outboxRows,
+       (SELECT COUNT(*) FROM command_idempotency WHERE idempotency_key = ?) AS commands`,
+    [failedResource, failedResource, `business-rollback:${suffix}`, failedKey],
+  );
+  assert.deepEqual(
+    [businessRollback.versions, businessRollback.audits,
+      businessRollback.outboxRows, businessRollback.commands],
+    [0, 0, 0, 0],
+  );
+
   await db.execute(
-    `UPDATE writer_fences SET enabled = 0, generation = generation + 1
+    `UPDATE writer_fences SET enabled = 0, owner = 'fastify-v1', generation = 2
      WHERE resource = 'notifications.commands'`,
   );
   await assert.rejects(
@@ -152,7 +233,18 @@ test("MySQL 8 write foundation is atomic, serialized, fenced, and replayable", {
     (error) => error.code === "WRITER_FENCE_REJECTED",
   );
   await db.execute(
-    `UPDATE writer_fences SET enabled = 1, generation = 2
+    `UPDATE writer_fences SET enabled = 1, owner = 'not-fastify-v1', generation = 2
+     WHERE resource = 'notifications.commands'`,
+  );
+  await assert.rejects(
+    executeCommand({
+      ...commandOptions,
+      request: request(`mysql-fence-identity-${suffix}`),
+    }),
+    (error) => error.code === "WRITER_FENCE_REJECTED",
+  );
+  await db.execute(
+    `UPDATE writer_fences SET enabled = 1, owner = 'fastify-v1', generation = 2
      WHERE resource = 'notifications.commands'`,
   );
 
