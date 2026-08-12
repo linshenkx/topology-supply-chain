@@ -30,6 +30,14 @@ if (process.argv.includes("--print")) {
 }
 
 const baseline = JSON.parse(await readFile(baselineUrl, "utf8"));
+const unfrozenWarnings = Object.keys(baseline.entries)
+  .filter((key) => key.includes("::warning::"))
+  .filter((key) => typeof baseline.warningReasons?.[key] !== "string" || baseline.warningReasons[key].trim() === "");
+if (unfrozenWarnings.length) {
+  console.error("Frozen warning entries require a non-empty, entry-specific reason:");
+  for (const key of unfrozenWarnings) console.error(`- ${key}`);
+  process.exit(1);
+}
 const regressions = Object.entries(actual)
   .filter(([key, count]) => count > (baseline.entries[key] ?? 0))
   .map(([key, count]) => `${key}: ${count} > ${baseline.entries[key] ?? 0}`);
