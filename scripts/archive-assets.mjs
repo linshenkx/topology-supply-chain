@@ -284,7 +284,11 @@ async function commandVerify(print = true) {
     const relative = entry.status === "archived" ? entry.target : entry.source;
     const absolute = repositoryPath(relative);
     const metadata = await stat(absolute);
-    if (metadata.size !== entry.evidence?.bytes || await sha256(absolute) !== entry.evidence?.sha256) {
+    if (
+      metadata.size !== entry.evidence?.bytes
+      || metadata.mtime.toISOString() !== entry.evidence?.mtimeUtc
+      || await sha256(absolute) !== entry.evidence?.sha256
+    ) {
       throw new Error(`Archive evidence mismatch: ${relative}`);
     }
     if (entry.status === "archived") {
