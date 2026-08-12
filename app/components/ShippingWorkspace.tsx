@@ -17,6 +17,17 @@ type ReturnRecord = {
   dispositions?: Array<{ id: number; type: string; quantity: number; status: string }>;
 };
 
+type ShippingAction = {
+  type: "ship" | "receive" | "inspect" | "propose";
+  id: number;
+} | null;
+
+type PostMutation = (
+  path: "/api/v1/shipments" | "/api/v1/returns",
+  payload: Record<string, unknown>,
+  success: string,
+) => Promise<void>;
+
 const statusText: Record<string, string> = {
   pending_factory_confirmation: "待工厂确认", planned: "待发货", pending_supply_chain: "待供应链审批",
   approved_to_ship: "已批准发货", shipped: "运输中", received: "已签收", received_with_exception: "物流异常",
@@ -46,7 +57,7 @@ export default function ShippingWorkspace({ toast, roles }: { toast: (message: s
   const [shipments, setShipments] = useState<Shipment[]>([]);
   const [returns, setReturns] = useState<ReturnRecord[]>([]);
   const [busy, setBusy] = useState(false);
-  const [action, setAction] = useState<{ type: "ship" | "receive" | "inspect" | "propose"; id: number } | null>(null);
+  const [action, setAction] = useState<ShippingAction>(null);
   const receiverOnly = roles.length === 1 && roles[0] === "receiver";
 
   const refresh = useCallback(async () => {
@@ -129,30 +140,30 @@ function ActionBox({ title, children, close }: { title: string; children: React.
   return <div className="shipping-action"><div className="panel-head"><h3>{title}</h3><button className="ghost-btn" onClick={close}>取消</button></div>{children}</div>;
 }
 
-function ShipForm({ id, busy, post, close }: { id: number; busy: boolean; post: Function; close: () => void }) {
+function ShipForm({ id, busy, post, close }: { id: number; busy: boolean; post: PostMutation; close: () => void }) {
   return <ActionBox title="登记实际发货" close={close}><form className="production-form" onSubmit={async event => {
     event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File;
     try { const saved = await upload(file, "shipment_evidence", "delivery_batch", id); await post("/api/v1/shipments", { action: "ship", deliveryBatchId: id, shippedAt: String(form.get("shippedAt") ?? ""), carrier: String(form.get("carrier") ?? ""), logisticsNo: String(form.get("logisticsNo") ?? ""), deviationReason: String(form.get("deviationReason") ?? ""), evidenceFileId: saved.id, evidenceFileName: saved.fileName }, "实际发货已登记，库存已扣减"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
   }}><label>实际发货时间<input name="shippedAt" type="datetime-local" required /></label><label>承运商<input name="carrier" required /></label><label>物流单号<input name="logisticsNo" required /></label><label>偏离原因<input name="deviationReason" placeholder="未按计划日期时必填" /></label><label>发货凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>提交发货</button></form></ActionBox>;
 }
 
-function ReceiveForm({ id, busy, post, close }: { id: number; busy: boolean; post: Function; close: () => void }) {
+function ReceiveForm({ id, busy, post, close }: { id: number; busy: boolean; post: PostMutation; close: () => void }) {
   return <ActionBox title="确认收货" close={close}><form className="production-form" onSubmit={async event => {
     event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File;
     try { const saved = await upload(file, "receipt_evidence", "delivery_batch", id); await post("/api/v1/shipments", { action: "receive", deliveryBatchId: id, receivedQuantity: Number(form.get("receivedQuantity")), damagedQuantity: Number(form.get("damagedQuantity")), receivedAt: String(form.get("receivedAt") ?? ""), exceptionReason: String(form.get("exceptionReason") ?? ""), receiptEvidenceFileId: saved.id }, "签收已确认"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); }
   }}><label>签收数量<input name="receivedQuantity" type="number" min="0" required /></label><label>破损数量<input name="damagedQuantity" type="number" min="0" defaultValue="0" required /></label><label>签收时间<input name="receivedAt" type="datetime-local" required /></label><label>少货/破损原因<input name="exceptionReason" /></label><label>签收凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>确认签收</button></form></ActionBox>;
 }
 
-function ReturnsPanel({ rows, shipments, busy, post, action, setAction }: { rows: ReturnRecord[]; shipments: Shipment[]; busy: boolean; post: Function; action: unknown; setAction: Function }) {
+function ReturnsPanel({ rows, shipments, busy, post, action, setAction }: { rows: ReturnRecord[]; shipments: Shipment[]; busy: boolean; post: PostMutation; action: unknown; setAction: (action: ShippingAction) => void }) {
   return <><form className="production-form" onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); post("/api/v1/returns", { action: "receive", returnNo: String(form.get("returnNo") ?? ""), sourceDeliveryBatchId: Number(form.get("sourceDeliveryBatchId")), warehouseId: Number(form.get("warehouseId")), quantity: Number(form.get("quantity")) }, "退货已登记并进入冻结库存"); event.currentTarget.reset(); }}>
     <label>退货单号<input name="returnNo" required /></label><label>原发货批次<select name="sourceDeliveryBatchId" required><option value="">请选择</option>{shipments.map(row => <option key={row.id} value={row.id}>{row.batchNo}</option>)}</select></label><label>退回仓库ID<input name="warehouseId" type="number" min="1" required /></label><label>退货数量<input name="quantity" type="number" min="1" required /></label><button disabled={busy}>登记退货</button>
   </form><div className="shipping-list">{rows.map(row => <article className="production-card" key={row.id}><div className="production-row"><div><strong>{row.returnNo}</strong><span>{row.sku} · {row.quantity} 件</span></div><span className="status">{statusText[row.status] || row.status}</span></div>{row.inspections?.map(item => <div className="shipping-facts" key={item.id}><span>质检：合格 {item.passedQuantity} / 不合格 {item.failedQuantity}</span><span>{item.defectReason}</span></div>)}{row.dispositions?.map(item => <div className="shipping-facts" key={item.id}><span>{({ restock: "重新入库", rework: "返工", scrap: "报废" } as Record<string,string>)[item.type]} {item.quantity} 件</span><span>{item.status}</span></div>)}<div className="row-actions">{row.status === "quarantined" && <button onClick={() => setAction({ type: "inspect", id: row.id })}>退货质检</button>}{row.status === "pending_supply_chain" && !row.dispositions?.length && <button onClick={() => setAction({ type: "propose", id: row.id })}>工厂提交方案</button>}{row.status === "pending_supply_chain" && !!row.dispositions?.length && <><button onClick={() => post("/api/v1/returns", { action: "review", productReturnId: row.id, decision: "approved" }, "退货方案已批准")}>供应链批准</button><button className="danger-btn" onClick={() => post("/api/v1/returns", { action: "review", productReturnId: row.id, decision: "rejected" }, "退货方案已拒绝")}>拒绝</button></>}</div></article>)}</div></>;
 }
 
-function InspectForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: Function; close: () => void }) {
+function InspectForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: PostMutation; close: () => void }) {
   return <ActionBox title="退货质检" close={close}><form className="production-form" onSubmit={async event => { event.preventDefault(); const form = new FormData(event.currentTarget); const file = form.get("evidence") as File; try { const saved = await upload(file, "quality_evidence", "product_return", record.id); const passed = Number(form.get("passedQuantity")); await post("/api/v1/returns", { action: "inspect", productReturnId: record.id, inspectedQuantity: record.quantity, passedQuantity: passed, failedQuantity: record.quantity - passed, defectReason: String(form.get("defectReason") ?? ""), evidenceFileId: saved.id }, "退货质检已完成"); } catch (error) { window.alert(error instanceof Error ? error.message : "上传失败"); } }}><label>检验数量<input value={record.quantity} readOnly /></label><label>合格数量<input name="passedQuantity" type="number" min="0" max={record.quantity} required /></label><label>不良原因<input name="defectReason" /></label><label>现场照片/凭证<input name="evidence" type="file" accept="image/*,.pdf" required /></label><button disabled={busy}>提交质检</button></form></ActionBox>;
 }
 
-function DispositionForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: Function; close: () => void }) {
+function DispositionForm({ record, busy, post, close }: { record: ReturnRecord; busy: boolean; post: PostMutation; close: () => void }) {
   return <ActionBox title="工厂退货处理方案" close={close}><form className="production-form" onSubmit={event => { event.preventDefault(); const form = new FormData(event.currentTarget); post("/api/v1/returns", { action: "propose", productReturnId: record.id, dispositions: [{ type: "restock", quantity: Number(form.get("restock")) }, { type: "rework", quantity: Number(form.get("rework")) }, { type: "scrap", quantity: Number(form.get("scrap")) }] }, "处理方案已提交供应链审核"); }}><label>重新入库<input name="restock" type="number" min="0" defaultValue="0" /></label><label>返工<input name="rework" type="number" min="0" defaultValue="0" /></label><label>报废<input name="scrap" type="number" min="0" defaultValue="0" /></label><p>三项合计必须等于 {record.quantity} 件。</p><button disabled={busy}>提交方案</button></form></ActionBox>;
 }
