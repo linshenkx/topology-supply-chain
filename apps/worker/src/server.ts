@@ -21,6 +21,12 @@ const leaseMs = 5 * 60_000;
 const maxBatch = 25;
 const writerGeneration = 2;
 const writerOwner = "worker-v1";
+const workerFenceResources = [
+  "outbox.worker",
+  "reminders.worker",
+  "files.worker",
+] as const;
+type WorkerFenceResource = (typeof workerFenceResources)[number];
 
 interface OutboxRow extends RowDataPacket {
   attempts: number;
@@ -84,7 +90,7 @@ class FencePaused extends Error {
 
 async function requireFence(
   connection: mysql.PoolConnection | Pool,
-  resource: "files.worker" | "outbox.worker" | "reminders.worker",
+  resource: WorkerFenceResource,
 ): Promise<void> {
   const [rows] = await connection.query<RowDataPacket[]>(
     `SELECT owner, enabled, generation FROM writer_fences
@@ -97,12 +103,19 @@ async function requireFence(
   }
 }
 
-async function requireWorkerFences(connection: Pool): Promise<void> {
-  await Promise.all([
-    requireFence(connection, "outbox.worker"),
-    requireFence(connection, "reminders.worker"),
-    requireFence(connection, "files.worker"),
-  ]);
+async function requireWorkerFenceIdentities(connection: Pool): Promise<void> {
+  const [rows] = await connection.query<RowDataPacket[]>(
+    `SELECT resource, owner, generation FROM writer_fences
+     WHERE resource IN (?,?,?)`,
+    [...workerFenceResources],
+  );
+  const byResource = new Map(rows.map((row) => [String(row.resource), row]));
+  for (const resource of workerFenceResources) {
+    const row = byResource.get(resource);
+    if (row?.owner !== writerOwner || Number(row.generation) !== writerGeneration) {
+      throw new Error(`Worker fence identity mismatch: ${resource}`);
+    }
+  }
 }
 
 function required(name: string): string {
@@ -659,7 +672,7 @@ const health = createServer(async (request, response) => {
     try {
       await pool.query("SELECT 1");
       await checkProviders(providers);
-      await requireWorkerFences(pool);
+      await requireWorkerFenceIdentities(pool);
       response.writeHead(ready ? 200 : 503, { "content-type": "application/json" });
       response.end(JSON.stringify({ status: ready ? "ok" : "not_ready" }));
     } catch {

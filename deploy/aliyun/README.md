@@ -77,16 +77,40 @@
 - `docker-compose.yml`：运行Web、独立API、Worker及一次性数据库迁移容器。
 - `.env.production.template`：生产配置模板，真实文件不得提交到Git。
 - `nginx-scm.conf`：`scm.topologygz.com` HTTPS反向代理。
-- `deploy.sh`：以同一版本构建Web/API/Worker，检查配置、执行迁移、发布并等待三服务健康检查。
-- `rollback.sh`：按同一历史镜像版本协同回滚Web、API与Worker，不自动回滚数据库迁移。
-- 回滚到无Worker/fence的旧版本时，脚本仅允许generation 2尚未启用且没有v1写事实的首次切换前撤回。已有写事实默认要求向前修复；只有先停用generation 2、完成maintenance drain/reconcile，并显式设置`LEGACY_ROLLBACK_RECONCILED_GENERATION=2`才可执行受控旧版回滚。
+- `deploy.sh`：以同一版本构建Web/API/Worker/migrator，检查配置、校验release manifest、执行append-only迁移、发布并等待三服务健康检查。普通发布不调用fence工具，对`writer_fences`零变更。
+- `scripts/release-manifest.mjs`：随migrator镜像发布不可变契约，明确schema migration lineage、writer generation、全部canonical command/resource identity、运行服务和最低兼容release序列。不得再用“目标镜像是否有Worker”猜测兼容。
+- `scripts/activate-writers.sh`：独立显式激活入口。必须同时给出非空资源allowlist和带SHA-256的JSON证据；证据绑定活动release、波次、generation、资源顺序、drain、零差异对账、批准人/理由和可观测检查。empty/unknown/duplicate资源、证据hash不符、对账或live drain失败均在事务前/事务内fail closed；重复执行只报告`changedResources: 0`。
+- `rollback.sh`：按同一历史版本协同回滚Web/API/Worker，不回滚数据库migration。当前和目标都必须提供完整manifest；schema contract、writer generation、canonical command/resource identity、runtime或最低兼容版本任一不符即拒绝。检查始终使用当前活动migrator，并读取全部`command_idempotency.command_name`事实，不存在legacy override；generation 2事实出现后只能回到manifest兼容版本，否则forward-fix。
+
+显式激活证据最小格式（文件原始字节的SHA-256作为命令输入，`resources`顺序必须与命令allowlist一致）：
+
+```json
+{
+  "version": 1,
+  "releaseContract": "topology-scm.scope-a.schema-0004.writer-generation-2",
+  "releaseTag": "20260812120000",
+  "writerGeneration": 2,
+  "wave": "pilot-iam",
+  "resources": ["auth.commands"],
+  "drain": { "pendingCommands": 0, "unknownCommands": 0, "processingOutbox": 0 },
+  "reconciliation": { "differences": 0, "artifactSha256": "<64 lowercase hex>" },
+  "approval": { "approvedBy": "<stable operator identity>", "reason": "<change record>" },
+  "observability": { "checks": ["error-rate", "idem-mismatch", "outbox-lag"], "artifactSha256": "<64 lowercase hex>" }
+}
+```
+
+运行示例：`scripts/activate-writers.sh ./pilot-iam.json auth.commands`。一次只提交已经完成业务UAT和canonical对账的资源；激活后的观察结果仍须保存在外部变更记录中，仓库不新增审批平台或运行组件。
 - `install-jobs.sh`：清理已退休的HTTP定时器并确认Worker就绪。
+
+Worker readiness把“安装健康”和“允许消费”明确分离：`/health/ready`要求数据库、provider、主循环正常，且`outbox.worker`、`reminders.worker`、`files.worker`三条fence均存在并匹配`worker-v1`/generation 2；`enabled=false`表示健康暂停，仍返回ready。所有claim、provider调用、reminder/file/outbox副作用路径继续在执行前要求对应fence `enabled=true`，因此普通install-only发布可以完成并建立active release，但不会提前消费。
 
 ### 迁移历史不匹配
 
-MySQL migration基线已冻结为`0000`至`0004`的唯一append-only manifest。`deploy.sh`会在停止旧writer之前同时校验仓库SQL hash、snapshot hash、journal顺序/时间戳，以及`__drizzle_migrations`中的`hash + created_at`严格前缀。任何文件改写、未知hash、时间戳错位、空洞或额外history都会中止发布；禁止修改历史表、强行改hash或在原库重放fresh baseline。
+MySQL migration基线已冻结为`0000`至`0004`的唯一append-only manifest，唯一声明位于`scripts/mysql-migration-manifest.mjs`（SQL name/hash/createdAt/snapshot hash）。`check-mysql-migration-history.mjs`和`release-manifest.mjs`都只消费该来源，并在数据库连接或manifest输出前校验实际SQL、snapshot及journal的idx/tag/when/version/breakpoints；任一文件改写、漏项、未知hash、时间戳错位、空洞或额外history都会中止发布。禁止修改历史表、强行改hash或在原库重放fresh baseline。
 
 生产前必须由数据库负责人只读导出`SELECT id, hash, created_at FROM __drizzle_migrations ORDER BY created_at, id`并与下列顺序核对：`0000=7d881b148166d64865a3062ff36898888eeef9c5f87fb650f9533c27fb576f7c@1785334745281`、`0001=425efc9f6fd7baa04a80bd6bc03a39716201af5916ae9a62c103e098f52e1577@1785662406202`、`0002=8d2878f9b5e2068343db0d12437b2d92a479cbcb23e0dc668d1395ba703a2a64@1786464478157`、`0003=f7fb8dcf1ff6185cebd866a39836b0c5ef7b56a7e96ccc8fe438aa572b96df41@1786512000000`、`0004=974aefb885e265e082f4f1a6006b2cd77472cf63183ca1746d0fc83885bf9ecd@1786521600000`。空history仅允许空业务schema。
+
+首次生产发布前还必须只读确认：服务器上每个候选tag的四个镜像来自同一构建；活动tag和`.active-release-manifest.json`与活动migrator输出逐字节一致；数据库history精确匹配manifest；`writer_fences`不存在未知generation/resource/owner；`command_idempotency`不存在manifest外command identity；准备激活的波次已有真实drain、业务表/ledger/audit/outbox对账和观测证据。任一事实不能证明即停止，不以人工环境变量放行。
 
 Git初始字节的`0000=9570b573c500297d7c17b505852858a87756b67c6e491c7830823c30c00ec26f`与`0001=91700499032fb516feb8d335053bab5c74e967fa5559d22ab3daf5589c4f607d`不是受支持的已应用lineage：MySQL 8会把其`SERIAL`主键展开为`BIGINT UNSIGNED`，首个指向`INT`外键即以不兼容失败，Drizzle不会写入完成history。若生产导出出现这些hash或其他hash，必须停止、保留输出与快照并做数据库取证/经批准的数据迁移；不得把它们改写成canonical hash。未完成核对前不得继续启用generation 2 writer fence。
 

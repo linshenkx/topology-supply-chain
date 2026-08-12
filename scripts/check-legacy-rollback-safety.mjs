@@ -1,48 +1,45 @@
 import mysql from "mysql2/promise";
 
+import { parseReleaseManifest } from "./release-manifest.mjs";
+
 const url = process.env.DATABASE_URL;
 if (!url?.startsWith("mysql://")) throw new Error("DATABASE_URL must be mysql://");
+const target = parseReleaseManifest(process.env.TARGET_RELEASE_MANIFEST_JSON ?? "", "rollback target manifest");
 const connection = await mysql.createConnection(url);
 
-async function count(sql, parameters = []) {
-  try {
-    const [rows] = await connection.query(sql, parameters);
-    return Number(rows[0]?.count ?? 0);
-  } catch (error) {
-    if (error?.code === "ER_NO_SUCH_TABLE") return 0;
-    throw error;
-  }
-}
-
 try {
-  const enabledGenerationTwo = await count(
-    "SELECT COUNT(*) AS count FROM writer_fences WHERE generation = 2 AND enabled = 1",
+  const [history] = await connection.query(
+    "SELECT hash, created_at AS createdAt FROM __drizzle_migrations ORDER BY created_at, id",
   );
-  if (enabledGenerationTwo !== 0) {
-    throw new Error("Generation 2 writers are still enabled; refusing legacy rollback.");
+  if (history.length !== target.schema.migrations.length) {
+    throw new Error("Database schema history does not exactly match the rollback manifest; forward-fix is required.");
   }
-  const v1Facts = await count(
-    `SELECT COUNT(*) AS count FROM command_idempotency
-      WHERE command_name IN ('auth.login','auth.verify','auth.logout','step-up.request','step-up.verify',
-        'users.assign-role','users.revoke-role','users.unlock','files.upload','notifications.mark-read')`,
+  for (const [index, actual] of history.entries()) {
+    const expected = target.schema.migrations[index];
+    if (actual.hash !== expected.hash || Number(actual.createdAt) !== expected.createdAt) {
+      throw new Error(`Database schema history differs from rollback manifest at ${expected.name}; forward-fix is required.`);
+    }
+  }
+
+  const commandIdentities = new Set(target.writer.commands.map(({ command }) => command));
+  const [facts] = await connection.query("SELECT DISTINCT command_name AS commandName FROM command_idempotency");
+  const unknownFacts = facts.map(({ commandName }) => commandName).filter((command) => !commandIdentities.has(command));
+  if (unknownFacts.length !== 0) {
+    throw new Error(`Rollback target does not recognize generation-2 write facts: ${unknownFacts.join(", ")}; forward-fix is required.`);
+  }
+
+  const resources = new Map(target.writer.resources.map((resource) => [resource.resource, resource]));
+  const [enabledFences] = await connection.query(
+    "SELECT resource, owner, generation FROM writer_fences WHERE enabled = 1 AND generation >= 2",
   );
-  if (v1Facts === 0) {
-    console.log("Legacy rollback is safe before the first generation 2 write fact.");
-  } else {
-    if (process.env.LEGACY_ROLLBACK_RECONCILED_GENERATION !== "2") {
-      throw new Error("Generation 2 write facts exist; forward-fix is required unless maintenance reconciliation is explicitly approved.");
+  for (const fence of enabledFences) {
+    const expected = resources.get(fence.resource);
+    if (expected?.owner !== fence.owner || expected?.generation !== Number(fence.generation)) {
+      throw new Error(`Rollback target is incompatible with active writer ${fence.resource}; forward-fix is required.`);
     }
-    const inFlightCommands = await count(
-      "SELECT COUNT(*) AS count FROM command_idempotency WHERE status IN ('pending','unknown')",
-    );
-    const inFlightOutbox = await count(
-      "SELECT COUNT(*) AS count FROM outbox_messages WHERE status = 'processing'",
-    );
-    if (inFlightCommands !== 0 || inFlightOutbox !== 0) {
-      throw new Error("Maintenance rollback reconciliation is incomplete; in-flight writes remain.");
-    }
-    console.log("Legacy rollback maintenance override accepted after generation 2 reconciliation.");
   }
+
+  console.log(`Rollback database safety passed for ${facts.length} canonical command fact type(s) and ${enabledFences.length} active generation-2 fence(s).`);
 } finally {
   await connection.end();
 }

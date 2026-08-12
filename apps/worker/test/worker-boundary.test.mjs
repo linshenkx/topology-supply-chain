@@ -47,7 +47,18 @@ test("worker exposes only health HTTP endpoints and owns reminder execution", as
 
   assert.match(source, /request\.url === "\/health\/live"/u);
   assert.match(source, /request\.url === "\/health\/ready"/u);
-  assert.match(source, /requireWorkerFences\(pool\)/u);
+  assert.match(source, /requireWorkerFenceIdentities\(pool\)/u);
+  const identityCheck = source.slice(
+    source.indexOf("async function requireWorkerFenceIdentities"),
+    source.indexOf("function required", source.indexOf("async function requireWorkerFenceIdentities")),
+  );
+  assert.match(identityCheck, /SELECT resource, owner, generation FROM writer_fences/u);
+  assert.doesNotMatch(identityCheck, /enabled/u);
+  const executionFence = source.slice(
+    source.indexOf("async function requireFence"),
+    source.indexOf("async function requireWorkerFenceIdentities"),
+  );
+  assert.match(executionFence, /Number\(row\.enabled\) !== 1/u);
   for (const fence of ["outbox.worker", "reminders.worker", "files.worker"]) assert.match(source, new RegExp(fence.replace(".", "\\."), "u"));
   assert.doesNotMatch(source, /\/api\/jobs/u);
   assert.match(source, /async function sweepReminder/u);

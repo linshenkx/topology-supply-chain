@@ -19,6 +19,13 @@ export APP_IMAGE_TAG="${RELEASE_TAG}"
 export API_IMAGE_TAG="${RELEASE_TAG}"
 export WORKER_IMAGE_TAG="${RELEASE_TAG}"
 
+CURRENT_MANIFEST="$(mktemp "${DEPLOY_DIR}/.rollback-current-manifest.XXXXXX")"
+TARGET_MANIFEST="$(mktemp "${DEPLOY_DIR}/.rollback-target-manifest.XXXXXX")"
+cleanup() {
+  rm -f "${CURRENT_MANIFEST}" "${TARGET_MANIFEST}"
+}
+trap cleanup EXIT
+
 wait_for_service_health() {
   local display_name="$1"
   local service_name="$2"
@@ -46,20 +53,42 @@ if ! docker image inspect "topology-scm-api:${API_IMAGE_TAG}" >/dev/null 2>&1; t
   exit 1
 fi
 
-if docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then
-  ROLLBACK_SERVICES=(app api worker)
-else
-  echo "目标版本早于Worker/fence边界；先执行generation安全回滚检查。"
-  ACTIVE_RELEASE_TAG="$(cat .active-release 2>/dev/null || true)"
-  if [[ -z "${ACTIVE_RELEASE_TAG}" ]]; then
-    echo "缺少当前活动版本记录，无法确认安全检查使用的是generation-aware migrator。"
-    exit 1
-  fi
-  APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm migrator node scripts/check-legacy-rollback-safety.mjs
-  echo "安全检查通过；停止当前Worker并只恢复Web/API。"
-  docker compose stop worker
-  ROLLBACK_SERVICES=(app api)
+if ! docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then
+  echo "目标版本缺少同版本Worker镜像，停止回滚。"
+  exit 1
 fi
+if ! docker image inspect "topology-scm-migrator:${RELEASE_TAG}" >/dev/null 2>&1; then
+  echo "目标版本缺少同版本migrator镜像/manifest，停止回滚。"
+  exit 1
+fi
+
+ACTIVE_RELEASE_TAG="$(cat .active-release 2>/dev/null || true)"
+if [[ -z "${ACTIVE_RELEASE_TAG}" || ! -s .active-release-manifest.json ]]; then
+  echo "缺少当前活动版本或manifest记录，停止回滚。"
+  exit 1
+fi
+if ! docker image inspect "topology-scm-migrator:${ACTIVE_RELEASE_TAG}" >/dev/null 2>&1; then
+  echo "当前活动migrator镜像不存在，无法执行可信回滚门禁。"
+  exit 1
+fi
+
+docker run --rm "topology-scm-migrator:${ACTIVE_RELEASE_TAG}" node scripts/release-manifest.mjs print > "${CURRENT_MANIFEST}"
+if ! cmp -s "${CURRENT_MANIFEST}" .active-release-manifest.json; then
+  echo "活动镜像manifest与发布记录不一致，停止回滚。"
+  exit 1
+fi
+docker run --rm "topology-scm-migrator:${RELEASE_TAG}" node scripts/release-manifest.mjs print > "${TARGET_MANIFEST}"
+export CURRENT_RELEASE_MANIFEST_JSON="$(cat "${CURRENT_MANIFEST}")"
+export TARGET_RELEASE_MANIFEST_JSON="$(cat "${TARGET_MANIFEST}")"
+
+APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm \
+  -e CURRENT_RELEASE_MANIFEST_JSON -e TARGET_RELEASE_MANIFEST_JSON \
+  migrator node scripts/check-release-compatibility.mjs
+APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm \
+  -e TARGET_RELEASE_MANIFEST_JSON \
+  migrator node scripts/check-legacy-rollback-safety.mjs
+
+ROLLBACK_SERVICES=(app api worker)
 
 docker compose up -d --no-build "${ROLLBACK_SERVICES[@]}"
 
@@ -71,11 +100,10 @@ if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/re
   exit 1
 fi
 
-if [[ " ${ROLLBACK_SERVICES[*]} " == *" worker "* ]]; then
-  if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then
-    exit 1
-  fi
+if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then
+  exit 1
 fi
 
 printf '%s\n' "${RELEASE_TAG}" > .active-release
+mv "${TARGET_MANIFEST}" .active-release-manifest.json
 echo "Web、API 与 Worker 已协同回滚到版本 ${RELEASE_TAG}，健康检查通过。"

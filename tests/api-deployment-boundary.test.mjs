@@ -43,6 +43,14 @@ const fenceScript = readFileSync(
   new URL("../scripts/set-writer-fences.mjs", import.meta.url),
   "utf8",
 );
+const releaseManifestScript = readFileSync(
+  new URL("../scripts/release-manifest.mjs", import.meta.url),
+  "utf8",
+);
+const activationScript = readFileSync(
+  new URL("../scripts/activate-writers.sh", import.meta.url),
+  "utf8",
+);
 const domainMigration = readFileSync(
   new URL("../drizzle-mysql/0004_scope_a_domain_writes.sql", import.meta.url),
   "utf8",
@@ -334,7 +342,6 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
   const stop = commandIndex(deployScript, "docker compose stop app api worker");
   const drain = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/check-write-drain.mjs");
   const migration = commandIndex(deployScript, "docker compose --profile migration run --rm migrator");
-  const enable = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/set-writer-fences.mjs");
   const start = commandIndex(deployScript, "docker compose up -d app api worker");
   const webHealth = commandIndex(
     deployScript,
@@ -352,20 +359,23 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
   assert.ok(build < envCheck, "all release images must be built before validation");
   assert.ok(envCheck < history && history < stop, "history must fail closed before stopping writers");
   assert.ok(stop < drain && drain < migration, "old writers must stop and drain before migration");
-  assert.ok(migration < enable && enable < start, "generation 2 must activate after migration and before startup");
+  assert.ok(migration < start, "runtime services must start after append-only migration");
   assert.ok(start < webHealth, "Web readiness must run after both services are switched");
   assert.ok(webHealth < apiHealth, "both readiness gates must run in a deterministic order");
   assert.ok(apiHealth < workerHealth, "Worker readiness must follow API readiness");
   assert.match(deployScript, /printf '%s\\n' "\$\{RELEASE_TAG\}" > \.active-release/);
+  assert.doesNotMatch(deployScript, /set-writer-fences|WRITER_ACTIVATION/u);
   assert.doesNotMatch(deployScript, /rollback.*(?:schema|migrat)|(?:schema|migrat).*rollback/i);
 });
 
-test("production API loads both Scope A manifests and activates every domain fence", () => {
+test("production API loads both Scope A manifests and release metadata covers every domain fence", () => {
   assert.match(compose, /DOMAIN_REGISTRATION_MODULES:[^\n]*r2-master-procurement\/index\.js,[^\n]*r3\/manifest\.js/u);
-  assert.match(fenceScript, /r2\.imports\.preview/u);
-  assert.match(fenceScript, /r2\.purchase-orders\.update/u);
-  assert.match(fenceScript, /r3\.approvals\.commands/u);
-  assert.match(fenceScript, /r3\.warehouses\.commands/u);
+  assert.match(releaseManifestScript, /r2\.imports\.preview/u);
+  assert.match(releaseManifestScript, /r2\.purchase-orders\.update/u);
+  assert.match(releaseManifestScript, /r3\.approvals\.commands/u);
+  assert.match(releaseManifestScript, /r3\.warehouses\.commands/u);
+  assert.match(fenceScript, /WRITER_ACTIVATION_RESOURCES/u);
+  assert.match(activationScript, /WRITER_ACTIVATION_EVIDENCE_SHA256/u);
   assert.match(domainMigration, /r2\.imports\.preview/u);
   assert.match(domainMigration, /r3\.warehouses\.commands/u);
   assert.match(migrationJournal, /0004_scope_a_domain_writes/u);
@@ -411,8 +421,9 @@ test("rollback switches all runtime images to one target tag without touching sc
     /docker image inspect "topology-scm-worker:\$\{WORKER_IMAGE_TAG\}"/,
   );
   assert.match(rollbackScript, /ROLLBACK_SERVICES=\(app api worker\)/);
-  assert.match(rollbackScript, /ROLLBACK_SERVICES=\(app api\)/);
-  assert.match(rollbackScript, /APP_IMAGE_TAG="\$\{ACTIVE_RELEASE_TAG\}" docker compose --profile migration run --rm migrator node scripts\/check-legacy-rollback-safety\.mjs/);
+  assert.doesNotMatch(rollbackScript, /ROLLBACK_SERVICES=\(app api\)/);
+  assert.match(rollbackScript, /check-release-compatibility\.mjs/);
+  assert.match(rollbackScript, /check-legacy-rollback-safety\.mjs/);
   assert.match(rollbackScript, /cat \.active-release/);
   assert.match(rollbackScript, /docker compose up -d --no-build "\$\{ROLLBACK_SERVICES\[@\]\}"/);
   assert.match(
@@ -447,13 +458,8 @@ test("rollback switches all runtime images to one target tag without touching sc
   );
   const workerImage = commandIndex(
     rollbackScript,
-    'if docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then',
+    'if ! docker image inspect "topology-scm-worker:${WORKER_IMAGE_TAG}" >/dev/null 2>&1; then',
   );
-  const legacySafety = commandIndex(
-    rollbackScript,
-    'APP_IMAGE_TAG="${ACTIVE_RELEASE_TAG}" docker compose --profile migration run --rm migrator node scripts/check-legacy-rollback-safety.mjs',
-  );
-  const stopWorker = commandIndex(rollbackScript, "docker compose stop worker");
   const start = commandIndex(rollbackScript, 'docker compose up -d --no-build "${ROLLBACK_SERVICES[@]}"');
   const webHealth = commandIndex(
     rollbackScript,
@@ -469,8 +475,7 @@ test("rollback switches all runtime images to one target tag without touching sc
   );
 
   assert.ok(webImage < apiImage && apiImage < workerImage, "all target images must be checked before switching");
-  assert.ok(workerImage < legacySafety && legacySafety < stopWorker, "legacy rollback safety must pass before stopping the current Worker");
-  assert.ok(workerImage < start, "optional Worker detection must happen before switching");
+  assert.ok(workerImage < start, "all runtime images and manifest gates must pass before switching");
   assert.ok(start < webHealth, "rollback readiness must run after both services switch");
   assert.ok(webHealth < apiHealth, "rollback must check both services deterministically");
   assert.ok(apiHealth < workerHealth, "rollback must check Worker after API");

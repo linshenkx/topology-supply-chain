@@ -16,6 +16,12 @@ export API_IMAGE_TAG="${RELEASE_TAG}"
 export WORKER_IMAGE_TAG="${RELEASE_TAG}"
 echo "准备发布镜像版本：${RELEASE_TAG}（Web/API/Worker 同版本）"
 
+MANIFEST_TEMP="$(mktemp "${DEPLOY_DIR}/.release-manifest.XXXXXX")"
+cleanup() {
+  rm -f "${MANIFEST_TEMP}"
+}
+trap cleanup EXIT
+
 wait_for_service_health() {
   local display_name="$1"
   local service_name="$2"
@@ -34,12 +40,12 @@ wait_for_service_health() {
 }
 
 docker compose build app api worker migrator
+docker run --rm "topology-scm-migrator:${RELEASE_TAG}" node scripts/release-manifest.mjs print > "${MANIFEST_TEMP}"
 docker compose --profile migration run --rm migrator node scripts/check-production-env.mjs
 docker compose --profile migration run --rm migrator node scripts/check-mysql-migration-history.mjs
 docker compose stop app api worker
 docker compose --profile migration run --rm migrator node scripts/check-write-drain.mjs
 docker compose --profile migration run --rm migrator
-docker compose --profile migration run --rm migrator node scripts/set-writer-fences.mjs
 docker compose up -d app api worker
 
 if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then
@@ -55,5 +61,6 @@ if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/rea
 fi
 
 printf '%s\n' "${RELEASE_TAG}" > .active-release
+mv "${MANIFEST_TEMP}" .active-release-manifest.json
 docker image prune -f --filter "until=168h" >/dev/null
-echo "Web、API 与 Worker 均已发布到版本 ${RELEASE_TAG}。"
+echo "Web、API 与 Worker 均已发布到版本 ${RELEASE_TAG}；普通发布未改变 writer fence。"
