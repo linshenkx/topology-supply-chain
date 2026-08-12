@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baseline": "db63839bcd4ce8c852a18310f1f0ef7bca83c269",
-  "status": "inspected",
+  "status": "partially-archived",
   "totals": {
     "legacy-deliveries": 29,
     "deliveries": 278,
@@ -5058,7 +5058,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-admin-bootstrap-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-admin-bootstrap-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "423ea59af1e26a8efd521ab620b1d701f9c0247b7ae571e77d9e4938e0d6816c",
         "bytes": 4548,
@@ -5081,7 +5081,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-ali-oss-external-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-ali-oss-external-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9e2fcd32ebbc131f43271bd280ddc2cb0ad91756bb7c8a6c2724f48b003d1b4c",
         "bytes": 289,
@@ -5099,7 +5099,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-aliyun-sms-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-aliyun-sms-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1703e265d84932d760370b6eed65cfe9eb1c1413a5a52edf96c5593c0da6f267",
         "bytes": 93591,
@@ -5122,7 +5122,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-audit-center-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-audit-center-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "50960bdb54da101d1fbd47a04b86df089ce18ef1af27903dbbb19743470af380",
         "bytes": 4510,
@@ -5141,7 +5141,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-bom-versions-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-bom-versions-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b1e3ddbe894f55dc58ac9a409bd9709ced4a2784ac3a0133a5fc2b2c8995806a",
         "bytes": 30272,
@@ -5159,7 +5159,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-delivery-performance-v1-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-delivery-performance-v1-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "921556e8107d6aa0819f0e4bde73eb69b4c0a2b3ec49f2b7f80541751c96d1df",
         "bytes": 4478,
@@ -5177,7 +5177,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-finance-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-finance-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e8b0f6385f88b92b96296633e1145a5ec779bf6533d557f48bddbb8d6d717c2f",
         "bytes": 33407,
@@ -5195,7 +5195,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-finance-exceptions-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-finance-exceptions-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "61c1daa232a389a105e18ebbbc0802caefeddda469276a194bac52c2c83ac5f8",
         "bytes": 12547,
@@ -5214,7 +5214,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-health-log-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-health-log-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "20491f1989465b6422fba648638a5ffd51fe62e98379540c58569ca333ab6ba7",
         "bytes": 703,
@@ -5232,7 +5232,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-inventory-transfer-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-inventory-transfer-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c4d2f374ef4af8d402d3bd670aafa8204ea16c4f2a9781c7ea6b3475e9941f2d",
         "bytes": 43187,
@@ -5250,7 +5250,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-master-data-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-master-data-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6d510dd5e56e9bce269a7a763b7b57226b004b8d0301f57cab86470cced167f5",
         "bytes": 43609,
@@ -5268,7 +5268,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-order-confirmation-20260731.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-order-confirmation-20260731.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b8ae10b4041c78e03d0774da59503a4ef8634f391bca1f47e5efe79c1784a6f2",
         "bytes": 9259,
@@ -5286,7 +5286,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-oss-esm-fix-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-oss-esm-fix-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "77bf6d900f4e1cd23c46277e5c3391eac576d80b00dd8192151d5940d00ff283",
         "bytes": 1454,
@@ -5304,7 +5304,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-oss-imdsv2-fix-20260730.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-oss-imdsv2-fix-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "747176caa808c616472600931b9e29d7e406705bac21037aaac3fa4e03ce1387",
         "bytes": 1651,
@@ -5322,7 +5322,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-production-flow-20260731.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-production-flow-20260731.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "73c39179a9f2e644463d683c52b587da3958c6b059ae8e6a8db40948d0d36e49",
         "bytes": 41624,
@@ -5340,7 +5340,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-production-inventory-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-production-inventory-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "488659c0e917ded1f16e4301a830c6bf6331cecfbd2bc49b27e0955f014962c6",
         "bytes": 8351,
@@ -5358,7 +5358,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-purchase-execution-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-purchase-execution-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "0554c78e0c6b0cb13079711cbe1936ed0e0607dc312f7fe4454f849e5b7c7e12",
         "bytes": 13591,
@@ -5376,7 +5376,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-purchase-workspace-20260731.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-purchase-workspace-20260731.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "908672541a9fc709ffe15da6493b502c3ea30edebb5c9938de96352527d5431e",
         "bytes": 42124,
@@ -5394,7 +5394,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-quality-performance-v1-fixed-20260803.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-quality-performance-v1-fixed-20260803.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2f021fcb0b8f03a6f2ce2c377a1166ed0faa04a2891dc566e62ff3ea4988b248",
         "bytes": 4480,
@@ -5412,7 +5412,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-real-admin-stepup-20260731.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-real-admin-stepup-20260731.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5dc0d4f434bf8ac86a7c0fce684ca7eaf232b209d8c659dd76173636e20bcf98",
         "bytes": 38401,
@@ -5430,7 +5430,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-role-approval-20260731.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-role-approval-20260731.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9fae496e1db3ea7df9074a392b4f27bf91cbeb9dc40f8c4e532f9452f071526f",
         "bytes": 6152,
@@ -5448,7 +5448,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-shipping-returns-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-shipping-returns-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5a5549c51e32e73ed6919a9290581d675d8979a112bf3d538eebc6804a6b6eed",
         "bytes": 35042,
@@ -5466,7 +5466,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-stocktake-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-stocktake-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "30bf39ae0bcd3b99a3962527e1a34de9ddf1ade7a7b6e395d37bcfe472792323",
         "bytes": 26060,
@@ -5484,7 +5484,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-supplier-network-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-supplier-network-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "71b4b94c8de1e3ca56febfd1d244a95add51b733ec992040f77d158209e819ee",
         "bytes": 45109,
@@ -5502,7 +5502,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-supplier-performance-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-supplier-performance-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "14118c2f22f0df71afe808a43a3a0bd9cea57b80b0a693ab00ce186ebbf5b82d",
         "bytes": 69631,
@@ -5520,7 +5520,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-supplier-performance-mysql-fix-20260802.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-supplier-performance-mysql-fix-20260802.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9aeee436b76c5008b78584cc4a80ff9a1d658f0562b80739da89a7ffeb0b5cc6",
         "bytes": 28742,
@@ -5538,7 +5538,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-supplier-performance-stable-v1-20260804.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-supplier-performance-stable-v1-20260804.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f9d72eb5b3295ffb3acea21d646f3b8856340687a051d363f4b8976cd5b660f4",
         "bytes": 4479,
@@ -5556,7 +5556,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-supplier-pricing-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-supplier-pricing-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "0380d3af55cbe16a05f58f2c16dd66c4c4dfa920f4b7217ec8d73d13b93df30f",
         "bytes": 25994,
@@ -5574,7 +5574,7 @@
       "category": "legacy-deliveries",
       "source": "topology-scm-warehouse-management-20260801.tar.gz",
       "target": "archive/legacy-deliveries/topology-scm-warehouse-management-20260801.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "58f30d37095657524e354251f409959e134847f87c3fa3244639197b6524e2eb",
         "bytes": 22437,

@@ -4,8 +4,8 @@
 
 ```bash
 cd /opt/topology-scm
-sha256sum topology-scm-audit-center-20260802.tar.gz
-tar -xzf topology-scm-audit-center-20260802.tar.gz
+sha256sum archive/legacy-deliveries/topology-scm-audit-center-20260802.tar.gz
+tar -xzf archive/legacy-deliveries/topology-scm-audit-center-20260802.tar.gz
 cd /opt/topology-scm/deploy/aliyun
 set -a
 source .env.production
