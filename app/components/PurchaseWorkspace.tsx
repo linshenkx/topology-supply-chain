@@ -70,7 +70,13 @@ export default function PurchaseWorkspace({ toast, openImport }: {
       setLoading(false);
     }
   }, [toast]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData();
+  }, [load]);
 
   const planRows = useMemo(() => plans.flatMap(plan => plan.items.map(item => ({ plan, item }))).filter(({ plan, item }) =>
     `${plan.planNo}${item.sku}${item.productName}${item.factoryName}`.toLowerCase().includes(query.toLowerCase())), [plans, query]);

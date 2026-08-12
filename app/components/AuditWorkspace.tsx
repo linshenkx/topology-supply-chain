@@ -9,7 +9,7 @@ export default function AuditWorkspace({ toast }: { toast:(message:string)=>void
   const [logs,setLogs]=useState<LogRow[]>([]); const [page,setPage]=useState(1); const [total,setTotal]=useState(0); const [loading,setLoading]=useState(false);
   const params=(targetPage=page)=>{const p=new URLSearchParams({page:String(targetPage),pageSize:"20"});Object.entries(filters).forEach(([k,v])=>v&&p.set(k,v));return p;};
   const load=async(targetPage=page)=>{setLoading(true);try{const response=await fetch(`/api/v1/audit-logs?${params(targetPage)}`,{cache:"no-store"});const data=await response.json();if(!response.ok)throw new Error(data.error||"日志加载失败");setLogs(data.logs||[]);setTotal(data.total||0);setPage(targetPage);}catch(error){toast(error instanceof Error?error.message:"日志加载失败");}finally{setLoading(false);}};
-  useEffect(()=>{void load(1);},[]);
+  useEffect(()=>{async function loadInitialData(){await load(1);}void loadInitialData();},[]);
   const exportFile=async()=>{try{const response=await fetch(`/api/v1/audit-logs?${params(1)}&export=xlsx`);if(!response.ok){const data=await response.json();throw new Error(data.error||"导出失败");}const blob=await response.blob();const url=URL.createObjectURL(blob);const link=document.createElement("a");link.href=url;link.download=response.headers.get("content-disposition")?.match(/filename="([^"]+)"/)?.[1]||"topology-audit-logs.xlsx";link.click();URL.revokeObjectURL(url);toast("操作日志已导出，文件已添加导出人和导出时间水印");}catch(error){toast(error instanceof Error?error.message:"导出失败");}};
   const update=(key:string,value:string)=>setFilters(previous=>({...previous,[key]:value})); const pages=Math.max(1,Math.ceil(total/20));
   return <article className="panel audit-center">

@@ -23,7 +23,13 @@ export default function WarehouseWorkspace({ toast }: Props) {
     if (!response.ok) throw new Error(data.error || "仓库数据加载失败");
     setWarehouses(data.warehouses || []); setFactories(data.factories || []);
   }, []);
-  useEffect(() => { void load().catch(error => toast(error.message, "error")); }, [load, toast]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData().catch(error => toast(error.message, "error"));
+  }, [load, toast]);
 
   async function submit(payload: Record<string, unknown>, success: string) {
     setBusy(true);

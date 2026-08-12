@@ -30,7 +30,13 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
     if (!response.ok) return toast(result.error || "绩效数据加载失败");
     setData(result);
   };
-  useEffect(() => { void load(); }, [quarter, tier]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData();
+  }, [quarter, tier]);
   useEffect(() => {
     const current = data?.weights.find(item => item.tier === tier);
     if (current) setWeights({ ...current, delivery: current.delivery / 100, quality: current.quality / 100, exception: current.exception / 100, preparation: current.preparation / 100, satisfaction: current.satisfaction / 100, sampling: current.sampling / 100 });

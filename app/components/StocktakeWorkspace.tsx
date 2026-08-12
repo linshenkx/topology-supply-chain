@@ -27,7 +27,13 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
     setData(body);
     setSelectedId(current => current && body.stocktakes.some((row: Task) => row.id === current) ? current : body.stocktakes[0]?.id);
   }
-  useEffect(() => { void load().catch(error => toast(error.message)); }, []);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData().catch(error => toast(error.message));
+  }, []);
   const task = useMemo(() => data.stocktakes.find(row => row.id === selectedId), [data.stocktakes, selectedId]);
   const round = task?.status === "first_count" ? 1 : task?.status === "recount" ? 2 : 0;
   const warehouse = new Map(data.warehouses.map(row => [row.id, row.name]));

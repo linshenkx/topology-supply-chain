@@ -24,7 +24,13 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
     if (response.ok) setData(body); else toast(body.error ?? "生产数据加载失败");
     setLoading(false);
   }, [toast]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData();
+  }, [load]);
 
   const selectedItem = data.options.orderItems.find(item => item.id === Number(form.orderItemId));
   const availableBoms = useMemo(() => data.options.boms.filter(bom => bom.finishedSku === selectedItem?.sku), [data.options.boms, selectedItem]);

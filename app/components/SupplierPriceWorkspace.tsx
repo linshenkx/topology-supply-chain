@@ -28,7 +28,13 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
     if (!response.ok) throw new Error(result.error || "价格数据加载失败");
     setData(result);
   };
-  useEffect(() => { void load().catch(error => toast(error.message)); }, []);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData().catch(error => toast(error.message));
+  }, []);
   const upload = async (file?: File) => {
     if (!file) return;
     setBusy(true);

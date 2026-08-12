@@ -30,7 +30,13 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
     if (supplierResponse.ok) { const data = await supplierResponse.json(); setSuppliers(data.suppliers ?? []); setFactories(data.factories ?? []); }
     if (relationResponse.ok) { const data = await relationResponse.json(); setRelations(data.relations ?? []); setSkus(data.skus ?? []); if (!factories.length && data.factories) setFactories(data.factories); }
   };
-  useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData();
+  }, []);
   const factoryName = (id: number | null) => factories.find(item => item.id === id)?.name ?? (id ? `工厂 #${id}` : "—");
   const supplierName = (id: number) => suppliers.find(item => item.id === id)?.name ?? `供应商 #${id}`;
   const visibleSuppliers = useMemo(() => suppliers.filter(item => `${item.code}${item.name}${item.contactName}${item.contactPhone}`.toLowerCase().includes(search.toLowerCase())), [suppliers, search]);

@@ -31,7 +31,13 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
     } catch (error) { toast(error instanceof Error ? error.message : "库存数据加载失败"); }
     finally { setLoading(false); }
   }, [toast]);
-  useEffect(() => { void load(); }, [load]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await load();
+    }
+
+    void loadInitialData();
+  }, [load]);
 
   const warehouseName = useMemo(() => new Map(data.warehouses.map(row => [row.id, row.name])), [data.warehouses]);
   const batchName = useMemo(() => new Map(data.batches.map(row => [row.id, `${row.sku} · ${row.batchNo}`])), [data.batches]);

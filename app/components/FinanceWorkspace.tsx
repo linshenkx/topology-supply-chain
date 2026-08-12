@@ -35,7 +35,13 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
   const [verifiedDigest, setVerifiedDigest] = useState("");
 
   const refresh = useCallback(async () => setData(await requestJson("/api/v1/finance")), []);
-  useEffect(() => { refresh().catch(error => toast(error.message)); }, [refresh, toast]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await refresh();
+    }
+
+    void loadInitialData().catch(error => toast(error.message));
+  }, [refresh, toast]);
 
   const paidByRequest = useMemo(() => data.payments.filter(isPayableLedgerRecord).reduce<Record<number,number>>((map,row) => { map[row.paymentRequestId] = (map[row.paymentRequestId] || 0) + row.amountMinor; return map; }, {}), [data.payments]);
   const summary = useMemo(() => ({

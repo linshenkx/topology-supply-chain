@@ -432,7 +432,13 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
       setLoading(false);
     }
   };
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    async function loadInitialData() {
+      await refresh();
+    }
+
+    void loadInitialData();
+  }, []);
 
   const grantRole = async () => {
     try {
@@ -512,7 +518,13 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
     catch (error) { toast(error instanceof Error ? error.message : "审批列表加载失败"); }
     finally { setLoading(false); }
   };
-  useEffect(() => { void refresh(); }, []);
+  useEffect(() => {
+    async function loadInitialData() {
+      await refresh();
+    }
+
+    void loadInitialData();
+  }, []);
 
   const choose = (item: ApprovalItem, nextDecision: "approved" | "rejected") => {
     setSelected(item); setDecision(nextDecision); setComment(""); setChallengeNo(""); setCode(""); setVerified(false); setMaskedMobile("");

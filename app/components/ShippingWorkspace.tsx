@@ -66,7 +66,13 @@ export default function ShippingWorkspace({ toast, roles }: { toast: (message: s
     setReturns(returnData.returns ?? []);
   }, []);
 
-  useEffect(() => { refresh().catch(error => toast(error.message)); }, [refresh, toast]);
+  useEffect(() => {
+    async function loadInitialData() {
+      await refresh();
+    }
+
+    void loadInitialData().catch(error => toast(error.message));
+  }, [refresh, toast]);
 
   const summary = useMemo(() => ({
     waiting: shipments.filter(row => ["pending_factory_confirmation", "planned", "approved_to_ship"].includes(row.status)).length,
