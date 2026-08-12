@@ -48,11 +48,12 @@ test("inventory and logistics reads and R3 mutations use v1", async () => {
 });
 
 test("production and R2 supplier mutations use their typed v1 adapters", async () => {
-  const [production, suppliers, prices, performance, r2Client] = await Promise.all([
+  const [production, suppliers, prices, performance, performanceLifecycle, r2Client] = await Promise.all([
     source("app/components/ProductionWorkspace.tsx"),
     source("app/components/SupplierWorkspace.tsx"),
     source("app/components/SupplierPriceWorkspace.tsx"),
     source("app/components/SupplierPerformanceWorkspace.tsx"),
+    source("app/lib/supplier-performance-lifecycle.ts"),
     source("app/lib/r2-mutation-client.ts"),
   ]);
 
@@ -65,10 +66,11 @@ test("production and R2 supplier mutations use their typed v1 adapters", async (
   assert.match(suppliers, /writeSupplierSku/u);
   assert.match(prices, /fetch\("\/api\/v1\/supplier-prices"/u);
   assert.match(prices, /writeSupplierPrice/u);
-  assert.match(performance, /fetch\(`\/api\/v1\/supplier-performance\?/u);
+  assert.match(performance, /loadSupplierPerformanceSnapshot/u);
+  assert.match(performanceLifecycle, /fetcher\(`\/api\/v1\/supplier-performance\?/u);
   assert.match(performance, /window\.location\.href = `\/api\/v1\/supplier-performance\?/u);
   assert.match(performance, /writeSupplierPerformance/u);
-  assert.doesNotMatch([suppliers, prices, performance].join("\n"), /fetch\([`"]\/api\/(?:suppliers|supplier-skus|supplier-prices|supplier-performance)/u);
+  assert.doesNotMatch([suppliers, prices, performance, performanceLifecycle].join("\n"), /fetch\([`"]\/api\/(?:suppliers|supplier-skus|supplier-prices|supplier-performance)/u);
   assert.match(r2Client, /"\/api\/v1\/supplier-prices"/u);
 });
 
