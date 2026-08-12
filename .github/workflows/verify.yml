@@ -1,0 +1,74 @@
+name: Verify
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  local-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+      - name: Install Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Verify TypeScript, lint baseline, tests, and Web builds
+        run: pnpm verify:local
+
+  mysql-contracts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: topology_ci
+          MYSQL_DATABASE: topology_scm
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -ptopology_ci"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+      - name: Install pnpm
+        uses: pnpm/action-setup@f520eceda224fe1a4aed5a2a27a194379a409996 # v6
+      - name: Install Node.js
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version: 22.13.0
+          cache: pnpm
+      - name: Frozen install
+        run: pnpm install --frozen-lockfile
+      - name: Apply canonical MySQL history
+        run: pnpm db:migrate:mysql
+        env:
+          DATABASE_URL: mysql://root:topology_ci@127.0.0.1:3306/topology_scm
+      - name: Verify real MySQL contracts without skips
+        run: pnpm verify:mysql
+        env:
+          DB_SSL: disabled
+          MYSQL_ADMIN_TEST_URL: mysql://root:topology_ci@127.0.0.1:3306/mysql
+          TEST_DATABASE_URL: mysql://root:topology_ci@127.0.0.1:3306/topology_scm
+          MYSQL_WRITE_TEST_URL: mysql://root:topology_ci@127.0.0.1:3306/topology_scm
+          MYSQL_R2_TEST_URL: mysql://root:topology_ci@127.0.0.1:3306/topology_scm
+          MYSQL_R3_TEST_URL: mysql://root:topology_ci@127.0.0.1:3306/topology_scm

@@ -5,15 +5,32 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
-  // Override default ignores of eslint-config-next.
   globalIgnores([
-    // Default ignores of eslint-config-next:
     ".next/**",
+    "**/dist/**",
     "out/**",
     "outputs/**",
-    "build/**",
+    ".tmp/**",
+    ".wrangler/**",
+    ".pnpm-store/**",
+    "archive/**",
+    "coverage/**",
+    "node_modules/**",
+    "*.tsbuildinfo",
     "next-env.d.ts",
   ]),
+  {
+    files: ["tests/**/*.{js,mjs,cjs,ts}", "scripts/**/*.{js,mjs,cjs,ts}"],
+    rules: {
+      "@next/next/no-assign-module-variable": "off",
+    },
+  },
+  {
+    files: ["types/**/*.d.ts"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+    },
+  },
 ]);
 
 export default eslintConfig;
