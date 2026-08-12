@@ -30,7 +30,6 @@
     "db/**/*.ts",
     "platform/**/*.ts",
     "types/**/*.d.ts",
-    "worker/**/*.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

@@ -28,6 +28,15 @@ test("Sites build tooling has a visible Cloudflare owner outside ignored build o
   await assert.rejects(readFile("build/sites-vite-plugin.ts", "utf8"), { code: "ENOENT" });
 });
 
+test("Cloudflare Web adapter cannot be confused with the canonical background Worker", async () => {
+  const viteConfig = await readFile("vite.config.ts", "utf8");
+  const adapter = await readFile("platform/cloudflare/web-adapter.ts", "utf8");
+
+  assert.match(viteConfig, /main: "\.\/platform\/cloudflare\/web-adapter\.ts"/u);
+  assert.match(adapter, /Cloudflare Worker entry point for the vinext-starter template/u);
+  await assert.rejects(readFile("worker/index.ts", "utf8"), { code: "ENOENT" });
+});
+
 test("Worker runtime closure does not copy builder workspace or vendor inputs", async () => {
   const workerDockerfile = await readFile("Dockerfile.worker", "utf8");
   const runner = workerDockerfile.split("FROM node:22-alpine AS runner")[1];

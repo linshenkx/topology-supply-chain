@@ -84,6 +84,7 @@ MySQL 门禁使用以下环境变量：
 app/                    根 Web package、bridge 与兼容边界
 apps/api/               canonical Fastify API
 apps/worker/            canonical 后台 Worker
+platform/cloudflare/    D1/Vinext/Sites 开发预览与兼容 adapter
 packages/contracts/     跨边界协议与稳定 identity
 db/ + drizzle*/         D1 source / MySQL generated schema 与双 migration lineage
 deploy/aliyun/          阿里云 Compose、Nginx、部署与回滚
