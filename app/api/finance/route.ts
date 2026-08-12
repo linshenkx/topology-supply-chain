@@ -37,37 +37,8 @@ const REJECTION_REASONS = new Set([
   "other",
 ]);
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "finance"]);
-    if (access.localPreview) {
-      return Response.json({ invoices: [], paymentRequests: [], payments: [], verifications: [], allocations: [], exceptions: [], replacementLinks: [], requestItems: [], purchaseOrders: [], preview: true });
-    }
-    const db = getDb();
-    const [invoices, paymentRequests, payments, verifications, allocations, exceptions, replacementLinks, requestItems, orders] = await Promise.all([
-      db.select().from(factoryInvoices).orderBy(desc(factoryInvoices.createdAt)).limit(200),
-      db.select({ ...getTableColumns(factoryPaymentRequests), objectVersion: databaseObjectVersion(factoryPaymentRequests.updatedAt) }).from(factoryPaymentRequests).orderBy(desc(factoryPaymentRequests.createdAt)).limit(200),
-      db.select({ ...getTableColumns(paymentRecords), objectVersion: databaseObjectVersion(paymentRecords.updatedAt) }).from(paymentRecords).orderBy(desc(paymentRecords.createdAt)).limit(300),
-      db.select().from(invoiceVerifications).orderBy(desc(invoiceVerifications.verifiedAt)).limit(400),
-      db.select().from(invoicePaymentAllocations).orderBy(desc(invoicePaymentAllocations.createdAt)).limit(400),
-      db.select({ ...getTableColumns(invoiceExceptions), objectVersion: databaseObjectVersion(invoiceExceptions.updatedAt) }).from(invoiceExceptions).orderBy(desc(invoiceExceptions.createdAt)).limit(200),
-      db.select().from(replacementInvoiceLinks).orderBy(desc(replacementInvoiceLinks.createdAt)).limit(400),
-      db.select().from(factoryPaymentRequestItems).orderBy(desc(factoryPaymentRequestItems.id)).limit(500),
-      db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt)).limit(300),
-    ]);
-    await writeAudit(access, {
-      action: "view",
-      module: "finance",
-      entityType: "finance_dashboard",
-      entityId: "latest",
-      sensitiveView: true,
-      request,
-    });
-    return Response.json({ invoices, paymentRequests, payments, verifications, allocations, exceptions, replacementLinks, requestItems, purchaseOrders: orders });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/finance");
 }
 
 export async function POST(request: Request) {

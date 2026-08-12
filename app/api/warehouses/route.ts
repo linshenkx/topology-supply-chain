@@ -36,12 +36,8 @@ async function warehouseData() {
   };
 }
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request); requireRole(access, ["admin", "supply_chain"]);
-    if (access.localPreview) return Response.json({ warehouses: [], factories: [], preview: true });
-    return Response.json(await warehouseData());
-  } catch (error) { return accessErrorResponse(error); }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/warehouses");
 }
 
 export async function POST(request: Request) {

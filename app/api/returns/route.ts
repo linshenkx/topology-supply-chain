@@ -16,29 +16,8 @@ import { accessErrorResponse, isInternal, requireAccess, requireRole } from "../
 import { writeAudit } from "../../lib/audit";
 import { retiredPlatformRoute } from "../../lib/retired-writer";
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory", "company_qc", "supplier_qc"]);
-    if (access.localPreview) return Response.json({ returns: [], preview: true });
-    const db = getDb();
-    const rows = await db.select().from(productReturns).orderBy(desc(productReturns.createdAt)).limit(200);
-    const inspections = await db.select().from(productReturnInspections);
-    const dispositions = await db.select().from(productReturnDispositions);
-    const shipments = await db.select().from(deliveryBatches);
-    const enrich = (record: typeof productReturns.$inferSelect) => ({
-      ...record,
-      sourceShipment: shipments.find(row => row.id === record.sourceDeliveryBatchId) ?? null,
-      inspections: inspections.filter(row => row.productReturnId === record.id),
-      dispositions: dispositions.filter(row => row.productReturnId === record.id),
-    });
-    if (isInternal(access)) return Response.json({ returns: rows.map(enrich) });
-    const visible = [];
-    for (const record of rows) if (await canAccessReturn(record, access)) visible.push(record);
-    return Response.json({ returns: visible.map(enrich) });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/returns");
 }
 
 export async function POST(request: Request) {

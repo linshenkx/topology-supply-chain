@@ -39,58 +39,8 @@ function localDate(value: string) {
   }).format(date);
 }
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory", "receiver"]);
-    if (access.localPreview) return Response.json({ shipments: [], preview: true });
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(deliveryBatches)
-      .orderBy(desc(deliveryBatches.createdAt))
-      .limit(200);
-    const executions = await db.select().from(executionOrders);
-    const items = await db.select().from(orderItems);
-    const evidence = await db.select().from(shipmentEvidence);
-    const receipts = await db.select().from(shipmentReceipts);
-    const logisticsExceptions = (await db.select().from(exceptions)).filter(row => row.type === "logistics_exception");
-    const enrich = (shipment: typeof deliveryBatches.$inferSelect) => {
-      const execution = executions.find(row => row.id === shipment.executionOrderId) ?? null;
-      return {
-        ...shipment,
-        execution,
-        item: execution ? items.find(row => row.id === execution.orderItemId) ?? null : null,
-        evidence: evidence.filter(row => row.deliveryBatchId === shipment.id),
-        receipts: receipts.filter(row => row.deliveryBatchId === shipment.id),
-        exceptions: logisticsExceptions.filter(row => row.executionOrderId === shipment.executionOrderId),
-      };
-    };
-    if (isInternal(access)) {
-      return Response.json({ shipments: rows.map(enrich) });
-    }
-    if (access.roles.includes("receiver")) {
-      return Response.json({
-        shipments: rows.filter(
-          (shipment) =>
-            access.organizationName &&
-            shipment.destination.trim() === access.organizationName.trim(),
-        ).map(enrich),
-      });
-    }
-    const visible = [];
-    for (const shipment of rows) {
-      const [order] = await db
-        .select({ factoryId: executionOrders.factoryId })
-        .from(executionOrders)
-        .where(eq(executionOrders.id, shipment.executionOrderId))
-        .limit(1);
-      if (order?.factoryId === access.factoryId) visible.push(shipment);
-    }
-    return Response.json({ shipments: visible.map(enrich) });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/shipments");
 }
 
 export async function POST(request: Request) {

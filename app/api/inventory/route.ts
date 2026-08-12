@@ -17,67 +17,8 @@ import { writeAudit } from "../../lib/audit";
 import { findInventoryFreeze } from "../../lib/inventory-freeze";
 import { retiredPlatformRoute } from "../../lib/retired-writer";
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory"]);
-    if (access.localPreview) return Response.json({ batches: [], preview: true });
-
-    const url = new URL(request.url);
-    const warehouseId = Number(url.searchParams.get("warehouseId") ?? 0);
-    const sku = url.searchParams.get("sku")?.trim();
-    const db = getDb();
-
-    const permittedWarehouses = isInternal(access)
-      ? await db.select({ id: warehouses.id }).from(warehouses)
-      : await db
-          .select({ id: warehouses.id })
-          .from(warehouses)
-          .where(eq(warehouses.factoryId, access.factoryId ?? -1));
-    const warehouseIds = permittedWarehouses.map((row) => row.id);
-    if (!warehouseIds.length) return Response.json({ batches: [], warehouses: [], reservations: [], transfers: [] });
-    if (warehouseId && !warehouseIds.includes(warehouseId)) {
-      return Response.json({ error: "无权查看该仓库库存。" }, { status: 403 });
-    }
-
-    const filters = [
-      inArray(inventoryBatches.warehouseId, warehouseId ? [warehouseId] : warehouseIds),
-    ];
-    if (sku) filters.push(eq(inventoryBatches.sku, sku));
-    const batches = await db
-      .select()
-      .from(inventoryBatches)
-      .where(and(...filters))
-      // FEFO：有到期日的批次优先按到期日推荐，无到期日的批次排在后面。
-      .orderBy(asc(inventoryBatches.expiryDate), desc(inventoryBatches.inboundDate))
-      .limit(500);
-
-    const warehouseRows = await db.select().from(warehouses).where(inArray(warehouses.id, warehouseIds));
-    const batchIds = batches.map(row => row.id);
-    const reservations = batchIds.length
-      ? await db.select().from(inventoryReservations).where(and(inArray(inventoryReservations.batchId, batchIds), eq(inventoryReservations.status, "active"))).orderBy(desc(inventoryReservations.createdAt)).limit(200)
-      : [];
-    const transfers = await db.select().from(inventoryTransfers)
-      .where(or(
-        inArray(inventoryTransfers.fromWarehouseId, warehouseIds),
-        inArray(inventoryTransfers.toWarehouseId, warehouseIds),
-      ))
-      .orderBy(desc(inventoryTransfers.createdAt)).limit(100);
-
-    if (url.searchParams.get("sensitive") === "1") {
-      await writeAudit(access, {
-        action: "view",
-        module: "inventory",
-        entityType: "inventory_batch",
-        entityId: warehouseId || "all",
-        sensitiveView: true,
-        request,
-      });
-    }
-    return Response.json({ batches, warehouses: warehouseRows, reservations, transfers });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/inventory");
 }
 
 export async function POST(request: Request) {

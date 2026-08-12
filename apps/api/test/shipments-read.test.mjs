@@ -35,7 +35,16 @@ function fakeDatabase({
     queries,
     async query(sql, params = []) {
       queries.push({ sql, params });
-      if (sql.includes("FROM delivery_batches")) return shipments;
+      if (sql.includes("FROM delivery_batches")) {
+        if (sql.includes("BINARY TRIM(destination) = BINARY ?")) {
+          return shipments.filter((row) => row.destination.trim() === params[0]);
+        }
+        if (sql.includes("scoped_executions.factory_id = ?")) {
+          const visibleExecutions = new Set(executions.filter((row) => row.factoryId === params[0]).map((row) => row.id));
+          return shipments.filter((row) => visibleExecutions.has(row.executionOrderId));
+        }
+        return shipments;
+      }
       if (sql.includes("FROM execution_orders")) return executions.filter((row) => params.includes(row.id));
       if (sql.includes("FROM order_items")) return items.filter((row) => params.includes(row.id));
       if (sql.includes("FROM shipment_evidence")) return evidenceRows.filter((row) => params.includes(row.deliveryBatchId));
@@ -62,7 +71,7 @@ function assertPrivate(response) {
   assert.equal(response.headers.vary, "Cookie");
 }
 
-test("shipment scopes preserve global-limit then internal, receiver, and factory precedence", async () => {
+test("shipment scopes are applied before LIMIT with internal, receiver, and factory precedence", async () => {
   const cases = [
     { context: { factoryId: null, localPreview: false, organizationName: "Topology", roles: ["admin"] }, ids: [1, 2] },
     { context: { factoryId: 9, localPreview: false, organizationName: "Receiver B", roles: ["receiver", "factory"] }, ids: [2] },
@@ -76,8 +85,17 @@ test("shipment scopes preserve global-limit then internal, receiver, and factory
       assert.equal(response.statusCode, 200);
       assertPrivate(response);
       assert.deepEqual(response.json().shipments.map((row) => row.id), current.ids);
-      assert.match(database.queries[0].sql, /FROM delivery_batches\s+ORDER BY created_at DESC, id DESC\s+LIMIT 200$/u);
-      assert.deepEqual(database.queries[0].params, []);
+      assert.match(database.queries[0].sql, /FROM delivery_batches[\s\S]*ORDER BY created_at DESC, id DESC\s+LIMIT 200$/u);
+      if (current.context.roles.includes("admin")) {
+        assert.doesNotMatch(database.queries[0].sql, /WHERE/u);
+        assert.deepEqual(database.queries[0].params, []);
+      } else if (current.context.roles.includes("receiver")) {
+        assert.match(database.queries[0].sql, /WHERE BINARY TRIM\(destination\) = BINARY \?/u);
+        assert.deepEqual(database.queries[0].params, ["Receiver B"]);
+      } else {
+        assert.match(database.queries[0].sql, /WHERE EXISTS[\s\S]*scoped_executions\.factory_id = \?/u);
+        assert.deepEqual(database.queries[0].params, [9]);
+      }
     } finally { await app.close(); }
   }
 });
@@ -122,6 +140,22 @@ test("shipments preview and forbidden roles avoid data, while broken relations f
     assert.equal(deniedDatabase.queries.length, 0);
   } finally { await denied.close(); }
 
+  const unboundDatabase = fakeDatabase();
+  const unboundFactory = await createApp({ database: unboundDatabase, context: { factoryId: null, localPreview: false, organizationName: "Factory", roles: ["factory"] } });
+  try {
+    const response = await unboundFactory.inject({ method: "GET", url: "/api/v1/shipments" });
+    assert.equal(response.statusCode, 403);
+    assert.equal(unboundDatabase.queries.length, 0);
+  } finally { await unboundFactory.close(); }
+
+  const unboundReceiverDatabase = fakeDatabase();
+  const unboundReceiver = await createApp({ database: unboundReceiverDatabase, context: { factoryId: null, localPreview: false, organizationName: "  ", roles: ["receiver"] } });
+  try {
+    const response = await unboundReceiver.inject({ method: "GET", url: "/api/v1/shipments" });
+    assert.equal(response.statusCode, 403);
+    assert.equal(unboundReceiverDatabase.queries.length, 0);
+  } finally { await unboundReceiver.close(); }
+
   const malformed = await createApp({ database: fakeDatabase({ executions: [] }) });
   try {
     const response = await malformed.inject({ method: "GET", url: "/api/v1/shipments" });
@@ -132,4 +166,25 @@ test("shipments preview and forbidden roles avoid data, while broken relations f
       /EX-11|execution_order_id|execution_no|SELECT/u,
     );
   } finally { await malformed.close(); }
+});
+
+test("external shipment scope precedes LIMIT so global noise cannot starve visible rows", async () => {
+  const noise = Array.from({ length: 200 }, (_, index) => shipment(1_000 + index, 10_000 + index, "Other Receiver"));
+  const database = fakeDatabase({
+    shipments: [...noise, shipment(1, 11, "Receiver A")],
+    executions: [execution(11, 9, 21)],
+    items: [item(21)],
+    evidenceRows: [], receiptRows: [], exceptionRows: [],
+  });
+  const app = await createApp({
+    database,
+    context: { factoryId: null, localPreview: false, organizationName: "Receiver A", roles: ["receiver"] },
+  });
+  try {
+    const response = await app.inject({ method: "GET", url: "/api/v1/shipments" });
+    assert.equal(response.statusCode, 200);
+    assert.deepEqual(response.json().shipments.map((row) => row.id), [1]);
+    assert.match(database.queries[0].sql, /WHERE BINARY TRIM\(destination\) = BINARY \?[\s\S]*LIMIT 200$/u);
+    assert.deepEqual(database.queries[0].params, ["Receiver A"]);
+  } finally { await app.close(); }
 });

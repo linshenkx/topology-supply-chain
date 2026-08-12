@@ -24,18 +24,18 @@ test("returns a safe local preview session", async () => {
   assert.equal(payload.security.trustedDeviceDays, 90);
 });
 
-test("does not expose all suppliers in preview mode", async () => {
+test("legacy suppliers GET is retired in favor of v1", async () => {
   const response = await fetch(`${baseUrl}/api/suppliers`);
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 410);
   const payload = await response.json();
-  assert.deepEqual(payload.suppliers, []);
-  assert.equal(payload.preview, true);
+  assert.equal(payload.migrationPath, "/api/v1/suppliers");
+  assert.match(response.headers.get("link") ?? "", /<\/api\/v1\/suppliers>; rel="successor-version"/u);
 });
 
-test("preview mode validates approval separation safely", async () => {
+test("legacy approvals GET is retired in favor of v1", async () => {
   const response = await fetch(`${baseUrl}/api/approvals`);
-  assert.equal(response.status, 200);
+  assert.equal(response.status, 410);
   const payload = await response.json();
-  assert.deepEqual(payload.approvals, []);
-  assert.equal(payload.preview, true);
+  assert.equal(payload.migrationPath, "/api/v1/approvals");
+  assert.match(response.headers.get("link") ?? "", /<\/api\/v1\/approvals>; rel="successor-version"/u);
 });

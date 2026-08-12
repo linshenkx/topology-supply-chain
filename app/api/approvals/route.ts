@@ -12,20 +12,8 @@ import { evaluatePayableLedger, evaluateRefundCorrection } from "../../lib/payme
 import { consumeVerifiedStepUp, databaseObjectVersion, finalRequestDigest, nextDatabaseUpdatedAt } from "../../lib/step-up";
 import { retiredPlatformRoute } from "../../lib/retired-writer";
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "finance"]);
-    if (access.localPreview) return Response.json({ approvals: [], preview: true });
-    const rows = await getDb().select({
-      ...getTableColumns(approvalRequests),
-      objectVersion: databaseObjectVersion(approvalRequests.updatedAt),
-    }).from(approvalRequests).orderBy(desc(approvalRequests.requestedAt)).limit(100);
-    await writeAudit(access, { action: "view", module: "approvals", entityType: "approval_list", entityId: "latest", request });
-    return Response.json({ approvals: rows });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/approvals");
 }
 
 export async function POST(request: Request) {

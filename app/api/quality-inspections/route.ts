@@ -18,34 +18,8 @@ import { retiredPlatformRoute } from "../../lib/retired-writer";
 
 const DEFAULT_PASS_RATE_BPS = 9500;
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory", "supplier_qc", "company_qc"]);
-    if (access.localPreview) return Response.json({ inspections: [], preview: true });
-    const db = getDb();
-    const rows = await db
-      .select()
-      .from(qualityInspections)
-      .orderBy(desc(qualityInspections.createdAt))
-      .limit(200);
-    if (isInternal(access)) return Response.json({ inspections: rows });
-
-    const visible = [];
-    for (const inspection of rows) {
-      const [order] = await db
-        .select({ factoryId: executionOrders.factoryId })
-        .from(executionOrders)
-        .where(eq(executionOrders.id, inspection.executionOrderId))
-        .limit(1);
-      if (order?.factoryId === access.factoryId || access.roles.includes("supplier_qc")) {
-        visible.push(inspection);
-      }
-    }
-    return Response.json({ inspections: visible });
-  } catch (error) {
-    return accessErrorResponse(error);
-  }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/quality-inspections");
 }
 
 export async function POST(request: Request) {

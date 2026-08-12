@@ -13,26 +13,8 @@ const total = (row: { availableQuantity: number; lockedQuantity: number; defecti
 const changed = (a: ReturnType<typeof quantities>, b: ReturnType<typeof quantities>) => Object.keys(a).some(key => a[key as keyof typeof a] !== b[key as keyof typeof b]);
 const quantities = (row: { availableQuantity: number; lockedQuantity: number; defectiveQuantity: number; pendingInspectionQuantity: number }) => ({ availableQuantity: row.availableQuantity, lockedQuantity: row.lockedQuantity, defectiveQuantity: row.defectiveQuantity, pendingInspectionQuantity: row.pendingInspectionQuantity });
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory"]);
-    if (access.localPreview) return Response.json({ stocktakes: [], warehouses: [], factories: [], canCreate: true, preview: true });
-    const db = getDb();
-    const warehouseRows = isInternal(access) ? await db.select().from(warehouses) : await db.select().from(warehouses).where(eq(warehouses.factoryId, access.factoryId ?? -1));
-    const ids = warehouseRows.map(row => row.id);
-    if (!ids.length) return Response.json({ stocktakes: [], warehouses: [], factories: [], canCreate: isInternal(access) });
-    const tasks = await db.select().from(stocktakes).where(inArray(stocktakes.warehouseId, ids)).orderBy(desc(stocktakes.createdAt)).limit(100);
-    const result = [];
-    for (const task of tasks) {
-      const targets = await db.select({ batchId: stocktakeCounts.batchId, sku: stocktakeCounts.sku }).from(stocktakeCounts).where(and(eq(stocktakeCounts.stocktakeId, task.id), eq(stocktakeCounts.countRound, 0)));
-      const actual = await db.select().from(stocktakeCounts).where(and(eq(stocktakeCounts.stocktakeId, task.id), inArray(stocktakeCounts.countRound, [1, 2])));
-      const batchIds = targets.flatMap(row => row.batchId ? [row.batchId] : []);
-      const batches = batchIds.length ? await db.select({ id: inventoryBatches.id, batchNo: inventoryBatches.batchNo }).from(inventoryBatches).where(inArray(inventoryBatches.id, batchIds)) : [];
-      result.push({ ...task, targets: targets.map(row => ({ ...row, batchNo: batches.find(batch => batch.id === row.batchId)?.batchNo ?? null })), counts: actual });
-    }
-    return Response.json({ stocktakes: result, warehouses: warehouseRows, factories: isInternal(access) ? await db.select().from(factories) : [], canCreate: isInternal(access) });
-  } catch (error) { return accessErrorResponse(error); }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/stocktakes");
 }
 
 export async function POST(request: Request) {

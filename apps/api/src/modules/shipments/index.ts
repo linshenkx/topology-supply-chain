@@ -152,8 +152,10 @@ function resolveScope(context: ShipmentsAccessContext): ShipmentScope {
   if (!Array.isArray(context.roles) || !context.roles.some((role) => ALLOWED_ROLES.has(role))) throw new ShipmentsForbiddenError();
   if (context.roles.some((role) => INTERNAL_ROLES.has(role))) return { kind: "internal" };
   if (context.roles.includes("receiver")) {
-    if (typeof context.organizationName !== "string") return invalidData();
-    return { kind: "receiver", organizationName: context.organizationName };
+    if (typeof context.organizationName !== "string" || context.organizationName.trim().length === 0) {
+      throw new ShipmentsForbiddenError();
+    }
+    return { kind: "receiver", organizationName: context.organizationName.trim() };
   }
   if (context.roles.includes("factory") && Number.isSafeInteger(context.factoryId) && (context.factoryId ?? 0) > 0) {
     return { kind: "factory", factoryId: context.factoryId! };
@@ -167,8 +169,17 @@ async function queryChildren<Row>(database: QueryExecutor, sql: string, ids: rea
 }
 
 async function readShipments(database: QueryExecutor, scope: ShipmentScope): Promise<ShipmentsResponse> {
+  const scopedBaseQuery = scope.kind === "internal"
+    ? { sql: SHIPMENT_COLUMNS, params: [] as readonly (number | string)[] }
+    : scope.kind === "receiver"
+      ? { sql: `${SHIPMENT_COLUMNS}\nWHERE BINARY TRIM(destination) = BINARY ?`, params: [scope.organizationName] }
+      : {
+          sql: `${SHIPMENT_COLUMNS}\nWHERE EXISTS (\n  SELECT 1 FROM execution_orders AS scoped_executions\n  WHERE scoped_executions.id = delivery_batches.execution_order_id\n    AND scoped_executions.factory_id = ?\n)`,
+          params: [scope.factoryId],
+        };
   const bases = bounded(await database.query<DataRow>(
-    `${SHIPMENT_COLUMNS}\nORDER BY created_at DESC, id DESC\nLIMIT ${SHIPMENT_LIMIT}`,
+    `${scopedBaseQuery.sql}\nORDER BY created_at DESC, id DESC\nLIMIT ${SHIPMENT_LIMIT}`,
+    scopedBaseQuery.params,
   ), SHIPMENT_LIMIT).map(shipment);
   if (bases.length === 0) return { shipments: [] };
   const executionIds = Array.from(new Set(bases.map((row) => row.executionOrderId)));

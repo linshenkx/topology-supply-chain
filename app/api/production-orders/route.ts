@@ -42,15 +42,8 @@ async function loadData(factoryId?: number | null) {
   };
 }
 
-export async function GET(request: Request) {
-  try {
-    const access = await requireAccess(request);
-    requireRole(access, ["admin", "supply_chain", "factory", "company_qc"]);
-    if (access.localPreview) return Response.json({ orders: [], options: { orderItems: [], factories: [], boms: [], skus: [] }, preview: true });
-    const data = await loadData(access.factoryId);
-    await writeAudit(access, { action: "view", module: "production", entityType: "execution_order_list", entityId: "latest", request });
-    return Response.json(data);
-  } catch (error) { return accessErrorResponse(error); }
+export async function GET() {
+  return retiredPlatformRoute("/api/v1/production-orders");
 }
 
 export async function POST(request: Request) {
