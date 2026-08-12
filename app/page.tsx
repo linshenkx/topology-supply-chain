@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import "./shipping.css";
 import "./audit.css";
 import "./performance.css";
@@ -629,18 +629,18 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [code, setCode] = useState("");
   const [maskedMobile, setMaskedMobile] = useState("");
   const [message, setMessage] = useState("");
-  const [deviceId, setDeviceId] = useState("");
+  const deviceId = useRef("");
   useEffect(() => {
     const existing = window.localStorage.getItem("topology_device_id");
-    if (existing) { setDeviceId(existing); return; }
+    if (existing) { deviceId.current = existing; return; }
     const created = crypto.randomUUID();
     window.localStorage.setItem("topology_device_id", created);
-    setDeviceId(created);
+    deviceId.current = created;
   }, []);
   const login = async () => {
     setMessage("正在验证…");
     let payload: { authenticated:boolean; challengeNo?:string; maskedMobile?:string; previewCode?:string };
-    try { payload = await mutateJson("/api/v1/auth/login", "POST", { account, password, deviceId, deviceName: navigator.userAgent.slice(0, 80) }, { csrf:false }); }
+    try { payload = await mutateJson("/api/v1/auth/login", "POST", { account, password, deviceId: deviceId.current, deviceName: navigator.userAgent.slice(0, 80) }, { csrf:false }); }
     catch (error) { setMessage(error instanceof Error ? error.message : "登录失败"); return; }
     if (payload.authenticated) { onAuthenticated(); return; }
     if (!payload.challengeNo) { setMessage("登录响应缺少验证码任务"); return; }
