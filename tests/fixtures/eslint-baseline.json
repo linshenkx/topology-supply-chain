@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "errors": 17,
+  "errors": 16,
   "warnings": 113,
   "entries": {
     "app/api/approvals/route.ts::warning::@typescript-eslint/no-unused-vars": 1,
@@ -35,7 +35,6 @@
     "app/components/SupplierWorkspace.tsx::warning::react-hooks/exhaustive-deps": 2,
     "app/components/WarehouseWorkspace.tsx::error::react-hooks/set-state-in-effect": 1,
     "app/lib/oss-store.ts::warning::<parser>": 1,
-    "app/lib/runtime-env.ts::error::@typescript-eslint/no-explicit-any": 1,
     "app/page.tsx::error::react-hooks/set-state-in-effect": 3,
     "app/page.tsx::warning::@typescript-eslint/no-unused-vars": 7,
     "app/page.tsx::warning::react-hooks/exhaustive-deps": 2,

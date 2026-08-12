@@ -15,7 +15,7 @@ export function isAliyunRuntime() {
 export async function getPreviewFileBucket() {
   if (isAliyunRuntime()) throw new Error("阿里云运行环境不能访问预览存储。");
   const moduleName = "cloudflare:workers";
-  const workers = await import(moduleName) as { env?: { FILES?: any } };
+  const workers = await import(moduleName) as { env?: { FILES?: unknown } };
   if (!workers.env?.FILES) throw new Error("预览文件存储绑定不可用。");
   return workers.env.FILES;
 }
