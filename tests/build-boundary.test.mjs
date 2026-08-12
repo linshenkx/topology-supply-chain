@@ -3,12 +3,26 @@ import { readFile } from "node:fs/promises";
 import test from "node:test";
 import { createAliyunBuildEnv } from "../scripts/build-aliyun.mjs";
 
-test("archived outputs are excluded from TypeScript and ESLint", async () => {
+test("archive, outputs, and generated state are excluded from source and image scans", async () => {
   const tsconfig = JSON.parse(await readFile("tsconfig.json", "utf8"));
   const eslintConfig = await readFile("eslint.config.mjs", "utf8");
+  const dockerignore = await readFile(".dockerignore", "utf8");
 
   assert.ok(tsconfig.exclude?.includes("outputs"));
+  assert.ok(tsconfig.exclude?.includes("archive"));
   assert.match(eslintConfig, /["']outputs\/\*\*["']/);
+  assert.match(eslintConfig, /["']archive\/\*\*["']/);
+  for (const pattern of ["archive", "outputs", ".tmp", ".pnpm-store", "topology-scm-*.tar.gz", "*.tsbuildinfo"]) {
+    assert.ok(dockerignore.split(/\r?\n/u).includes(pattern), `${pattern} must stay outside Docker context`);
+  }
+});
+
+test("Worker runtime closure does not copy builder workspace or vendor inputs", async () => {
+  const workerDockerfile = await readFile("Dockerfile.worker", "utf8");
+  const runner = workerDockerfile.split("FROM node:22-alpine AS runner")[1];
+  assert.ok(runner);
+  assert.doesNotMatch(runner, /COPY[^\n]*(?:vendor|node_modules|packages)/u);
+  assert.match(runner, /COPY --from=builder[^\n]*\/prod\/apps\/worker \.\/apps\/worker/u);
 });
 
 test("Aliyun builds pin the production runtime without requiring secrets", async () => {

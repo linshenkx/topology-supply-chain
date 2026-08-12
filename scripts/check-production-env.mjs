@@ -1,15 +1,8 @@
-const required = [
-  "APP_BASE_URL",
-  "SESSION_SECRET",
-  "API_SESSION_SIGNING_KEY",
-  "JOB_TOKEN",
-  "DATABASE_URL",
-  "OSS_REGION",
-  "OSS_BUCKET",
-  "OTP_SEALING_KEY_ID",
-  "OTP_SEALING_KEY",
-  "OTP_SEALING_KEYS_JSON",
-];
+import { ENVIRONMENT_CONTRACT } from "./environment-contract.mjs";
+
+const required = Object.entries(ENVIRONMENT_CONTRACT)
+  .filter(([, contract]) => contract.requiredProduction)
+  .map(([name]) => name);
 
 const placeholder = /replace|example|configure|changeme|请填写|请生成|占位/i;
 const errors = [];
