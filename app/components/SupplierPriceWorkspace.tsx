@@ -29,11 +29,16 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
     setData(result);
   };
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData().catch(error => toast(error.message));
+    const controller = new AbortController();
+    void fetch("/api/v1/supplier-prices", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const next = await response.json();
+        if (!response.ok) throw new Error(next.error || "价格数据加载失败");
+        return next;
+      })
+      .then(next => { if (!controller.signal.aborted) setData(next); })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+    return () => controller.abort();
   }, []);
   const upload = async (file?: File) => {
     if (!file) return;

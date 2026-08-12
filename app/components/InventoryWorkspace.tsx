@@ -32,12 +32,18 @@ export default function InventoryWorkspace({ toast }: { toast: (message: string)
     finally { setLoading(false); }
   }, [toast]);
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData();
-  }, [load]);
+    const controller = new AbortController();
+    void fetch("/api/v1/inventory", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const next = await response.json();
+        if (!response.ok) throw new Error(next.error ?? "库存数据加载失败");
+        return next;
+      })
+      .then(next => { if (!controller.signal.aborted) setData(next); })
+      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "库存数据加载失败"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [load, toast]);
 
   const warehouseName = useMemo(() => new Map(data.warehouses.map(row => [row.id, row.name])), [data.warehouses]);
   const batchName = useMemo(() => new Map(data.batches.map(row => [row.id, `${row.sku} · ${row.batchNo}`])), [data.batches]);

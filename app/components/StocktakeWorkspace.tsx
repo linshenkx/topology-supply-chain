@@ -28,11 +28,20 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
     setSelectedId(current => current && body.stocktakes.some((row: Task) => row.id === current) ? current : body.stocktakes[0]?.id);
   }
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData().catch(error => toast(error.message));
+    const controller = new AbortController();
+    void fetch("/api/v1/stocktakes", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const next = await response.json();
+        if (!response.ok) throw new Error(next.error ?? "盘点数据加载失败");
+        return next;
+      })
+      .then(next => {
+        if (controller.signal.aborted) return;
+        setData(next);
+        setSelectedId(current => current && next.stocktakes.some((row: Task) => row.id === current) ? current : next.stocktakes[0]?.id);
+      })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+    return () => controller.abort();
   }, []);
   const task = useMemo(() => data.stocktakes.find(row => row.id === selectedId), [data.stocktakes, selectedId]);
   const round = task?.status === "first_count" ? 1 : task?.status === "recount" ? 2 : 0;

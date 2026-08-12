@@ -67,11 +67,16 @@ export default function ShippingWorkspace({ toast, roles }: { toast: (message: s
   }, []);
 
   useEffect(() => {
-    async function loadInitialData() {
-      await refresh();
-    }
-
-    void loadInitialData().catch(error => toast(error.message));
+    const controller = new AbortController();
+    const init = { signal: controller.signal };
+    void Promise.all([jsonRequest("/api/v1/shipments", init), jsonRequest("/api/v1/returns", init)])
+      .then(([shipmentData, returnData]) => {
+        if (controller.signal.aborted) return;
+        setShipments(shipmentData.shipments ?? []);
+        setReturns(returnData.returns ?? []);
+      })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+    return () => controller.abort();
   }, [refresh, toast]);
 
   const summary = useMemo(() => ({

@@ -25,12 +25,17 @@ export default function ProductionWorkspace({ toast }: { toast: (message: string
     setLoading(false);
   }, [toast]);
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData();
-  }, [load]);
+    const controller = new AbortController();
+    void fetch("/api/v1/production-orders", { cache: "no-store", signal: controller.signal })
+      .then(async response => ({ body: await response.json(), ok: response.ok }))
+      .then(({ body, ok }) => {
+        if (controller.signal.aborted) return;
+        if (ok) setData(body); else toast(body.error ?? "生产数据加载失败");
+      })
+      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "生产数据加载失败"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [load, toast]);
 
   const selectedItem = data.options.orderItems.find(item => item.id === Number(form.orderItemId));
   const availableBoms = useMemo(() => data.options.boms.filter(bom => bom.finishedSku === selectedItem?.sku), [data.options.boms, selectedItem]);

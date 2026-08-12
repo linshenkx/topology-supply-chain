@@ -36,11 +36,11 @@ export default function FinanceWorkspace({ toast }:{ toast:(message:string)=>voi
 
   const refresh = useCallback(async () => setData(await requestJson("/api/v1/finance")), []);
   useEffect(() => {
-    async function loadInitialData() {
-      await refresh();
-    }
-
-    void loadInitialData().catch(error => toast(error.message));
+    const controller = new AbortController();
+    void requestJson("/api/v1/finance", { signal: controller.signal })
+      .then(next => { if (!controller.signal.aborted) setData(next); })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+    return () => controller.abort();
   }, [refresh, toast]);
 
   const paidByRequest = useMemo(() => data.payments.filter(isPayableLedgerRecord).reduce<Record<number,number>>((map,row) => { map[row.paymentRequestId] = (map[row.paymentRequestId] || 0) + row.amountMinor; return map; }, {}), [data.payments]);

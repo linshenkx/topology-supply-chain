@@ -26,11 +26,11 @@ export default function FinanceExceptionWorkspace({ toast }:{ toast:(message:str
   const [busy, setBusy] = useState(false);
   const refresh = useCallback(async () => setData(await json("/api/v1/finance")), []);
   useEffect(() => {
-    async function loadInitialData() {
-      await refresh();
-    }
-
-    void loadInitialData().catch(error => toast(error.message));
+    const controller = new AbortController();
+    void json("/api/v1/finance", { signal: controller.signal })
+      .then(next => { if (!controller.signal.aborted) setData(next); })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+    return () => controller.abort();
   }, [refresh, toast]);
 
   const invoiceById = useMemo(() => Object.fromEntries(data.invoices.map(row => [row.id, row])), [data.invoices]);

@@ -31,11 +31,20 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
     if (relationResponse.ok) { const data = await relationResponse.json(); setRelations(data.relations ?? []); setSkus(data.skus ?? []); if (!factories.length && data.factories) setFactories(data.factories); }
   };
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData();
+    const controller = new AbortController();
+    const signal = controller.signal;
+    void Promise.all([fetch("/api/v1/suppliers", { signal }), fetch("/api/v1/supplier-skus", { signal })])
+      .then(async ([supplierResponse, relationResponse]) => ({
+        relation: relationResponse.ok ? await relationResponse.json() : null,
+        supplier: supplierResponse.ok ? await supplierResponse.json() : null,
+      }))
+      .then(({ relation: nextRelation, supplier: nextSupplier }) => {
+        if (signal.aborted) return;
+        if (nextSupplier) { setSuppliers(nextSupplier.suppliers ?? []); setFactories(nextSupplier.factories ?? []); }
+        if (nextRelation) { setRelations(nextRelation.relations ?? []); setSkus(nextRelation.skus ?? []); if (!factories.length && nextRelation.factories) setFactories(nextRelation.factories); }
+      })
+      .catch(error => { if (!signal.aborted) throw error; });
+    return () => controller.abort();
   }, []);
   const factoryName = (id: number | null) => factories.find(item => item.id === id)?.name ?? (id ? `工厂 #${id}` : "—");
   const supplierName = (id: number) => suppliers.find(item => item.id === id)?.name ?? `供应商 #${id}`;

@@ -147,11 +147,12 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
     }
   };
   useEffect(() => {
-    async function loadInitialData() {
-      await refresh();
-    }
-
-    void loadInitialData();
+    const controller = new AbortController();
+    void apiJson("/api/v1/users", { signal: controller.signal })
+      .then(data => { if (!controller.signal.aborted) setUsers(data.users ?? []); })
+      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "用户列表加载失败"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   const grantRole = async () => {
@@ -233,11 +234,12 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
     finally { setLoading(false); }
   };
   useEffect(() => {
-    async function loadInitialData() {
-      await refresh();
-    }
-
-    void loadInitialData();
+    const controller = new AbortController();
+    void apiJson("/api/v1/approvals", { signal: controller.signal })
+      .then(data => { if (!controller.signal.aborted) setItems(data.approvals ?? []); })
+      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "审批列表加载失败"); })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, []);
 
   const choose = (item: ApprovalItem, nextDecision: "approved" | "rejected") => {

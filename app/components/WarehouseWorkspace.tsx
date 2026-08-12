@@ -24,11 +24,20 @@ export default function WarehouseWorkspace({ toast }: Props) {
     setWarehouses(data.warehouses || []); setFactories(data.factories || []);
   }, []);
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData().catch(error => toast(error.message, "error"));
+    const controller = new AbortController();
+    void fetch("/api/v1/warehouses", { cache: "no-store", signal: controller.signal })
+      .then(async response => {
+        const next = await response.json();
+        if (!response.ok) throw new Error(next.error || "仓库数据加载失败");
+        return next;
+      })
+      .then(next => {
+        if (controller.signal.aborted) return;
+        setWarehouses(next.warehouses || []);
+        setFactories(next.factories || []);
+      })
+      .catch(error => { if (!controller.signal.aborted) toast(error.message, "error"); });
+    return () => controller.abort();
   }, [load, toast]);
 
   async function submit(payload: Record<string, unknown>, success: string) {

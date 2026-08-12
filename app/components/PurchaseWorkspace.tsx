@@ -71,12 +71,26 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     }
   }, [toast]);
   useEffect(() => {
-    async function loadInitialData() {
-      await load();
-    }
-
-    void loadInitialData();
-  }, [load]);
+    const controller = new AbortController();
+    const signal = controller.signal;
+    void Promise.all([
+      fetch("/api/v1/purchase-plans", { cache: "no-store", signal }),
+      fetch("/api/v1/purchase-orders", { cache: "no-store", signal }),
+      fetch("/api/v1/session", { cache: "no-store", signal }),
+    ]).then(async ([planResponse, orderResponse, sessionResponse]) => {
+      const [planData, orderData, sessionData] = await Promise.all([planResponse.json(), orderResponse.json(), sessionResponse.json()]);
+      if (!planResponse.ok) throw new Error(planData.error ?? "采购计划加载失败");
+      if (!orderResponse.ok) throw new Error(orderData.error ?? "采购单加载失败");
+      return { orderData, planData, sessionData, sessionOk: sessionResponse.ok };
+    }).then(({ orderData, planData, sessionData, sessionOk }) => {
+      if (signal.aborted) return;
+      setPlans(planData.plans ?? []);
+      setOrders(orderData.orders ?? []);
+      if (sessionOk) setSession(sessionData);
+    }).catch(error => { if (!signal.aborted) toast(error instanceof Error ? error.message : "采购数据加载失败"); })
+      .finally(() => { if (!signal.aborted) setLoading(false); });
+    return () => controller.abort();
+  }, [load, toast]);
 
   const planRows = useMemo(() => plans.flatMap(plan => plan.items.map(item => ({ plan, item }))).filter(({ plan, item }) =>
     `${plan.planNo}${item.sku}${item.productName}${item.factoryName}`.toLowerCase().includes(query.toLowerCase())), [plans, query]);
