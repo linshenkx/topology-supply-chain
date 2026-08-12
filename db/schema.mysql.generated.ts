@@ -7,7 +7,7 @@
  * SQLite-only SQL expressions and emulate INSERT ... RETURNING with insertId/select.
  */
 import { sql } from "drizzle-orm";
-import { boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
+import { bigint, boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";
 
 const timestamps = {
   createdAt: datetime("created_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
@@ -747,7 +747,11 @@ export const stocktakeAdjustments = mysqlTable("stocktake_adjustments", {
   id: int("id").autoincrement().primaryKey(),
   stocktakeId: int("stocktake_id").notNull().references(() => stocktakes.id),
   stocktakeCountId: int("stocktake_count_id").notNull().references(() => stocktakeCounts.id),
+  bucket: varchar("bucket", { length: 32 }),
+  snapshotQuantity: int("snapshot_quantity"),
+  countedQuantity: int("counted_quantity"),
   varianceQuantity: int("variance_quantity").notNull(),
+  revision: int("revision").notNull().default(1),
   generatedBatchNo: text("generated_batch_no"),
   estimatedProductionDate: text("estimated_production_date"),
   estimatedExpiryDate: text("estimated_expiry_date"),
@@ -755,7 +759,7 @@ export const stocktakeAdjustments = mysqlTable("stocktake_adjustments", {
   reviewedBy: int("reviewed_by").references(() => users.id),
   reviewedAt: text("reviewed_at"),
   ...timestamps,
-});
+}, table => [uniqueIndex("r3_stocktake_adjustment_bucket_unique").on(table.stocktakeId, table.stocktakeCountId, table.bucket)]);
 
 export const inventoryMovements = mysqlTable("inventory_movements", {
   id: int("id").autoincrement().primaryKey(),
@@ -764,9 +768,10 @@ export const inventoryMovements = mysqlTable("inventory_movements", {
   type: varchar("type", { length: 191, enum: ["inbound", "shipment", "transfer_out", "transfer_in", "adjustment"] }).notNull(),
   quantity: int("quantity").notNull(),
   deliveryBatchId: int("delivery_batch_id").references(() => deliveryBatches.id),
+  sourceKey: varchar("source_key", { length: 191 }),
   occurredAt: datetime("occurred_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
   createdBy: int("created_by").notNull().references(() => users.id),
-});
+}, table => [uniqueIndex("r3_inventory_movement_source_unique").on(table.sourceKey)]);
 
 export const inventoryTransfers = mysqlTable("inventory_transfers", {
   id: int("id").autoincrement().primaryKey(),
@@ -946,12 +951,16 @@ export const paymentRecords = mysqlTable("payment_records", {
   bankReference: text("bank_reference").notNull(),
   recordType: text("record_type", { enum: ["payment", "reversal", "correction", "refund"] }).notNull().default("payment"),
   reversesPaymentRecordId: int("reverses_payment_record_id"),
+  correctsPaymentRecordId: int("corrects_payment_record_id"),
   invoiceExceptionId: int("invoice_exception_id").references(() => invoiceExceptions.id),
   recordedBy: int("recorded_by").notNull().references(() => users.id),
   reviewedBy: int("reviewed_by").references(() => users.id),
   reviewStatus: text("review_status", { enum: ["not_required", "pending", "approved", "rejected"] }).notNull().default("not_required"),
   ...timestamps,
-});
+}, table => [
+  uniqueIndex("r3_payment_record_reversal_unique").on(table.reversesPaymentRecordId),
+  uniqueIndex("r3_payment_record_correction_unique").on(table.correctsPaymentRecordId),
+]);
 
 export const auditLogs = mysqlTable("audit_logs", {
   id: int("id").autoincrement().primaryKey(),
@@ -1168,11 +1177,18 @@ export const authChallenges = mysqlTable("auth_challenges", {
   action: text("action"),
   objectType: varchar("object_type", { length: 191 }),
   objectId: varchar("object_id", { length: 191 }),
-  objectVersion: int("object_version"),
+  objectVersion: bigint("object_version", { mode: "number" }),
   requestDigest: varchar("request_digest", { length: 191 }),
   consumedAt: text("consumed_at"),
   ...timestamps,
 });
+
+export const r3BusinessKeys = mysqlTable("r3_business_keys", {
+  keyType: varchar("key_type", { length: 64 }).notNull(),
+  keyValue: varchar("key_value", { length: 191 }).notNull(),
+  aggregateId: varchar("aggregate_id", { length: 191 }).notNull(),
+  createdAt: datetime("created_at", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`),
+}, table => [uniqueIndex("r3_business_keys_identity_unique").on(table.keyType, table.keyValue)]);
 
 export const trustedDevices = mysqlTable("trusted_devices", {
   id: int("id").autoincrement().primaryKey(),

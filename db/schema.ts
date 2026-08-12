@@ -739,7 +739,11 @@ export const stocktakeAdjustments = sqliteTable("stocktake_adjustments", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   stocktakeId: integer("stocktake_id").notNull().references(() => stocktakes.id),
   stocktakeCountId: integer("stocktake_count_id").notNull().references(() => stocktakeCounts.id),
+  bucket: text("bucket"),
+  snapshotQuantity: integer("snapshot_quantity"),
+  countedQuantity: integer("counted_quantity"),
   varianceQuantity: integer("variance_quantity").notNull(),
+  revision: integer("revision").notNull().default(1),
   generatedBatchNo: text("generated_batch_no"),
   estimatedProductionDate: text("estimated_production_date"),
   estimatedExpiryDate: text("estimated_expiry_date"),
@@ -747,7 +751,7 @@ export const stocktakeAdjustments = sqliteTable("stocktake_adjustments", {
   reviewedBy: integer("reviewed_by").references(() => users.id),
   reviewedAt: text("reviewed_at"),
   ...timestamps,
-});
+}, table => [uniqueIndex("r3_stocktake_adjustment_bucket_unique").on(table.stocktakeId, table.stocktakeCountId, table.bucket)]);
 
 export const inventoryMovements = sqliteTable("inventory_movements", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -756,9 +760,10 @@ export const inventoryMovements = sqliteTable("inventory_movements", {
   type: text("type", { enum: ["inbound", "shipment", "transfer_out", "transfer_in", "adjustment"] }).notNull(),
   quantity: integer("quantity").notNull(),
   deliveryBatchId: integer("delivery_batch_id").references(() => deliveryBatches.id),
+  sourceKey: text("source_key"),
   occurredAt: text("occurred_at").notNull().default(sql`CURRENT_TIMESTAMP`),
   createdBy: integer("created_by").notNull().references(() => users.id),
-});
+}, table => [uniqueIndex("r3_inventory_movement_source_unique").on(table.sourceKey)]);
 
 export const inventoryTransfers = sqliteTable("inventory_transfers", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -938,12 +943,16 @@ export const paymentRecords = sqliteTable("payment_records", {
   bankReference: text("bank_reference").notNull(),
   recordType: text("record_type", { enum: ["payment", "reversal", "correction", "refund"] }).notNull().default("payment"),
   reversesPaymentRecordId: integer("reverses_payment_record_id"),
+  correctsPaymentRecordId: integer("corrects_payment_record_id"),
   invoiceExceptionId: integer("invoice_exception_id").references(() => invoiceExceptions.id),
   recordedBy: integer("recorded_by").notNull().references(() => users.id),
   reviewedBy: integer("reviewed_by").references(() => users.id),
   reviewStatus: text("review_status", { enum: ["not_required", "pending", "approved", "rejected"] }).notNull().default("not_required"),
   ...timestamps,
-});
+}, table => [
+  uniqueIndex("r3_payment_record_reversal_unique").on(table.reversesPaymentRecordId),
+  uniqueIndex("r3_payment_record_correction_unique").on(table.correctsPaymentRecordId),
+]);
 
 export const auditLogs = sqliteTable("audit_logs", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -1165,6 +1174,13 @@ export const authChallenges = sqliteTable("auth_challenges", {
   consumedAt: text("consumed_at"),
   ...timestamps,
 });
+
+export const r3BusinessKeys = sqliteTable("r3_business_keys", {
+  keyType: text("key_type").notNull(),
+  keyValue: text("key_value").notNull(),
+  aggregateId: text("aggregate_id").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, table => [uniqueIndex("r3_business_keys_identity_unique").on(table.keyType, table.keyValue)]);
 
 export const trustedDevices = sqliteTable("trusted_devices", {
   id: integer("id").primaryKey({ autoIncrement: true }),

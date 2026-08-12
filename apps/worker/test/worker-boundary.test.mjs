@@ -35,6 +35,11 @@ test("worker has retry, dead-letter, and provider idempotency boundaries", async
   assert.match(source, /scan_status = \?/u);
   assert.ok(source.indexOf('requireFence(pool, "outbox.worker")') < source.indexOf("deliverEmail(providers"));
   assert.ok(source.indexOf('requireFence(pool, "files.worker")') < source.indexOf("scanFile(providers"));
+  assert.match(source, /case "domain\.event"/u);
+  assert.match(source, /requireDomainEvent/u);
+  assert.match(source, /entity_binding/u);
+  assert.match(source, /recipient_factory_id|factory_id IN/u);
+  assert.match(source, /users\.role = 'factory' OR user_roles\.role_code = 'factory'/u);
 });
 
 test("worker exposes only health HTTP endpoints and owns reminder execution", async () => {

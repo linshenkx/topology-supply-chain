@@ -52,11 +52,15 @@ const indexedTextColumns = new Set([
   "content_sha256",
   "object_type",
   "object_id",
+  "key_type",
+  "key_value",
+  "source_key",
+  "bucket",
 ]);
 source = source
   .replace(
     'import { integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core";',
-    'import { boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";',
+    'import { bigint, boolean, datetime, int, mysqlTable, text, uniqueIndex, varchar } from "drizzle-orm/mysql-core";',
   )
   .replaceAll("sqliteTable(", "mysqlTable(")
   .replace(
@@ -82,6 +86,13 @@ source = source.replace(
     return `varchar("${columnName}", { length: 191 })`;
   },
 );
+source = source.replace(
+  'objectVersion: int("object_version"),',
+  'objectVersion: bigint("object_version", { mode: "number" }),',
+);
+source = source
+  .replace('keyType: varchar("key_type", { length: 191 })', 'keyType: varchar("key_type", { length: 64 })')
+  .replace('bucket: varchar("bucket", { length: 191 })', 'bucket: varchar("bucket", { length: 32 })');
 source = source.replace(
   /text\("([^"]+)"\)\.notNull\(\)\.default\(sql`CURRENT_TIMESTAMP`\)/g,
   'datetime("$1", { mode: "string", fsp: 3 }).notNull().default(sql`CURRENT_TIMESTAMP(3)`)',

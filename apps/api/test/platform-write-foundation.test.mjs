@@ -78,6 +78,10 @@ test("built-in file authorization follows entity relations and keeps legacy file
   assert.equal(await authorize({ access, entityType: "delivery_batch", entityId: "12", operation: "write" }), true);
   assert.equal(await authorize({ access: { ...access, factoryId: 5 }, entityType: "delivery_batch", entityId: "12", operation: "read" }), false);
   assert.equal(await authorize({ access, entityType: "unknown", entityId: "12", operation: "read" }), false);
+  assert.equal(await authorize({ access: { ...access, roles: ["supply_chain"] }, entityType: "import_upload", entityId: "9", operation: "write" }), true);
+  assert.equal(await authorize({ access: { ...access, roles: ["supply_chain"] }, entityType: "import_upload", entityId: "10", operation: "write" }), false);
+  assert.equal(await authorize({ access: { ...access, roles: ["company_qc"] }, entityType: "import_upload", entityId: "9", operation: "write" }), false);
+  assert.equal(await authorize({ access, entityType: "import_upload", entityId: "9", operation: "write" }), false);
   assert.equal(await authorize({ access, entityType: "legacy_file", entityId: "77", operation: "read" }), true);
   assert.equal(await authorize({ access: { ...access, userId: 10 }, entityType: "legacy_file", entityId: "77", operation: "read" }), false);
 });

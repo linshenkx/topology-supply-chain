@@ -4,6 +4,7 @@ import { PlatformError } from "../errors.js";
 import { createAuditWriter } from "../infrastructure/audit.js";
 import type { QueryExecutor } from "../infrastructure/database.js";
 import type { AccessContext } from "../modules/auth/index.js";
+import type { JsonValue } from "../platform/commands.js";
 import type { DomainRegistrationContext } from "../platform/registrations.js";
 
 // mysql2 rows are runtime-validated at every domain boundary below. `any` is
@@ -164,18 +165,26 @@ export async function domainEvent(
     aggregateType: string;
     aggregateId: number | string;
     deduplicationSuffix?: number | string;
-    payload?: Record<string, unknown>;
+    payload?: Record<string, JsonValue>;
+    recipient?:
+      | { kind: "role"; role: "supply_chain" }
+      | { kind: "user"; userId: number };
   },
 ): Promise<void> {
   const suffix = input.deduplicationSuffix === undefined ? "" : `:${input.deduplicationSuffix}`;
   await context.enqueueOutbox(transaction, {
-    // R3 owns the event contract; the shared outbox topic union/worker switch is a
-    // mechanical integration hook and is intentionally outside this isolated task.
-    topic: "r3.domain-event" as never,
+    topic: "domain.event",
     aggregateType: input.aggregateType,
     aggregateId: String(input.aggregateId),
     deduplicationKey: `r3:${input.type}:${input.aggregateType}:${input.aggregateId}${suffix}`,
-    payload: { domainEvent: input.type, ...(input.payload ?? {}) } as never,
+    payload: {
+      schemaVersion: 1,
+      entityType: input.aggregateType,
+      entityId: String(input.aggregateId),
+      eventType: input.type,
+      recipient: input.recipient ?? { kind: "none" as const },
+      data: input.payload ?? {},
+    },
   });
 }
 

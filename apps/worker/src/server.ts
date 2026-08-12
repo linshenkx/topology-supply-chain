@@ -146,6 +146,136 @@ function payloadText(payload: Record<string, unknown>, name: string): string {
   return value;
 }
 
+type DomainEventRecipient =
+  | { kind: "none" }
+  | { kind: "role"; role: "supply_chain" }
+  | { kind: "user"; userId: number }
+  | { kind: "entity_binding"; role: "factory"; entityType: string; entityId: string };
+
+interface DomainEventPayload {
+  data: Record<string, unknown>;
+  entityId: number;
+  entityType: string;
+  eventType: string;
+  recipient: DomainEventRecipient;
+}
+
+function requireDomainEvent(payload: Record<string, unknown>): DomainEventPayload {
+  if (payload.schemaVersion !== 1) throw new PermanentFailure("INVALID_PAYLOAD");
+  const entityType = payloadText(payload, "entityType");
+  const entityId = Number(payloadText(payload, "entityId"));
+  const eventType = payloadText(payload, "eventType");
+  if (!Number.isSafeInteger(entityId) || entityId <= 0 ||
+      !/^[a-z][a-z0-9_]{1,63}$/u.test(entityType) ||
+      !/^[A-Z][A-Za-z0-9]{2,127}$/u.test(eventType)) {
+    throw new PermanentFailure("INVALID_PAYLOAD");
+  }
+  const rawRecipient = payload.recipient;
+  if (typeof rawRecipient !== "object" || rawRecipient === null || Array.isArray(rawRecipient)) {
+    throw new PermanentFailure("INVALID_PAYLOAD");
+  }
+  const recipient = rawRecipient as Record<string, unknown>;
+  let normalized: DomainEventRecipient;
+  if (recipient.kind === "none") {
+    normalized = { kind: "none" };
+  } else if (recipient.kind === "role" && recipient.role === "supply_chain") {
+    normalized = { kind: "role", role: "supply_chain" };
+  } else if (recipient.kind === "user" && Number.isSafeInteger(recipient.userId) && Number(recipient.userId) > 0) {
+    normalized = { kind: "user", userId: Number(recipient.userId) };
+  } else if (recipient.kind === "entity_binding" && recipient.role === "factory" &&
+             typeof recipient.entityType === "string" &&
+             typeof recipient.entityId === "string" && /^[1-9]\d*$/u.test(recipient.entityId)) {
+    normalized = { kind: "entity_binding", role: "factory", entityType: recipient.entityType, entityId: recipient.entityId };
+  } else {
+    throw new PermanentFailure("INVALID_PAYLOAD");
+  }
+  const data = typeof payload.data === "object" && payload.data !== null && !Array.isArray(payload.data)
+    ? payload.data as Record<string, unknown>
+    : {};
+  return { data, entityId, entityType, eventType, recipient: normalized };
+}
+
+async function dispatchDomainEvent(
+  pool: Pool,
+  row: OutboxRow,
+  payload: Record<string, unknown>,
+): Promise<void> {
+  const event = requireDomainEvent(payload);
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    await requireFence(connection, "outbox.worker");
+    let users: UserRow[] = [];
+    if (event.recipient.kind === "role") {
+      const [rows] = await connection.query<UserRow[]>(
+        `SELECT DISTINCT users.id, users.email, users.role AS primaryRole
+         FROM users LEFT JOIN user_roles ON user_roles.user_id = users.id AND user_roles.status = 'active'
+         WHERE users.account_status = 'active' AND (users.role = ? OR user_roles.role_code = ?)`,
+        [event.recipient.role, event.recipient.role],
+      );
+      users = rows;
+    } else if (event.recipient.kind === "user") {
+      const [rows] = await connection.query<UserRow[]>(
+        `SELECT id, email, role AS primaryRole FROM users
+         WHERE id = ? AND account_status = 'active' LIMIT 1`,
+        [event.recipient.userId],
+      );
+      users = rows;
+    } else if (event.recipient.kind === "entity_binding") {
+      let factoryQuery: string;
+      switch (event.recipient.entityType) {
+        case "purchase_plan":
+          factoryQuery = `SELECT DISTINCT factory_id AS factoryId FROM purchase_plan_items WHERE purchase_plan_id = ?`;
+          break;
+        case "purchase_order":
+          factoryQuery = `SELECT DISTINCT plan.factory_id AS factoryId FROM order_items item
+            JOIN purchase_plan_order_links link ON link.order_item_id = item.id
+            JOIN purchase_plan_items plan ON plan.id = link.purchase_plan_item_id
+            WHERE item.purchase_order_id = ?`;
+          break;
+        case "supplier_sku":
+          factoryQuery = `SELECT factory_id AS factoryId FROM supplier_skus WHERE id = ? LIMIT 1`;
+          break;
+        default:
+          throw new PermanentFailure("INVALID_PAYLOAD");
+      }
+      const [factories] = await connection.query<(RowDataPacket & { factoryId: number })[]>(factoryQuery, [event.recipient.entityId]);
+      const factoryIds = [...new Set(factories.map((value) => Number(value.factoryId)).filter((value) => Number.isSafeInteger(value) && value > 0))];
+      if (factoryIds.length === 0) throw new PermanentFailure("RECIPIENT_NOT_FOUND");
+      const [rows] = await connection.query<UserRow[]>(
+        `SELECT DISTINCT users.id, users.email, users.role AS primaryRole
+         FROM users LEFT JOIN user_roles
+           ON user_roles.user_id = users.id AND user_roles.status = 'active'
+         WHERE users.account_status = 'active'
+           AND (users.role = 'factory' OR user_roles.role_code = 'factory')
+           AND users.factory_id IN (${factoryIds.map(() => "?").join(",")})`,
+        factoryIds,
+      );
+      users = rows;
+    }
+    const title = event.eventType;
+    const message = JSON.stringify(event.data);
+    for (const user of users) {
+      const [inserted] = await connection.execute<mysql.ResultSetHeader>(
+        `INSERT INTO notification_messages (
+           recipient_user_id, recipient_role, channel, type, severity, title,
+           message, entity_type, entity_id, status, sent_at, created_at
+         ) VALUES (?, ?, 'in_app', ?, 'info', ?, ?, ?, ?, 'sent', ?, CURRENT_TIMESTAMP(3))`,
+        [user.id, user.primaryRole, event.eventType, title, message,
+          event.entityType, event.entityId, new Date().toISOString()],
+      );
+      if (inserted.insertId <= 0) throw new Error("domain notification insert failed");
+    }
+    await completeLease(connection, row);
+    await connection.commit();
+  } catch (error) {
+    await connection.rollback().catch(() => undefined);
+    throw error;
+  } finally {
+    connection.release();
+  }
+}
+
 async function claim(pool: Pool): Promise<OutboxRow | undefined> {
   const connection = await pool.getConnection();
   try {
@@ -284,6 +414,9 @@ async function processMessage(pool: Pool, row: OutboxRow): Promise<boolean> {
       return false;
     case "notification.dispatch":
       await dispatchNotification(pool, row, payload);
+      return true;
+    case "domain.event":
+      await dispatchDomainEvent(pool, row, payload);
       return true;
     case "file.scan":
       {

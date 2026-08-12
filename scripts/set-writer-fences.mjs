@@ -1,6 +1,17 @@
 import mysql from "mysql2/promise";
-const resources = ["auth.commands", "users.commands", "files.commands", "notifications.commands",
-  "outbox.worker", "reminders.worker", "files.worker"];
+const resources = [
+  "auth.commands", "users.commands", "files.commands", "notifications.commands",
+  "outbox.worker", "reminders.worker", "files.worker",
+  "r2.imports.preview", "r2.imports.stage", "r2.imports.commit",
+  "r2.master-data.write", "r2.suppliers.write", "r2.supplier-skus.write",
+  "r2.supplier-prices.write", "r2.supplier-performance.write",
+  "r2.purchase-plans.create", "r2.purchase-plans.update",
+  "r2.purchase-orders.create", "r2.purchase-orders.update",
+  "r3.approvals.commands", "r3.inventory.commands", "r3.transfers.commands",
+  "r3.production-orders.commands", "r3.quality-inspections.commands",
+  "r3.stocktakes.commands", "r3.shipments.commands", "r3.returns.commands",
+  "r3.finance.commands", "r3.warehouses.commands",
+];
 const connection = await mysql.createConnection(process.env.DATABASE_URL);
 try {
   await connection.query(

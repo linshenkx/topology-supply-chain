@@ -6,7 +6,8 @@ export type OutboxTopic =
   | "sms.deliver"
   | "reminder.evaluate"
   | "file.scan"
-  | "notification.dispatch";
+  | "notification.dispatch"
+  | "domain.event";
 
 export interface OutboxMessage {
   aggregateId: string;

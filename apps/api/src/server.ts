@@ -6,6 +6,7 @@ import { safeErrorName } from "./safe-logging.js";
 
 const defaultHost = "0.0.0.0";
 const defaultPort = 3001;
+const productionDomainManifests = "../modules/r2-master-procurement/index.js,../r3/manifest.js";
 
 function readPort(rawPort: string | undefined): number {
   if (rawPort === undefined || rawPort.trim() === "") {
@@ -50,9 +51,13 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
 }
 
 try {
+  const manifestSpecifiers = process.env.DOMAIN_REGISTRATION_MODULES ??
+    (process.env.APP_ENV === "production" && process.env.DEPLOY_TARGET === "aliyun"
+      ? productionDomainManifests
+      : undefined);
   app = await buildRuntimeApp({
     registrationManifests: await loadDomainRegistrationManifests(
-      process.env.DOMAIN_REGISTRATION_MODULES,
+      manifestSpecifiers,
     ),
   });
   for (const signal of ["SIGTERM", "SIGINT"] as const) {

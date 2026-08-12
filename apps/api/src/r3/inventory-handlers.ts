@@ -169,6 +169,7 @@ export async function requestTransfer(
   });
   await domainEvent(context, command.transaction, {
     type: "ApprovalRequested", aggregateType: "inventory_transfer", aggregateId: transferId,
+    recipient: { kind: "role", role: "supply_chain" },
     payload: { approvalId: approval.insertId!, workflowType: "warehouse_transfer" },
   });
   return { transfer: { id: transferId, transferNo, fromWarehouseId, toWarehouseId, sku, quantity, reason, status: "pending_supply_chain" } };
@@ -323,6 +324,7 @@ export async function warehouseCommand(
     });
     await domainEvent(context, command.transaction, {
       type: "ApprovalRequested", aggregateType: "warehouse", aggregateId: id,
+      recipient: { kind: "role", role: "supply_chain" },
       deduplicationSuffix: approval.insertId!,
       payload: { approvalId: approval.insertId!, workflowType: "warehouse_merge" },
     });
@@ -630,6 +632,7 @@ export async function transitionStocktake(
   });
   await domainEvent(context, command.transaction, {
     type: "VarianceApprovalRequested", aggregateType: "stocktake", aggregateId: id,
+    recipient: { kind: "role", role: "supply_chain" },
     payload: { approvalId: approval.insertId!, varianceLines: variances.length },
   });
   return { success: true, status: "pending_approval", approvalId: approval.insertId, version: nextVersion };

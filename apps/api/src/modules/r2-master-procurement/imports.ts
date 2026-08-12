@@ -170,7 +170,13 @@ export async function stageImport(
     request,
     responseStatus: 201,
     run: async ({ idempotencyKey, transaction }) => {
-      await requireFile(transaction, access, { id: fileObjectId }, ["import", "import_source"]);
+      await requireFile(
+        transaction,
+        access,
+        { id: fileObjectId },
+        ["import", "import_source"],
+        { entityType: "import_upload", entityIds: [access.userId] },
+      );
       const duplicates = await transaction.query<DataRow & { createdAt: string; id: number; importNo: string; status: string }>(
         `SELECT id, import_no AS importNo, status, created_at AS createdAt
          FROM import_batches WHERE fingerprint = ? ORDER BY created_at DESC, id DESC LIMIT 1 FOR SHARE`,

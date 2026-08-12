@@ -39,6 +39,18 @@ const rollbackScript = readFileSync(
   new URL("../deploy/aliyun/rollback.sh", import.meta.url),
   "utf8",
 );
+const fenceScript = readFileSync(
+  new URL("../scripts/set-writer-fences.mjs", import.meta.url),
+  "utf8",
+);
+const domainMigration = readFileSync(
+  new URL("../drizzle-mysql/0004_scope_a_domain_writes.sql", import.meta.url),
+  "utf8",
+);
+const migrationJournal = readFileSync(
+  new URL("../drizzle-mysql/meta/_journal.json", import.meta.url),
+  "utf8",
+);
 const deploymentReadme = readFileSync(
   new URL("../deploy/aliyun/README.md", import.meta.url),
   "utf8",
@@ -196,6 +208,7 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
     "DB_SSL_REJECT_UNAUTHORIZED",
     "DB_TRANSACTION_TIMEOUT_MS",
     "DEPLOY_TARGET",
+    "DOMAIN_REGISTRATION_MODULES",
     "HOST",
     "NODE_ENV",
     "OSS_ACCESS_KEY_ID",
@@ -345,6 +358,17 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
   assert.ok(apiHealth < workerHealth, "Worker readiness must follow API readiness");
   assert.match(deployScript, /printf '%s\\n' "\$\{RELEASE_TAG\}" > \.active-release/);
   assert.doesNotMatch(deployScript, /rollback.*(?:schema|migrat)|(?:schema|migrat).*rollback/i);
+});
+
+test("production API loads both Scope A manifests and activates every domain fence", () => {
+  assert.match(compose, /DOMAIN_REGISTRATION_MODULES:[^\n]*r2-master-procurement\/index\.js,[^\n]*r3\/manifest\.js/u);
+  assert.match(fenceScript, /r2\.imports\.preview/u);
+  assert.match(fenceScript, /r2\.purchase-orders\.update/u);
+  assert.match(fenceScript, /r3\.approvals\.commands/u);
+  assert.match(fenceScript, /r3\.warehouses\.commands/u);
+  assert.match(domainMigration, /r2\.imports\.preview/u);
+  assert.match(domainMigration, /r3\.warehouses\.commands/u);
+  assert.match(migrationJournal, /0004_scope_a_domain_writes/u);
 });
 
 test("deploy has bounded, independent Web, API, and Worker readiness gates", () => {

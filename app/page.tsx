@@ -13,12 +13,28 @@ import SupplierWorkspace from "./components/SupplierWorkspace";
 import ShippingWorkspace from "./components/ShippingWorkspace";
 import FinanceWorkspace from "./components/FinanceWorkspace";
 import AuditWorkspace from "./components/AuditWorkspace";
-import { finalRequestDigest, mutateJson } from "./lib/mutation-client";
+import { finalRequestDigest, mutateJson, uploadPlatformFile } from "./lib/mutation-client";
+import { r2Imports } from "./lib/r2-mutation-client";
 
 type Order = {
   id: string; factory: string; product: string; sku: string; qty: number;
   done: number; due: string; status: string; risk: "正常" | "注意" | "异常";
 };
+
+type ImportPreview = {
+  canCommit: boolean;
+  errors: Array<{ field: string; message: string; row: number; sheet: string }>;
+  fileName: string;
+  fingerprint: string;
+  rows: Array<Record<string, unknown>>;
+  summary: { errorCount: number; totalRows: number; validRows: number; warningCount: number };
+  type: "purchase_plan" | "purchase_order";
+  warnings: Array<{ message: string; row: number; sheet: string }>;
+};
+
+type ImportStage = { batch: { id: number; importNo: string; status: string } };
+type ImportCommit = { awaitingMapping?: boolean; message?: string; success: boolean };
+type UploadedImport = { file: { id: number }; usable: boolean };
 
 const orders: Order[] = [
   { id: "EX-260728-01", factory: "组装工厂 A", product: "RestRidge 颈椎枕", sku: "RR-NP-01", qty: 2400, done: 1680, due: "07-31", status: "生产中", risk: "正常" },
@@ -637,6 +653,7 @@ export default function Home() {
   const [importResult, setImportResult] = useState("");
   const [qualityOpen, setQualityOpen] = useState(false);
   const [sessionName, setSessionName] = useState("陈文超");
+  const [sessionUserId, setSessionUserId] = useState(0);
   const [sessionRole, setSessionRole] = useState("供应链管理员");
   const [sessionRoles, setSessionRoles] = useState<string[]>([]);
   const visible = useMemo(() => filter === "全部" ? orders : orders.filter(o => o.status === filter), [filter]);
@@ -647,6 +664,7 @@ export default function Home() {
       .then(payload => {
         if (!payload?.user) return;
         setSessionName(payload.user.name);
+        setSessionUserId(payload.user.id);
         setSessionRole(payload.user.roles.join("、"));
         setSessionRoles(payload.user.roles);
         setSessionState("ready");
@@ -656,30 +674,47 @@ export default function Home() {
   const importExcel = async (file?: File) => {
     if (!file) return;
     try {
+      if (sessionUserId <= 0) throw new Error("安全会话缺少用户标识，请重新登录");
+      if (file.size > 20 * 1024 * 1024) throw new Error("单个文件不能超过 20MB");
+      if (!/\.(xlsx|xls)$/iu.test(file.name)) throw new Error("仅支持 .xlsx 或 .xls 文件");
+      setImportResult("正在预检并安全归档，请勿关闭窗口…");
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
-      if (importKind === "plan") {
-        const sheet = workbook.Sheets[workbook.SheetNames[0]];
-        const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, { defval: "" }).filter(row => Object.values(row).some(Boolean));
-        const missingDate = rows.filter(row => !row["期望到货时间"]).length;
-        if (missingDate) {
-          setImportResult(`无法正式导入：${missingDate} 行缺少期望到货时间，已生成错误清单。`);
-          return;
-        }
-        const mainRows = rows.filter(row => row["是否组合产品"] === "是" || row["SKU"] || row["MSKU"]);
-        setImportResult(`校验通过：读取 ${rows.length} 行原始明细，识别 ${mainRows.length} 条主SKU计划；展开子项将按系统有效BOM处理。`);
+      const sheets = workbook.SheetNames.map(name => ({
+        name,
+        rows: XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets[name]!, { defval: "" })
+          .filter(row => Object.values(row).some(Boolean)),
+      }));
+      const fingerprint = `${file.name}:${file.size}:${file.lastModified}:${workbook.SheetNames.join("|")}`;
+      const type = importKind === "plan" ? "purchase_plan" : "purchase_order";
+      const preview = await r2Imports.preview<ImportPreview>({ type, fileName: file.name, fingerprint, sheets });
+      if (!preview.canCommit) {
+        const first = preview.errors[0];
+        setImportResult(`无法正式导入：发现 ${preview.summary.errorCount} 个错误${first ? `；${first.sheet} 第 ${first.row || "—"} 行 ${first.message}` : ""}`);
         return;
       }
-      const requiredSheets = ["单据信息", "产品信息"];
-      const missing = requiredSheets.filter(name => !workbook.SheetNames.includes(name));
-      if (missing.length) {
-        setImportResult(`无法导入：缺少工作表「${missing.join("、")}」`);
-        return;
-      }
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(workbook.Sheets["产品信息"], { defval: "" });
-      const usable = rows.filter(row => Object.values(row).some(Boolean));
-      setImportResult(`校验通过：读取 ${usable.length} 条产品明细，可生成工厂执行单`);
-    } catch {
-      setImportResult("文件读取失败，请确认文件为领星导出的 .xlsx 或 .xls 格式");
+      const form = new FormData();
+      form.append("file", file);
+      form.append("category", "import_source");
+      form.append("entityType", "import_upload");
+      form.append("entityId", String(sessionUserId));
+      const uploaded = await uploadPlatformFile<UploadedImport>(form);
+      if (!uploaded.usable) throw new Error("文件安全扫描尚未完成，请稍后重试");
+      const staged = await r2Imports.stage<ImportStage>({
+        type: preview.type,
+        fileObjectId: uploaded.file.id,
+        fileName: preview.fileName,
+        fingerprint: preview.fingerprint,
+        rows: preview.rows,
+        errors: preview.errors,
+        warnings: preview.warnings,
+      });
+      const committed = await r2Imports.commit<ImportCommit>({ batchId: staged.batch.id });
+      const warning = preview.summary.warningCount ? `，另有 ${preview.summary.warningCount} 条提醒` : "";
+      setImportResult(committed.awaitingMapping
+        ? `校验通过并安全暂存：${preview.summary.validRows} 行${warning}；批次 ${staged.batch.importNo} 等待 SKU、工厂、仓库及 BOM 映射后生成正式单据。`
+        : `校验通过并提交：${preview.summary.validRows} 行${warning}。`);
+    } catch (error) {
+      setImportResult(error instanceof Error ? error.message : "文件读取或导入失败，请确认文件格式和安全会话");
     }
   };
 

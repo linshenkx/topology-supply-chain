@@ -28,6 +28,8 @@ const INTERNAL_ROLES = new Set([
   "company_qc",
 ]);
 const REQUIRED_ENTITY_TYPE_BY_CATEGORY = new Map([
+  ["import", "import_upload"],
+  ["import_source", "import_upload"],
   ["invoice", "purchase_order"],
   ["shipment_evidence", "delivery_batch"],
   ["receipt_evidence", "delivery_batch"],

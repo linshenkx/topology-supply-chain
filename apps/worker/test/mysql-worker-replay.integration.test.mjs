@@ -137,6 +137,126 @@ test("notification fan-out is idempotent when a completed transaction is redeliv
   assert.equal(Number(derived[0].count), 1);
 });
 
+test("generic domain events preserve entity and recipient semantics without approval fields", {
+  skip: !databaseUrl && "set MYSQL_WRITE_TEST_URL to run Worker domain-event integration",
+  timeout: 60_000,
+}, async (t) => {
+  const provider = createServer((request, response) => {
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify(request.url === "/scan" ? { status: "clean" } : { ok: true }));
+  });
+  await new Promise((resolve) => provider.listen(0, "127.0.0.1", resolve));
+  t.after(() => new Promise((resolve) => provider.close(resolve)));
+  const providerOrigin = `http://127.0.0.1:${provider.address().port}`;
+  const pool = mysql.createPool({ uri: databaseUrl, connectionLimit: 4 });
+  t.after(async () => pool.end());
+  await pool.execute(
+    `UPDATE writer_fences SET owner = 'worker-v1', enabled = 1, generation = 2
+     WHERE resource IN ('outbox.worker','reminders.worker','files.worker')`,
+  );
+  const suffix = `${process.pid}-${Date.now()}`;
+  const [userResult] = await pool.execute(
+    `INSERT INTO users (
+       email, mobile, name, role, organization_name, account_status,
+       created_at, updated_at
+     ) VALUES (?, ?, 'Domain Event Supply Chain', 'supply_chain', 'Topology', 'active',
+               CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [`domain-event-${suffix}@example.com`, `138${String(Date.now()).slice(-8)}`],
+  );
+  const entityId = 700_000_000 + (Date.now() % 100_000_000);
+  const payload = {
+    schemaVersion: 1,
+    entityType: "import_batch",
+    entityId: String(entityId),
+    eventType: "ImportStaged",
+    recipient: { kind: "role", role: "supply_chain" },
+    data: { rowCount: 3, type: "purchase_plan" },
+  };
+  assert.equal("approvalId" in payload, false);
+  const [outboxResult] = await pool.execute(
+    `INSERT INTO outbox_messages (
+       topic, aggregate_type, aggregate_id, deduplication_key, payload_json,
+       status, available_at, attempts, max_attempts, created_at, updated_at
+     ) VALUES ('domain.event', 'import_batch', ?, ?, ?, 'pending',
+               ?, 0, 8, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [String(entityId), `domain-event-${suffix}`, JSON.stringify(payload), new Date().toISOString()],
+  );
+  await runUntilCompleted(pool, outboxResult.insertId, 37_000 + (process.pid % 1_000), providerOrigin);
+  const [messages] = await pool.query(
+    `SELECT channel, type, entity_type AS entityType, entity_id AS entityId, message
+     FROM notification_messages
+     WHERE recipient_user_id = ? AND entity_type = 'import_batch' AND entity_id = ?`,
+    [userResult.insertId, entityId],
+  );
+  assert.deepEqual(messages.map((row) => ({
+    channel: row.channel,
+    entityId: Number(row.entityId),
+    entityType: row.entityType,
+    message: JSON.parse(row.message),
+    type: row.type,
+  })), [{
+    channel: "in_app",
+    entityId,
+    entityType: "import_batch",
+    message: { rowCount: 3, type: "purchase_plan" },
+    type: "ImportStaged",
+  }]);
+
+  const [factory] = await pool.execute(
+    "INSERT INTO factories (name, code, status) VALUES ('Domain Event Factory', ?, 'active')",
+    [`domain-event-factory-${suffix}`],
+  );
+  await pool.execute("UPDATE users SET factory_id = ? WHERE id = ?", [factory.insertId, userResult.insertId]);
+  await pool.execute(
+    `INSERT INTO user_roles (
+       user_id, role_code, effective_from, status, requested_by, created_at, updated_at
+     ) VALUES (?, 'factory', '2026-08-12', 'active', ?, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [userResult.insertId, userResult.insertId],
+  );
+  const [supplier] = await pool.execute(
+    "INSERT INTO suppliers (code, name, status) VALUES (?, 'Domain Event Supplier', 'active')",
+    [`domain-event-supplier-${suffix}`],
+  );
+  const [supplierSku] = await pool.execute(
+    `INSERT INTO supplier_skus (
+       factory_id, supplier_id, sku, effective_from, status, requested_by
+     ) VALUES (?, ?, ?, '2026-08-12', 'active', ?)`,
+    [factory.insertId, supplier.insertId, `DOMAIN-EVENT-${suffix}`, userResult.insertId],
+  );
+  const boundPayload = {
+    schemaVersion: 1,
+    entityType: "supplier_sku",
+    entityId: String(supplierSku.insertId),
+    eventType: "SupplierSkuActivated",
+    recipient: {
+      kind: "entity_binding",
+      role: "factory",
+      entityType: "supplier_sku",
+      entityId: String(supplierSku.insertId),
+    },
+    data: { status: "active" },
+  };
+  const [boundOutbox] = await pool.execute(
+    `INSERT INTO outbox_messages (
+       topic, aggregate_type, aggregate_id, deduplication_key, payload_json,
+       status, available_at, attempts, max_attempts, created_at, updated_at
+     ) VALUES ('domain.event', 'supplier_sku', ?, ?, ?, 'pending',
+               ?, 0, 8, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [String(supplierSku.insertId), `domain-event-binding-${suffix}`,
+      JSON.stringify(boundPayload), new Date().toISOString()],
+  );
+  await runUntilCompleted(pool, boundOutbox.insertId, 38_000 + (process.pid % 1_000), providerOrigin);
+  const [boundMessages] = await pool.query(
+    `SELECT type, entity_type AS entityType, entity_id AS entityId
+     FROM notification_messages
+     WHERE recipient_user_id = ? AND entity_type = 'supplier_sku' AND entity_id = ?`,
+    [userResult.insertId, supplierSku.insertId],
+  );
+  assert.deepEqual(boundMessages.map((row) => ({
+    entityId: Number(row.entityId), entityType: row.entityType, type: row.type,
+  })), [{ entityId: supplierSku.insertId, entityType: "supplier_sku", type: "SupplierSkuActivated" }]);
+});
+
 test("an expired final-attempt lease is deterministically dead-lettered", {
   skip: !databaseUrl && "set MYSQL_WRITE_TEST_URL to run Worker lease integration",
   timeout: 60_000,

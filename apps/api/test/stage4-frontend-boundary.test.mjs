@@ -80,6 +80,11 @@ test("session, purchase reads, and purchase mutations use v1", async () => {
   ]);
 
   assert.match(page, /fetch\("\/api\/v1\/session"\)/u);
+  assert.match(page, /r2Imports\.preview/u);
+  assert.match(page, /uploadPlatformFile/u);
+  assert.match(page, /r2Imports\.stage/u);
+  assert.match(page, /r2Imports\.commit/u);
+  assert.match(page, /entityType", "import_upload"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-plans"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-orders"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/session"/u);

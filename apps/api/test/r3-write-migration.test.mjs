@@ -139,15 +139,15 @@ test("R3 stays inside Scope A boundaries", async () => {
   assert.doesNotMatch(joined, /quality_inspection[\s\S]{0,300}available_quantity\s*=\s*available_quantity\s*\+/iu);
 });
 
-test("R3 domain events do not masquerade as approval notifications", async () => {
+test("R3 domain events use the shared generic worker contract", async () => {
   const [support, worker] = await Promise.all([
     readFile(new URL("apps/api/src/r3/support.ts", root), "utf8"),
-    readFile(new URL("apps/worker/src/r3/domain-events.ts", root), "utf8"),
+    readFile(new URL("apps/worker/src/server.ts", root), "utf8"),
   ]);
-  assert.match(support, /topic: "r3\.domain-event"/u);
+  assert.match(support, /topic: "domain\.event"/u);
   assert.doesNotMatch(support, /topic: "notification\.dispatch"/u);
-  assert.match(worker, /R3_DOMAIN_EVENT_TOPIC = "r3\.domain-event"/u);
-  assert.match(worker, /requireR3DomainEvent/u);
+  assert.match(worker, /case "domain\.event"/u);
+  assert.match(worker, /requireDomainEvent/u);
 });
 
 test("bounded A-J guards are represented in contracts, locks, ACLs and UI", async () => {
@@ -156,12 +156,17 @@ test("bounded A-J guards are represented in contracts, locks, ACLs and UI", asyn
     "apps/api/src/r3/production-handlers.ts", "apps/api/src/r3/logistics-handlers.ts",
     "apps/api/src/r3/inventory-handlers.ts", "apps/api/src/r3/support.ts", "apps/api/src/r3/command.ts",
     "packages/contracts/src/r3-fulfillment-writes.ts", "app/lib/mutation-client.ts", "app/page.tsx",
-    "app/components/ShippingWorkspace.tsx", "drizzle-mysql/r3_scope_a_fulfillment_writes.sql",
+    "app/components/ShippingWorkspace.tsx", "drizzle-mysql/0004_scope_a_domain_writes.sql",
   ].map((path) => readFile(new URL(path, root), "utf8")));
   assert.match(approval, /r1\.user_role_change/u);
   assert.match(approval, /`r2\.\$\{workflow\}`/u);
   assert.match(approval, /resource_type = 'approval_request'.+FOR UPDATE/su);
   assert.match(sql, /corrects_payment_record_id/u);
+  assert.ok(
+    sql.indexOf("ADD COLUMN `corrects_payment_record_id`") < sql.indexOf("CREATE UNIQUE INDEX `r3_payment_record_reversal_unique`"),
+    "legacy correction rows must be split before reversal uniqueness is enforced",
+  );
+  assert.match(sql, /SET `corrects_payment_record_id` = `reverses_payment_record_id`,[\s\S]+WHERE `record_type` = 'correction'/u);
   assert.match(production, /purchase_plan_order_links[\s\S]+purchase_plan_items[\s\S]+FOR UPDATE/u);
   assert.match(logistics, /shipment_receipts[\s\S]+FOR UPDATE/u);
   assert.match(logistics, /Disposition exceeds authoritative inspection buckets/u);

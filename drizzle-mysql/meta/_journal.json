@@ -29,6 +29,13 @@
       "when": 1786512000000,
       "tag": "0003_scope_a_write_hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1786521600000,
+      "tag": "0004_scope_a_domain_writes",
+      "breakpoints": true
     }
   ]
 }

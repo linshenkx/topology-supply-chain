@@ -105,7 +105,15 @@ export async function createPurchasePlan(
     request,
     responseStatus: 201,
     run: async ({ idempotencyKey, transaction }) => {
-      if (sourceFileKey !== null) await requireFile(transaction, access, { objectKey: sourceFileKey }, ["import", "import_source"]);
+      if (sourceFileKey !== null) {
+        await requireFile(
+          transaction,
+          access,
+          { objectKey: sourceFileKey },
+          ["import", "import_source"],
+          { entityType: "import_upload", entityIds: [access.userId] },
+        );
+      }
       const previousRows = await transaction.query<PlanRow>(
         `SELECT id, plan_no AS planNo, version, status, confirmation_due_at AS confirmationDueAt,
                 updated_at AS updatedAt
@@ -339,7 +347,15 @@ export async function createPurchaseOrder(
     request,
     responseStatus: 201,
     run: async ({ idempotencyKey, transaction }) => {
-      if (sourceFileKey !== null) await requireFile(transaction, access, { objectKey: sourceFileKey }, ["import", "import_source"]);
+      if (sourceFileKey !== null) {
+        await requireFile(
+          transaction,
+          access,
+          { objectKey: sourceFileKey },
+          ["import", "import_source"],
+          { entityType: "import_upload", entityIds: [access.userId] },
+        );
+      }
       const duplicate = await transaction.query<DataRow>("SELECT id FROM purchase_orders WHERE order_no = ? LIMIT 1 FOR UPDATE", [orderNo]);
       if (duplicate[0] !== undefined) return conflict("Purchase order number already exists");
       const prepared: Array<Record<string, unknown> & { planItem: PlanItemRow }> = [];

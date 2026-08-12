@@ -9,7 +9,7 @@ import { ApprovalEffectRegistry, ApprovalPolicyRegistry } from "../dist/platform
 import { FileAuthorizationRegistry } from "../dist/platform/registrations.js";
 import { executeR2Command } from "../dist/modules/r2-master-procurement/command.js";
 import manifest from "../dist/modules/r2-master-procurement/index.js";
-import { approvalNotification, domainEvent } from "../dist/modules/r2-master-procurement/shared.js";
+import { approvalNotification, domainEvent, requireFile } from "../dist/modules/r2-master-procurement/shared.js";
 
 const TOKEN = "ab".repeat(32);
 const KEY = "r2-command-key-00000001";
@@ -197,6 +197,43 @@ test("R2 separates generic domain events from real approval notifications", asyn
   });
 });
 
+test("import evidence is bound to the authenticated upload owner", async () => {
+  const transaction = {
+    async query() {
+      return [{
+        category: "import_source",
+        entityId: "9",
+        entityType: "import_upload",
+        factoryId: null,
+        id: 44,
+        objectKey: "imports/44.xlsx",
+        ownerUserId: 9,
+        scanStatus: "clean",
+        supplierId: null,
+      }];
+    },
+  };
+  const access = { userId: 9, roles: ["supply_chain"], factoryId: null, supplierId: null };
+  const file = await requireFile(
+    transaction,
+    access,
+    { id: 44 },
+    ["import_source"],
+    { entityType: "import_upload", entityIds: [access.userId] },
+  );
+  assert.equal(file.id, 44);
+  await assert.rejects(
+    requireFile(
+      transaction,
+      { ...access, userId: 10 },
+      { id: 44 },
+      ["import_source"],
+      { entityType: "import_upload", entityIds: [10] },
+    ),
+    (error) => error?.statusCode === 403,
+  );
+});
+
 test("legacy writers are 410-only and frontend mutations use the v1 adapter/bridge", async () => {
   const root = new URL("../../..", import.meta.url);
   const routes = [
@@ -224,6 +261,11 @@ test("legacy writers are 410-only and frontend mutations use the v1 adapter/brid
   for (const path of new Set(Object.keys(R2_COMMAND_BY_MUTATION).map((entry) => entry.slice(entry.indexOf(" ") + 1)))) {
     assert.match(bridge, new RegExp(path.replaceAll("/", "\\/"), "u"), path);
   }
-  const fenceSql = await readFile(new URL("apps/api/src/modules/r2-master-procurement/writer-fences.sql", root), "utf8");
+  const fenceSql = await readFile(new URL("drizzle-mysql/0004_scope_a_domain_writes.sql", root), "utf8");
   assert.equal((fenceSql.match(/\('r2\./gu) ?? []).length, 12);
+  assert.match(fenceSql, /0004_scope_a_domain_writes|r3_business_keys/u);
+  const imports = await readFile(new URL("apps/api/src/modules/r2-master-procurement/imports.ts", root), "utf8");
+  const procurement = await readFile(new URL("apps/api/src/modules/r2-master-procurement/procurement.ts", root), "utf8");
+  assert.match(imports, /entityType: "import_upload", entityIds: \[access\.userId\]/u);
+  assert.equal((procurement.match(/entityType: "import_upload", entityIds: \[access\.userId\]/gu) ?? []).length, 2);
 });

@@ -11,7 +11,7 @@ import { enqueueOutbox } from "./outbox.js";
 export type FileEntityAuthorizer = NonNullable<FilesModuleOptions["authorizeEntity"]>;
 const INTERNAL_FILE_ROLES = new Set(["admin", "company_qc", "finance", "supply_chain"]);
 export const PLATFORM_FILE_ENTITY_TYPES = Object.freeze([
-  "purchase_order", "delivery_batch", "product_return", "supplier_sku", "legacy_file",
+  "purchase_order", "delivery_batch", "product_return", "supplier_sku", "import_upload", "legacy_file",
 ] as const);
 
 export function createPlatformFileEntityAuthorizer(database: DatabaseClient): FileEntityAuthorizer {
@@ -21,6 +21,9 @@ export function createPlatformFileEntityAuthorizer(database: DatabaseClient): Fi
     const parameters = [entityId, internal, access.factoryId, access.supplierId] as const;
     let query: string;
     switch (entityType) {
+      case "import_upload":
+        return access.roles.some((role) => role === "admin" || role === "supply_chain") &&
+          entityId === String(access.userId);
       case "purchase_order":
         query = `SELECT 1 AS allowed FROM purchase_orders po
           LEFT JOIN order_items oi ON oi.purchase_order_id = po.id
