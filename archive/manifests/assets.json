@@ -17,7 +17,7 @@
       "category": "working-notes",
       "source": ".tmp/dev.err.log",
       "target": "archive/working-notes/dev.err.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "82a94d6047425f154f4d1ea6914a8ef1b552ae70c0c5c9b26e94196c6e9089d0",
         "bytes": 46277,
@@ -33,7 +33,7 @@
       "category": "working-notes",
       "source": ".tmp/dev.out.log",
       "target": "archive/working-notes/dev.out.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6fc9bdf34dc1c3b48251af329fae04d0cbb7352523c6d775b9c6ef06c79978bd",
         "bytes": 210071,
@@ -49,7 +49,7 @@
       "category": "working-notes",
       "source": ".tmp/fastify-api-implementation-notes.md",
       "target": "archive/working-notes/fastify-api-implementation-notes.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9dee6a2d98b250d0699047e0c4c89817a9aead153dad11195367e79de5e5695c",
         "bytes": 2364,
@@ -65,7 +65,7 @@
       "category": "working-notes",
       "source": ".tmp/initial-data-templates/build.mjs",
       "target": "archive/working-notes/initial-data-templates/build.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7a4f6b70b7109bfd460847b9ac7912a771e197a4306906eb3f2bf933c8d87e75",
         "bytes": 19265,
@@ -81,7 +81,7 @@
       "category": "working-notes",
       "source": ".tmp/initial-data-templates/verify.mjs",
       "target": "archive/working-notes/initial-data-templates/verify.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3ba2fbfbb1e133f15fc7f0772a9dc568f14d1b8000335decaa378cb8dfe24792",
         "bytes": 1319,
@@ -97,7 +97,7 @@
       "category": "working-notes",
       "source": ".tmp/lingxing-analysis/inspect.mjs",
       "target": "archive/working-notes/lingxing-analysis/inspect.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "79515ff135fd31b49cca150686bb88e220f0e159e034dd6497b796630b88f89e",
         "bytes": 1422,
@@ -113,7 +113,7 @@
       "category": "working-notes",
       "source": ".tmp/lingxing-analysis/summarize.mjs",
       "target": "archive/working-notes/lingxing-analysis/summarize.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e6c3ac0b53299d372e30d773d9cbe286310bf9cb957b4b74edf7b3cbd1dabd68",
         "bytes": 4148,
@@ -129,7 +129,7 @@
       "category": "working-notes",
       "source": ".tmp/lingxing-sku-analysis/analyze.mjs",
       "target": "archive/working-notes/lingxing-sku-analysis/analyze.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "477637d5fae43d43d4dccb87d9fdf015ebc61571870f884da270538ff95cfced",
         "bytes": 4068,
@@ -145,7 +145,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-2.err.log",
       "target": "archive/working-notes/pnpm-install-2.err.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -161,7 +161,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-2.out.log",
       "target": "archive/working-notes/pnpm-install-2.out.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e2dcf199a08f204b8ccde7f7abdb54c88d75430054738c7b4676c5096bca78bf",
         "bytes": 170,
@@ -177,7 +177,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-cn.err.log",
       "target": "archive/working-notes/pnpm-install-cn.err.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -193,7 +193,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-cn.out.log",
       "target": "archive/working-notes/pnpm-install-cn.out.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "66514a1bc3a1185908aa335ee99b645e099e4cc0a7f4175a63ab51830e67e749",
         "bytes": 813,
@@ -209,7 +209,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-final.err.log",
       "target": "archive/working-notes/pnpm-install-final.err.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -225,7 +225,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install-final.out.log",
       "target": "archive/working-notes/pnpm-install-final.out.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "503aacfdb5ef41946a6dfb426ce4224781a4bd793cee65291d7c8fea3015c435",
         "bytes": 110,
@@ -241,7 +241,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install.err.log",
       "target": "archive/working-notes/pnpm-install.err.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -257,7 +257,7 @@
       "category": "working-notes",
       "source": ".tmp/pnpm-install.out.log",
       "target": "archive/working-notes/pnpm-install.out.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1420454a2f4aa96fc2955d5e16734b0007e5207520fdbe8057f8474019ec3722",
         "bytes": 5624,
@@ -273,7 +273,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api-final.stderr.log",
       "target": "archive/working-notes/stage3-api-final.stderr.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -289,7 +289,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api-final.stdout.log",
       "target": "archive/working-notes/stage3-api-final.stdout.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6c0fdfcdf30b0b7b296dbe2485d7ba68d79c077622fc0e1fd6098dc5d65435ef",
         "bytes": 135,
@@ -305,7 +305,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api-live.stderr.log",
       "target": "archive/working-notes/stage3-api-live.stderr.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -321,7 +321,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api-live.stdout.log",
       "target": "archive/working-notes/stage3-api-live.stdout.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "44a38e21d154d1b9f8d9b5007ff9b4b8cd89be158ed66b9765946a2a2149f0b8",
         "bytes": 4630,
@@ -337,7 +337,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api.stderr.log",
       "target": "archive/working-notes/stage3-api.stderr.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "bytes": 0,
@@ -353,7 +353,7 @@
       "category": "working-notes",
       "source": ".tmp/stage3-api.stdout.log",
       "target": "archive/working-notes/stage3-api.stdout.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d7aa9ccbf92ca67bee79216d17cb7d9633e178b05e1efffd708d0c8950c9658e",
         "bytes": 135,
@@ -369,7 +369,7 @@
       "category": "working-notes",
       "source": ".tmp/staging-workbooks/build.mjs",
       "target": "archive/working-notes/staging-workbooks/build.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3731c4034e996c4d3d0e45bd6b08222afcc64811fb1868085f708594a384ce0f",
         "bytes": 18816,
@@ -385,7 +385,7 @@
       "category": "working-notes",
       "source": ".tmp/staging-workbooks/verify.mjs",
       "target": "archive/working-notes/staging-workbooks/verify.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "15fdf91acbdcbca405c9c62a5ec43e0dd839c88bf2cd5f584fd78723508b6eae",
         "bytes": 1435,
@@ -401,7 +401,7 @@
       "category": "working-notes",
       "source": ".tmp/start-vinext-dev.cmd",
       "target": "archive/working-notes/start-vinext-dev.cmd",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1163535e2b20fd01f7ed7d480749eeb94f3eef178077a071f6af0b75f11d61f3",
         "bytes": 166,
@@ -417,7 +417,7 @@
       "category": "working-notes",
       "source": ".tmp/start-vinext-dev.ps1",
       "target": "archive/working-notes/start-vinext-dev.ps1",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7a38765405e4e8a5cc8afb37157787396d77a964329117b3892c7a6ce926b191",
         "bytes": 198,
@@ -433,7 +433,7 @@
       "category": "working-notes",
       "source": ".tmp/supplier-analysis/analyze.mjs",
       "target": "archive/working-notes/supplier-analysis/analyze.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e9fab8cb30bd87a8a6810e2d4600f48ba3609e0d1c0a7e2697ff0e6763ef02e9",
         "bytes": 3579,
@@ -449,7 +449,7 @@
       "category": "working-notes",
       "source": ".tmp/vinext-dev-cmd.log",
       "target": "archive/working-notes/vinext-dev-cmd.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "74d76722f29e87d5f9cb6d4a7c3068028958bc23e86a69460836ddc0dc5cf048",
         "bytes": 244506,
@@ -465,7 +465,7 @@
       "category": "working-notes",
       "source": ".tmp/vinext-dev.log",
       "target": "archive/working-notes/vinext-dev.log",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2c73fadaffa114719f78aae073f383d106455558f43c623ea7f51d25e692eaf9",
         "bytes": 134,
@@ -481,7 +481,7 @@
       "category": "working-notes",
       "source": ".tmp/warehouse-analysis/analyze.mjs",
       "target": "archive/working-notes/warehouse-analysis/analyze.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b7f990dd2fccb384bda21d7a3c58c16280f283ae5927aa4ec54f935283eed92b",
         "bytes": 4429,
