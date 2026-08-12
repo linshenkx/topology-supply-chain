@@ -497,7 +497,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1-SHA256.txt",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1-SHA256.txt",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4d32c0016c4a6c4bbb4b1cdf4f368999a4aac99368274aff3660c7f5eac4660c",
         "bytes": 114,
@@ -513,7 +513,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1-VALIDATION.txt",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1-VALIDATION.txt",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "77a44bb689b51d61040feaa51ef53b40b16526b9ffb2e602fbf52c897b1c492d",
         "bytes": 729,
@@ -529,7 +529,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1.zip",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1.zip",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "729df170ae8e1d6f11dafb715b3c4645a3c7104542733d902e13c5f18938cdf0",
         "bytes": 1933279,
@@ -554,7 +554,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/.dockerignore",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.dockerignore",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a7483e67e4b060938893358b1008d0be9abb233663f41582348877530cd57f11",
         "bytes": 89,
@@ -570,7 +570,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/.env.example",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.env.example",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d1e5c9ef494809ac9552ad3f00778c7ddfec14f60520d4f8de34dfaaf7886f3c",
         "bytes": 963,
@@ -591,7 +591,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/.github/pull_request_template.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.github/pull_request_template.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c971513249ca5dc574fe81d6b2da382f3c6b57cb1186881aba9b139931b005b0",
         "bytes": 451,
@@ -607,7 +607,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/.gitignore",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.gitignore",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "91d605039a482e0fc15d3b1b16f08b3c590f6db6fc67dcf4fe3470acbc27d677",
         "bytes": 693,
@@ -623,7 +623,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/.openai/hosting.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.openai/hosting.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ac56805a09e952b47b514aee5cb24c2126ef1e877a06ca413a98e4fd5b9bd0ce",
         "bytes": 35,
@@ -639,7 +639,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/approvals/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/approvals/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1cdeb3c6eb6e20d9d053aa00c8dc08501b6557cf05b6086293cb64b7b02e9417",
         "bytes": 28087,
@@ -655,7 +655,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/audit-logs/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/audit-logs/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1114c5f5690990e02cfb1b3a9d948e3606bbe889ef45b7a6b3a86e8794ea8fec",
         "bytes": 4973,
@@ -671,7 +671,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/login/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/login/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f0e299d81d999793f7afadd0c2fd9531b0f13603740a71acc1e33759990d7f61",
         "bytes": 5045,
@@ -687,7 +687,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/logout/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/logout/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "997e73321e0ccacf331d90b04d78a0856f43678290a50fefcdd41cb895f1712d",
         "bytes": 710,
@@ -708,7 +708,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/step-up/request/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/step-up/request/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8a60a7a815abef3f9aec3ab2a6b4991255f748cdabf6fb3573b5f377c51295ae",
         "bytes": 1975,
@@ -724,7 +724,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/step-up/verify/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/step-up/verify/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2de8fcb0e2f14a9915de42dd1c041249c5fd9a84f7845835d7c1fbb5d7815965",
         "bytes": 2020,
@@ -740,7 +740,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/verify/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/verify/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b126e52aac56743924c2b468d0a0eac0c35407ec1aa745e48e135812b00a7653",
         "bytes": 2608,
@@ -756,7 +756,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/files/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/files/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e7635db2883e612a9478bb43da19f5196891b5f865b4af71c07daf0ac77a1ecb",
         "bytes": 5324,
@@ -772,7 +772,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/finance/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/finance/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "569bde56a32dcea5ddebdd2707541b81e009084a4f6b4671a991b8188030671c",
         "bytes": 28149,
@@ -788,7 +788,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/health/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/health/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d91655f13951d400b2e72cfda2281a928c9e02536a5fdcdc1cbd91a4f17af172",
         "bytes": 1476,
@@ -804,7 +804,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/commit/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/commit/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b086a5a96619b3093a73621c1ace57eb6f8a320331c793d83ec277b52e8b21ed",
         "bytes": 4520,
@@ -820,7 +820,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/diff/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/diff/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4b4e043ece3bf2f805a95f92ac4e685296b67de16a9e5f99235c76406ba1a1a0",
         "bytes": 2256,
@@ -836,7 +836,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/preview/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/preview/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9ebf5a763b564505c3ce957300c3b3e9ebc6dd2bf4b6b8756a6106debb087594",
         "bytes": 5805,
@@ -852,7 +852,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/stage/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/stage/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5c94cb54f134ecad22ac7e19bfa8abfa37aeb4ea4e9177522ae90a34c9a9955c",
         "bytes": 3018,
@@ -868,7 +868,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/inventory/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/inventory/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "192d1ef959714804620cd74f8847baae8cb29da549d9d8ee17eeebb6c57ce550",
         "bytes": 7460,
@@ -884,7 +884,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/inventory/transfers/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/inventory/transfers/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8bca5ee5f999386ca8181e51eb090fe7bab32ac30c074462dcda1ec04a849995",
         "bytes": 7736,
@@ -900,7 +900,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/jobs/email/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/jobs/email/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1f3e822f7b9708fecc3d4e031efd70cff206c241427ddda1104623e0237bbb5d",
         "bytes": 2069,
@@ -921,7 +921,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/jobs/reminders/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/jobs/reminders/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "304c6d9547b21d0db787ef657d916ff6fe2f41b756064295d0f4a90cf1c5ef0f",
         "bytes": 773,
@@ -942,7 +942,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/master-data/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/master-data/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "77b9a05f6c446d61fb47acbf6626cd708f103c31da2e6bd8e3575e8bc74f496e",
         "bytes": 10241,
@@ -958,7 +958,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/notifications/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/notifications/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6e51434dc9a7fb8d60c3a1d4b63a59c07f07f903abd8b5fbf4ec4cb4550ee93b",
         "bytes": 1457,
@@ -974,7 +974,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/production-orders/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/production-orders/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "23fdab837254a855aaf620925a02f9b6a6bba7a1e9e47de9d19d96739dffb7cb",
         "bytes": 12375,
@@ -990,7 +990,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/purchase-orders/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/purchase-orders/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "11f3cc3a166dc3ab71997a62fa51c8477f998962ba9222b07bb7828259628f17",
         "bytes": 10845,
@@ -1006,7 +1006,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/purchase-plans/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/purchase-plans/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "babec3637a20f319ed130e59a8494f0f6953e4d5625dc6906b35f96f1e4cf96a",
         "bytes": 12359,
@@ -1022,7 +1022,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/quality-inspections/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/quality-inspections/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f103e5cd70acbac32ae4225f5338d278f803a423b399b50abce8715843435b1a",
         "bytes": 7829,
@@ -1038,7 +1038,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/returns/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/returns/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d42c79c16a51049819cf07dffeb83e0bc5d08ad165503b0f765fa62a2f09d559",
         "bytes": 12964,
@@ -1054,7 +1054,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/session/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/session/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a62e8d5e4af60d9da6acde17daeadc9b063be450e27dc8e3d9dfa686c149ea0f",
         "bytes": 700,
@@ -1070,7 +1070,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/shipments/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/shipments/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "0e1c355b48f296fa7f20d9311dacf9c1a8a177214bc784a2b26e5c7263a9b041",
         "bytes": 23043,
@@ -1086,7 +1086,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/stocktakes/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/stocktakes/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "eb0197be525a91e38f2d521ea176f7656291906a8183f41b163ed508a9814e63",
         "bytes": 13084,
@@ -1102,7 +1102,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-performance/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-performance/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "cb5a6f670f50e3734eb5ce818b562a77424571059b12075ef6f43613279f3cf8",
         "bytes": 13361,
@@ -1118,7 +1118,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-prices/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-prices/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "79c6f11f03de04b3743491a4bb34b93268ecd13842e587d3b2685b45d8cbf222",
         "bytes": 8084,
@@ -1134,7 +1134,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-skus/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-skus/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "bd8d11671d95379a567c4e546df69b33247574ab4e85e588dc003ad5a6b86494",
         "bytes": 5899,
@@ -1150,7 +1150,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/suppliers/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/suppliers/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9281e7bd0e1596fad216a438bb75e5156ccd2225c38c494a27af6ffaf086f607",
         "bytes": 4311,
@@ -1166,7 +1166,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/users/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/users/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3c34141c647711570e380e8c5ad24afb3ef75cfecc9805419ab3487d9d73058d",
         "bytes": 12024,
@@ -1182,7 +1182,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/api/warehouses/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/warehouses/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d96dffa0bfac2b687ef8f058ee1bf9f4a931565a9fea473e053d9a952cb2cbe5",
         "bytes": 7036,
@@ -1198,7 +1198,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/approval.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/approval.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d596cd33a01b94c28e1daf7161711fa2997021e85ccd2634b962fa346c5c28dd",
         "bytes": 3379,
@@ -1214,7 +1214,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/audit.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/audit.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6c1393ce6ca6e5c2d97d59cb4f2b333812045caa24002e3de4408ed6748af5d8",
         "bytes": 1540,
@@ -1230,7 +1230,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/chatgpt-auth.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/chatgpt-auth.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1407f614cc83d7049fdb08cd713d2516866ba58e24e820f7f4fd9d718b9d3007",
         "bytes": 2490,
@@ -1246,7 +1246,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/AuditWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/AuditWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9f34405bbf4930a39d98c9281361c3e65f3924760592ab5ff92c5c2645d69875",
         "bytes": 5379,
@@ -1262,7 +1262,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/FinanceExceptionWorkspace",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/FinanceExceptionWorkspace",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7c883b9d46b2cd6cbec1bbd63c2160adcd7ccb835f154c0579b792f602cde955",
         "bytes": 9591,
@@ -1278,7 +1278,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/FinanceWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/FinanceWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "63415d912e2a8abf8ff7ea00dad4404eea25c4ef951b3d9a9973f391baaa79e6",
         "bytes": 13388,
@@ -1294,7 +1294,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/InventoryWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/InventoryWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5681985755723e7bf587db59820e6fe494be8e8d0f2c09f3b682400eb6d11f79",
         "bytes": 11368,
@@ -1310,7 +1310,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/MasterDataWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/MasterDataWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7251d42fa252bf9f816bc94ad043bf2a4ddbc30574141279fe98f15372569a07",
         "bytes": 14466,
@@ -1326,7 +1326,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/ProductionWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/ProductionWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f2b7698031abaa798d68f12c2ded8a837264c5cbf501395a522d0e8ec92e300f",
         "bytes": 8762,
@@ -1342,7 +1342,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/PurchaseWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/PurchaseWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "28d2a116e2416de0182ab59f540652c92de22b3b7a7ac605c1e90999a71ea8d3",
         "bytes": 15428,
@@ -1358,7 +1358,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/ShippingWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/ShippingWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "50d739071d59f78250ad00cad419eb678d1cd256aa22ed2be816cbb752c61f02",
         "bytes": 15883,
@@ -1374,7 +1374,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/StocktakeWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/StocktakeWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f2a26d3e5730d8fa4a215dcc855c96b123c4e2cdb5b0eaedd741d65eba6fd337",
         "bytes": 9908,
@@ -1390,7 +1390,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierPerformanceWorkspa",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierPerformanceWorkspa",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4820c30195fd813e7b9cdabe139c00231924cb500f49c83f134b594f5c42d78a",
         "bytes": 8809,
@@ -1406,7 +1406,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierPriceWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierPriceWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "95739b5cb71da5beb467c9f3506622c37022354289815c50780786663468cf4a",
         "bytes": 7959,
@@ -1422,7 +1422,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "07b8235b2f5820c6b2be86ecec3f8b9706e3ab31fa1684049830f2f7bb42d931",
         "bytes": 13075,
@@ -1438,7 +1438,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/components/WarehouseWorkspace.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/WarehouseWorkspace.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "12a894a211ee5595ba62f6334fadfbe30c33ad77a0d24ad566b8738286b1bd77",
         "bytes": 5860,
@@ -1454,7 +1454,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/finance.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/finance.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "78fe975b5274b8bf04560bd425f2f3a8d416c637afbc110eaf6ca15470864c56",
         "bytes": 2692,
@@ -1470,7 +1470,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/globals.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/globals.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "15ad8edb65469ec398894ce24ea34a2618a24b931b51b730c549d79f0f7ab7c8",
         "bytes": 63445,
@@ -1486,7 +1486,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/layout.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/layout.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d96ec3ca64d39af65bc5a8e3dc37feb4fd92d6c077dc1659a75f57ca15a069d6",
         "bytes": 846,
@@ -1502,7 +1502,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/audit.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/audit.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "883d7656f9555f9f6683c1012550596c0cd04733b9c4161d09a870c4f58258d9",
         "bytes": 1255,
@@ -1518,7 +1518,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/authz.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/authz.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "917d5a60f59039cd72b83972f3f3745f6da1dc9e0cc6e2aaa6af4ca1a6ce3907",
         "bytes": 4056,
@@ -1534,7 +1534,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/business-rules.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/business-rules.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "18b07693f69367805826765a088381fca393ceee17a7a90698f6672984f772b0",
         "bytes": 3729,
@@ -1550,7 +1550,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/crypto.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/crypto.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "db03b669bd0e60c30ba3f8385fad43cfc4bb4574b19dac9316961970e4b9d0fd",
         "bytes": 1248,
@@ -1571,7 +1571,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/inventory-freeze.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/inventory-freeze.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b31ea95c8ecb4624026e8dc2e884cb05d6bf255ca8b93d53f8366e90dd186183",
         "bytes": 1226,
@@ -1587,7 +1587,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/oss-store.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/oss-store.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "28aec6982db666595063dc7745edfa93fad932a405c770c76d42fc5ed398824e",
         "bytes": 4614,
@@ -1603,7 +1603,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/production-finalization.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/production-finalization.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d38ec21ddc862046c71b5bfd9a62d09cb2ae46ee8a524ae3f3633bda52f45dc6",
         "bytes": 3867,
@@ -1619,7 +1619,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/reminders.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/reminders.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c6648a3e5ef903369e16ac2618bb67d62a432fa9020e358b7c55ad89d16f63b8",
         "bytes": 3727,
@@ -1635,7 +1635,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/runtime-env.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/runtime-env.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fef14c2b741be4cd7282807b313655b49af94c7019f234b68a0bebcd19e82b38",
         "bytes": 715,
@@ -1651,7 +1651,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/sessions.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/sessions.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7588a956d42f92d0c367e60f94652a59f9f21de9e1434e6ff9aa9b9fe92d6909",
         "bytes": 1091,
@@ -1672,7 +1672,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/sms.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/sms.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4573e0243b5bec997c89a4bc9d574597e6dbcbf9c40c082fd1beee453f74ad4d",
         "bytes": 2635,
@@ -1688,7 +1688,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/page.tsx",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/page.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a1f3ceedbf02f31ae7d4bf04009d64ef0107d2f4cfb4cb563602a821e26813fa",
         "bytes": 81009,
@@ -1704,7 +1704,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/performance.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/performance.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "055fe5680f6c49909e325cb7b1395455e7d2d6f504230bf5e86bbbf8c4944e5c",
         "bytes": 2732,
@@ -1720,7 +1720,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/app/shipping.css",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/shipping.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5023029beb52e9ec28bf7c93ad26d45b013ec728ae561cc19f07e9c750645911",
         "bytes": 1024,
@@ -1736,7 +1736,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/CONTRIBUTING.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/CONTRIBUTING.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "cf3344d657e61b00e1865e04909ccc813c5501d78a93c906e528745824740d37",
         "bytes": 1263,
@@ -1752,7 +1752,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/index.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/index.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1c73910dc11065a3b2afedf0491657dde905dfe5b06e421926c3bfd8f293ea8d",
         "bytes": 1997,
@@ -1768,7 +1768,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/insert-one.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/insert-one.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "04757e6266ff6466ae8c5b0cb58927a94a2e7a128d5908e8e6e95000d4649445",
         "bytes": 1918,
@@ -1784,7 +1784,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/mysql.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/mysql.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5abd9ea6a7e5bf5459bf148fde1668d6e672a617faff8f4b090362d782e445c8",
         "bytes": 2519,
@@ -1800,7 +1800,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/schema.mysql.generated.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/schema.mysql.generated.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "81b0531771cac3636b76c10d5810d84b50348c5e49eebbd58f9827344d4a3b99",
         "bytes": 65555,
@@ -1816,7 +1816,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/schema.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/schema.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c572e8bafbd96a2d714898a9edd34d65602e21b86eb763e172584544c622ca6d",
         "bytes": 67050,
@@ -1832,7 +1832,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/db/transaction.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/transaction.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b37ac60356c8cbfbd09b903b1eddf89374cfe8be027bffa87bf04827a774d008",
         "bytes": 700,
@@ -1848,7 +1848,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/.env.production.template",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/.env.production.template",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "678689fbf8ad73f5ae75ff0e9e0b807c29cd5ab44e52d2a1c2aa79053b614a4f",
         "bytes": 735,
@@ -1869,7 +1869,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/AUDIT_CENTER_DEPLOY.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/AUDIT_CENTER_DEPLOY.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fe9c46f50fe66225d65c0351c075f0fc42e22bda1c3bded784be1c0595ed50f3",
         "bytes": 954,
@@ -1885,7 +1885,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-alinux3.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-alinux3.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e51fe7f25448a27b85c97d66eda594c5e7fdb0a69bb0dbc2c426c297c4466755",
         "bytes": 972,
@@ -1901,7 +1901,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-ubuntu.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-ubuntu.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4bf3f2c74e3bcf84fe66ba3fe8891c96fb69eb37f292e22b716b7590cf5fb99c",
         "bytes": 1007,
@@ -1917,7 +1917,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/configure-production-env.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/configure-production-env.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b287a11a181e82bd9ec12a0aef1d42b2fd885e7dafcf5d006ce965b7c5d1c3b6",
         "bytes": 2134,
@@ -1938,7 +1938,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/DEPLOY_FINANCE_EXCEPTIONS_2",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/DEPLOY_FINANCE_EXCEPTIONS_2",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ea12321c880467f7e13b7622758177f1ec088bd498b0aeeef5cdaa0060c6c82c",
         "bytes": 794,
@@ -1954,7 +1954,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-audit-center.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-audit-center.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "166d4cc15baad50cf623e11d39c04e3c4edf6059c11484345c20eb5c3e18fc49",
         "bytes": 723,
@@ -1970,7 +1970,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-bom-versions.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-bom-versions.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b0f41bc28d0445ad0354bb992643af1e158f23439503dfb4a48ebef96efe4f90",
         "bytes": 715,
@@ -1986,7 +1986,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a3e71b217cb37d09be29a7c9064d937af7f6c155c44d48f97189373344c33297",
         "bytes": 903,
@@ -2002,7 +2002,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/docker-compose.yml",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/docker-compose.yml",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "74288c8ebfab951910b00cd895a274dd3fcf143a05d30e3d6be17d4955b2bb61",
         "bytes": 1110,
@@ -2018,7 +2018,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/install-jobs.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/install-jobs.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ee872908c866a62ea50827152fdea27eafa6573e27faf4e60cf4297899771d71",
         "bytes": 1797,
@@ -2034,7 +2034,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/nginx-scm.conf",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/nginx-scm.conf",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6b22915ca91574c43ae3f7f1c8581a5aaacf57c7339501bfc63bb383f3095f05",
         "bytes": 1676,
@@ -2050,7 +2050,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/README.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/README.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "17e597afa1533435fdec90b5ecbeceb7eff551c8dd916837d9748148bdbc70c3",
         "bytes": 4000,
@@ -2066,7 +2066,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/resource-checklist.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/resource-checklist.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7f122190fd3db35e846263da345a7a6befaa3f29fe7b54f721253f11d0dffa28",
         "bytes": 585,
@@ -2082,7 +2082,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/rollback.sh",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/rollback.sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3eb7ddf323d2bb761a8ad24d0ace399143dff93884962e926fa7f79a7b32d866",
         "bytes": 721,
@@ -2098,7 +2098,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/Dockerfile.aliyun",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/Dockerfile.aliyun",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "46f22fa95fe4794d2fd97fce3be829ff0d768de8f2597ace242d3a577fd0ec76",
         "bytes": 1150,
@@ -2114,7 +2114,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/0000_hot_firestar.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/0000_hot_firestar.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9570b573c500297d7c17b505852858a87756b67c6e491c7830823c30c00ec26f",
         "bytes": 90498,
@@ -2130,7 +2130,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/0001_thankful_slyde.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/0001_thankful_slyde.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "91700499032fb516feb8d335053bab5c74e967fa5559d22ab3daf5589c4f607d",
         "bytes": 2154,
@@ -2146,7 +2146,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/_journal.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/_journal.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8aab5481556bee8b6cc0bcf68a5f88b28f2600901468dd657c587c6db82b59fb",
         "bytes": 343,
@@ -2162,7 +2162,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0000_snapshot.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0000_snapshot.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f076059fc5037d6abea1e2b8a769dd3684b6c0c2f50abff7135f1c663df366f7",
         "bytes": 309139,
@@ -2178,7 +2178,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0001_snapshot.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0001_snapshot.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "121e7b7ba4ee34b408c9fa0848a14b35a03ef615419d711182b869fbb7c9bc38",
         "bytes": 316553,
@@ -2194,7 +2194,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "73d0807c58e541dc3eaf175909fb5acc966faed61f74ff659d9d55027bf3e25b",
         "bytes": 155,
@@ -2210,7 +2210,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle.mysql.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle.mysql.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "37fe7b36dc6d521fa83fdf5330b9aa079e9963fdde9e96c3dc6fa01ea1648476",
         "bytes": 326,
@@ -2231,7 +2231,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0000_supply_chain.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0000_supply_chain.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1ad9d81986e08dbb24280ce1faa77e56478bc0c4dd79b2fdf74eb948c9ed0653",
         "bytes": 25130,
@@ -2247,7 +2247,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0001_supplier_governance.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0001_supplier_governance.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "04e328f4423a34e70bf54d23261b78073977107a9806ad5c4029fa31e3b2db3b",
         "bytes": 2439,
@@ -2263,7 +2263,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0002_purchase_plans.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0002_purchase_plans.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "194f3535d79b358081ae44f1ad5b620c763b9c4ce9c51dff878e788c8257d158",
         "bytes": 3292,
@@ -2279,7 +2279,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0003_sku_bom_production.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0003_sku_bom_production.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6f0086219e89a8ac4f18f4c0842e4176069164646906035c65c70ea49a93ce20",
         "bytes": 3524,
@@ -2295,7 +2295,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0004_inventory_batches_stocktakes",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0004_inventory_batches_stocktakes",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "860a80bd7bcc310d844210f1c0bbbb0e095308a401bc3c4ab4cb9544336ec7f3",
         "bytes": 3595,
@@ -2311,7 +2311,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0005_shipping_collaboration.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0005_shipping_collaboration.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "02b724cc8fb7eb498262969b3ac7dccb34218cff92fb6d8dd3451fb597013685",
         "bytes": 2134,
@@ -2327,7 +2327,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0006_governance_ai.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0006_governance_ai.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4976973412fde0bab2f13d5a4358853cad16f550b415271a7c12f02099e8cd03",
         "bytes": 9291,
@@ -2343,7 +2343,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0007_invoice_allocations.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0007_invoice_allocations.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "76331e49b23579524c251ec58892133d7fcf428fcce4c52fe3d2a3fd10cd877f",
         "bytes": 877,
@@ -2359,7 +2359,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0008_product_return_workflow.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0008_product_return_workflow.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2e8133c5e92e5c95305cd49f343f522b52d382baee84069c355ffd8f8e163b58",
         "bytes": 1554,
@@ -2375,7 +2375,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0009_invoice_exceptions.sql",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0009_invoice_exceptions.sql",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c0522259eaf961c7a16ada9136bc1e699c589ea33bc7ac701aedfad09f91c9aa",
         "bytes": 1982,
@@ -2391,7 +2391,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/meta/_journal.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/meta/_journal.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d908e9a7b93091b050107ba5788ed90088d6d14c135d73515a118335ab38c314",
         "bytes": 1532,
@@ -2407,7 +2407,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/eslint.config.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/eslint.config.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "275a07c13fc7c83a652efcfa9fb6a207c451a2f5088e6793415ce44281285720",
         "bytes": 483,
@@ -2423,7 +2423,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/examples/d1/app/api/notes/route.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/examples/d1/app/api/notes/route.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b0b134b9b0b4a9f5947abbd13fd4425b88b59c64f91db1aacb0cecbc16c38f45",
         "bytes": 1758,
@@ -2439,7 +2439,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/examples/d1/db/schema.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/examples/d1/db/schema.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1acd70317bcaf22cb140436fb47754c2144e7c2adfc59a3f427ecb1d816fa0f3",
         "bytes": 379,
@@ -2455,7 +2455,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/GITHUB_PACKAGE_MANIFEST.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/GITHUB_PACKAGE_MANIFEST.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6ee9b41ec02816969684ddd10c8a32c2842cb4f7bd73f0f2b93235ac6300d677",
         "bytes": 662,
@@ -2471,7 +2471,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/GITHUB_UPLOAD_GUIDE.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/GITHUB_UPLOAD_GUIDE.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8c6f49dcd013881665e3e8516c90751672c6e7924b1612d47571809a0cf6dda7",
         "bytes": 1050,
@@ -2487,7 +2487,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/next-env.d.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/next-env.d.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4e4da12aa061aac172fb1bcb48e9b6e4b293080d2f494327925fdba8f39632ac",
         "bytes": 253,
@@ -2503,7 +2503,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/next.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/next.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "656c20c4f080dfdc1f633df9a51e0cc9c8db90f1506c6dd657fef93bff5c1d76",
         "bytes": 285,
@@ -2519,7 +2519,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/package.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/package.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f59d84e87c903e42c3892f86c424283f2f5a29f74365bf7fbd8c8bf5ef0774a2",
         "bytes": 1884,
@@ -2535,7 +2535,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/pnpm-lock.yaml",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/pnpm-lock.yaml",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "928e55b73e213590c1bda48f06c7ec03550c2b1f572adcd8383ee340dc4e8102",
         "bytes": 262599,
@@ -2551,7 +2551,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/pnpm-workspace.yaml",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/pnpm-workspace.yaml",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c7c8996d280686006b5c9ea997dcfc898549fba0d7925189a4a4ec9d8326db36",
         "bytes": 189,
@@ -2567,7 +2567,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/postcss.config.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/postcss.config.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7b299d3d3b16699ddda397c0b2373b3af4f25f8fc9ccc9b3d9e64ef083bc1c21",
         "bytes": 101,
@@ -2583,7 +2583,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/PROJECT_STATUS.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/PROJECT_STATUS.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d67ab8057a7b6a257dda888b3c8707ad3690aa85f3472b29f553f0ddee404634",
         "bytes": 22618,
@@ -2599,7 +2599,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/public/favicon.svg",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/favicon.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3e8863288c2d43dd33d2a71de317dcf9198f09932ea8d61e0def1b846a865435",
         "bytes": 718,
@@ -2615,7 +2615,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/public/file.svg",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/file.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2b67812c325c199a02536cdbeea0c593a72f707d323b72ee3e08dbab06753bd4",
         "bytes": 391,
@@ -2631,7 +2631,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/public/globe.svg",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/globe.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b614b9bf183925957661ac851498fe1d8029fd43a62fbfed86f9e2624a57e7cf",
         "bytes": 1035,
@@ -2647,7 +2647,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/public/og.png",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/og.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "651757c37cf5f5654bb9dbf8496df1efd221d1da38127421f202ae1d56757bfa",
         "bytes": 1721683,
@@ -2663,7 +2663,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/public/window.svg",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/window.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "644768c4aaeb4767bce293344eeb0c125fb804a94d801440424072202d85e3a1",
         "bytes": 385,
@@ -2679,7 +2679,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/README.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/README.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b75851c09d39a0fe49520c323d810a08fc9c9c81f8cdb046e0ef7c88175f50c5",
         "bytes": 3843,
@@ -2695,7 +2695,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/scripts/bootstrap-admin.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/bootstrap-admin.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "365b0b3eca0f9afb9ea1fa86305ecbd516f079d41ca889786dff53d03c06eee9",
         "bytes": 6224,
@@ -2716,7 +2716,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/scripts/check-production-env.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/check-production-env.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4203c5b844e39362852775eae2da03c4a3ac33e0dab0a4ac4a150a83f872eb44",
         "bytes": 2197,
@@ -2732,7 +2732,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/scripts/generate-mysql-schema.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/generate-mysql-schema.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2e42df28557381d7d333519cd14754d93ca279ac65b5b278f4d65aac1aaa0771",
         "bytes": 2371,
@@ -2748,7 +2748,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/scripts/preflight-supplier-performance-mi",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/preflight-supplier-performance-mi",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "dcc83e919f9ac8d032dbc984580277076eb4c2d14cced4043b72e92b05243d5e",
         "bytes": 880,
@@ -2764,7 +2764,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/SECURITY.md",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/SECURITY.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b8c0a01caa8d5533faf6860bd983a102eb69b03f0deb29173e58e337719738ee",
         "bytes": 888,
@@ -2780,7 +2780,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/SOURCE_FILE_MANIFEST.tsv",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/SOURCE_FILE_MANIFEST.tsv",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f17c712fc7a0f7410ae726c9b6043fb505dd7f09c3649cb5104103b5b7dd16ca",
         "bytes": 14015,
@@ -2796,7 +2796,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/tests/business-rules.test.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tests/business-rules.test.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8135495bec7a20aa33296cc345ef3ded32f4f5e79bad87355a4728243a1571bc",
         "bytes": 3269,
@@ -2812,7 +2812,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/tests/rendered-html.test.mjs",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tests/rendered-html.test.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "daaffb09d3f94995e859d4a83e4e8129b9b8cfdb68ff1face21d295317465244",
         "bytes": 1772,
@@ -2828,7 +2828,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/tsconfig.json",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tsconfig.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fbff01604d6cb54694be707f26e7a0eb21a6ef796b888c6a1dab1839fa7c6ccc",
         "bytes": 700,
@@ -2844,7 +2844,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/types/cloudflare-runtime.d.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/types/cloudflare-runtime.d.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e7e1f139e95c0d2a8f292a1b256497c0a85d41f4dda5bdb38ac6f8f24e44150a",
         "bytes": 545,
@@ -2860,7 +2860,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/vite.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/vite.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5d68239b2f24f42354e8a05cf69b83fd8f3ce34727f2edf2b55283e4f732c77a",
         "bytes": 1756,
@@ -2876,7 +2876,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-20260804-v1/worker/index.ts",
       "target": "archive/deliveries/github/topology-scm-github-20260804-v1/worker/index.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6f8983ab616309202039ad672b1a46a835bede1bb77636dc751613c664f969e5",
         "bytes": 1778,
@@ -2892,7 +2892,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.dockerignore",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.dockerignore",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a7483e67e4b060938893358b1008d0be9abb233663f41582348877530cd57f11",
         "bytes": 89,
@@ -2908,7 +2908,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.env.example",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.env.example",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d1e5c9ef494809ac9552ad3f00778c7ddfec14f60520d4f8de34dfaaf7886f3c",
         "bytes": 963,
@@ -2929,7 +2929,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.github/pull_requ",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.github/pull_requ",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c971513249ca5dc574fe81d6b2da382f3c6b57cb1186881aba9b139931b005b0",
         "bytes": 451,
@@ -2945,7 +2945,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.gitignore",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.gitignore",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "91d605039a482e0fc15d3b1b16f08b3c590f6db6fc67dcf4fe3470acbc27d677",
         "bytes": 693,
@@ -2961,7 +2961,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.openai/hosting.j",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.openai/hosting.j",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ac56805a09e952b47b514aee5cb24c2126ef1e877a06ca413a98e4fd5b9bd0ce",
         "bytes": 35,
@@ -2977,7 +2977,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/files/rou",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/files/rou",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e7635db2883e612a9478bb43da19f5196891b5f865b4af71c07daf0ac77a1ecb",
         "bytes": 5324,
@@ -2993,7 +2993,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/finance/r",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/finance/r",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "569bde56a32dcea5ddebdd2707541b81e009084a4f6b4671a991b8188030671c",
         "bytes": 28149,
@@ -3009,7 +3009,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/health/ro",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/health/ro",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d91655f13951d400b2e72cfda2281a928c9e02536a5fdcdc1cbd91a4f17af172",
         "bytes": 1476,
@@ -3025,7 +3025,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/returns/r",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/returns/r",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d42c79c16a51049819cf07dffeb83e0bc5d08ad165503b0f765fa62a2f09d559",
         "bytes": 12964,
@@ -3041,7 +3041,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/session/r",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/session/r",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a62e8d5e4af60d9da6acde17daeadc9b063be450e27dc8e3d9dfa686c149ea0f",
         "bytes": 700,
@@ -3057,7 +3057,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/users/rou",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/users/rou",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3c34141c647711570e380e8c5ad24afb3ef75cfecc9805419ab3487d9d73058d",
         "bytes": 12024,
@@ -3073,7 +3073,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/approval.css",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/approval.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d596cd33a01b94c28e1daf7161711fa2997021e85ccd2634b962fa346c5c28dd",
         "bytes": 3379,
@@ -3089,7 +3089,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/audit.css",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/audit.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6c1393ce6ca6e5c2d97d59cb4f2b333812045caa24002e3de4408ed6748af5d8",
         "bytes": 1540,
@@ -3105,7 +3105,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/chatgpt-auth",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/chatgpt-auth",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1407f614cc83d7049fdb08cd713d2516866ba58e24e820f7f4fd9d718b9d3007",
         "bytes": 2490,
@@ -3121,7 +3121,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Au",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Au",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "9f34405bbf4930a39d98c9281361c3e65f3924760592ab5ff92c5c2645d69875",
         "bytes": 5379,
@@ -3137,7 +3137,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Fi",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Fi",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "63415d912e2a8abf8ff7ea00dad4404eea25c4ef951b3d9a9973f391baaa79e6",
         "bytes": 13388,
@@ -3153,7 +3153,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/In",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/In",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5681985755723e7bf587db59820e6fe494be8e8d0f2c09f3b682400eb6d11f79",
         "bytes": 11368,
@@ -3169,7 +3169,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Ma",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Ma",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7251d42fa252bf9f816bc94ad043bf2a4ddbc30574141279fe98f15372569a07",
         "bytes": 14466,
@@ -3185,7 +3185,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pr",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pr",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f2b7698031abaa798d68f12c2ded8a837264c5cbf501395a522d0e8ec92e300f",
         "bytes": 8762,
@@ -3201,7 +3201,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pu",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pu",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "28d2a116e2416de0182ab59f540652c92de22b3b7a7ac605c1e90999a71ea8d3",
         "bytes": 15428,
@@ -3217,7 +3217,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Sh",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Sh",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "50d739071d59f78250ad00cad419eb678d1cd256aa22ed2be816cbb752c61f02",
         "bytes": 15883,
@@ -3233,7 +3233,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/St",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/St",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f2a26d3e5730d8fa4a215dcc855c96b123c4e2cdb5b0eaedd741d65eba6fd337",
         "bytes": 9908,
@@ -3249,7 +3249,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Su",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Su",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "07b8235b2f5820c6b2be86ecec3f8b9706e3ab31fa1684049830f2f7bb42d931",
         "bytes": 13075,
@@ -3265,7 +3265,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Wa",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Wa",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "12a894a211ee5595ba62f6334fadfbe30c33ad77a0d24ad566b8738286b1bd77",
         "bytes": 5860,
@@ -3281,7 +3281,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/finance.css",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/finance.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "78fe975b5274b8bf04560bd425f2f3a8d416c637afbc110eaf6ca15470864c56",
         "bytes": 2692,
@@ -3297,7 +3297,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/globals.css",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/globals.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "15ad8edb65469ec398894ce24ea34a2618a24b931b51b730c549d79f0f7ab7c8",
         "bytes": 63445,
@@ -3313,7 +3313,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/layout.tsx",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/layout.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d96ec3ca64d39af65bc5a8e3dc37feb4fd92d6c077dc1659a75f57ca15a069d6",
         "bytes": 846,
@@ -3329,7 +3329,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/audit.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/audit.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "883d7656f9555f9f6683c1012550596c0cd04733b9c4161d09a870c4f58258d9",
         "bytes": 1255,
@@ -3345,7 +3345,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/authz.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/authz.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "917d5a60f59039cd72b83972f3f3745f6da1dc9e0cc6e2aaa6af4ca1a6ce3907",
         "bytes": 4056,
@@ -3361,7 +3361,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/business-",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/business-",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "18b07693f69367805826765a088381fca393ceee17a7a90698f6672984f772b0",
         "bytes": 3729,
@@ -3377,7 +3377,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/crypto.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/crypto.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "db03b669bd0e60c30ba3f8385fad43cfc4bb4574b19dac9316961970e4b9d0fd",
         "bytes": 1248,
@@ -3398,7 +3398,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/inventory",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/inventory",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b31ea95c8ecb4624026e8dc2e884cb05d6bf255ca8b93d53f8366e90dd186183",
         "bytes": 1226,
@@ -3414,7 +3414,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/oss-store",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/oss-store",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "28aec6982db666595063dc7745edfa93fad932a405c770c76d42fc5ed398824e",
         "bytes": 4614,
@@ -3430,7 +3430,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/productio",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/productio",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d38ec21ddc862046c71b5bfd9a62d09cb2ae46ee8a524ae3f3633bda52f45dc6",
         "bytes": 3867,
@@ -3446,7 +3446,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/reminders",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/reminders",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c6648a3e5ef903369e16ac2618bb67d62a432fa9020e358b7c55ad89d16f63b8",
         "bytes": 3727,
@@ -3462,7 +3462,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/runtime-e",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/runtime-e",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fef14c2b741be4cd7282807b313655b49af94c7019f234b68a0bebcd19e82b38",
         "bytes": 715,
@@ -3478,7 +3478,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sessions",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sessions",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7588a956d42f92d0c367e60f94652a59f9f21de9e1434e6ff9aa9b9fe92d6909",
         "bytes": 1091,
@@ -3499,7 +3499,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sms.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sms.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4573e0243b5bec997c89a4bc9d574597e6dbcbf9c40c082fd1beee453f74ad4d",
         "bytes": 2635,
@@ -3515,7 +3515,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/page.tsx",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/page.tsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a1f3ceedbf02f31ae7d4bf04009d64ef0107d2f4cfb4cb563602a821e26813fa",
         "bytes": 81009,
@@ -3531,7 +3531,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/performance.c",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/performance.c",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "055fe5680f6c49909e325cb7b1395455e7d2d6f504230bf5e86bbbf8c4944e5c",
         "bytes": 2732,
@@ -3547,7 +3547,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/shipping.css",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/shipping.css",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5023029beb52e9ec28bf7c93ad26d45b013ec728ae561cc19f07e9c750645911",
         "bytes": 1024,
@@ -3563,7 +3563,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/CONTRIBUTING.md",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/CONTRIBUTING.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "cf3344d657e61b00e1865e04909ccc813c5501d78a93c906e528745824740d37",
         "bytes": 1263,
@@ -3579,7 +3579,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/index.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/index.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1c73910dc11065a3b2afedf0491657dde905dfe5b06e421926c3bfd8f293ea8d",
         "bytes": 1997,
@@ -3595,7 +3595,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/insert-one.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/insert-one.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "04757e6266ff6466ae8c5b0cb58927a94a2e7a128d5908e8e6e95000d4649445",
         "bytes": 1918,
@@ -3611,7 +3611,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/mysql.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/mysql.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5abd9ea6a7e5bf5459bf148fde1668d6e672a617faff8f4b090362d782e445c8",
         "bytes": 2519,
@@ -3627,7 +3627,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.mysql.g",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.mysql.g",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "81b0531771cac3636b76c10d5810d84b50348c5e49eebbd58f9827344d4a3b99",
         "bytes": 65555,
@@ -3643,7 +3643,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c572e8bafbd96a2d714898a9edd34d65602e21b86eb763e172584544c622ca6d",
         "bytes": 67050,
@@ -3659,7 +3659,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/transaction.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/transaction.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b37ac60356c8cbfbd09b903b1eddf89374cfe8be027bffa87bf04827a774d008",
         "bytes": 700,
@@ -3675,7 +3675,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/deploy/aliyun/.en",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/deploy/aliyun/.en",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "678689fbf8ad73f5ae75ff0e9e0b807c29cd5ab44e52d2a1c2aa79053b614a4f",
         "bytes": 735,
@@ -3696,7 +3696,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/AUD",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/AUD",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fe9c46f50fe66225d65c0351c075f0fc42e22bda1c3bded784be1c0595ed50f3",
         "bytes": 954,
@@ -3712,7 +3712,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/boo",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/boo",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4bf3f2c74e3bcf84fe66ba3fe8891c96fb69eb37f292e22b716b7590cf5fb99c",
         "bytes": 1007,
@@ -3728,7 +3728,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/co_",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/co_",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b287a11a181e82bd9ec12a0aef1d42b2fd885e7dafcf5d006ce965b7c5d1c3b6",
         "bytes": 2134,
@@ -3749,7 +3749,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/dep",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/dep",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ea12321c880467f7e13b7622758177f1ec088bd498b0aeeef5cdaa0060c6c82c",
         "bytes": 794,
@@ -3765,7 +3765,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/doc",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/doc",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "74288c8ebfab951910b00cd895a274dd3fcf143a05d30e3d6be17d4955b2bb61",
         "bytes": 1110,
@@ -3781,7 +3781,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ins",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ins",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ee872908c866a62ea50827152fdea27eafa6573e27faf4e60cf4297899771d71",
         "bytes": 1797,
@@ -3797,7 +3797,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ngi",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ngi",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6b22915ca91574c43ae3f7f1c8581a5aaacf57c7339501bfc63bb383f3095f05",
         "bytes": 1676,
@@ -3813,7 +3813,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/REA",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/REA",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "17e597afa1533435fdec90b5ecbeceb7eff551c8dd916837d9748148bdbc70c3",
         "bytes": 4000,
@@ -3829,7 +3829,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/res",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/res",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7f122190fd3db35e846263da345a7a6befaa3f29fe7b54f721253f11d0dffa28",
         "bytes": 585,
@@ -3845,7 +3845,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/rol",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/rol",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3eb7ddf323d2bb761a8ad24d0ace399143dff93884962e926fa7f79a7b32d866",
         "bytes": 721,
@@ -3861,7 +3861,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/Dockerfile.aliyun",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/Dockerfile.aliyun",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "46f22fa95fe4794d2fd97fce3be829ff0d768de8f2597ace242d3a577fd0ec76",
         "bytes": 1150,
@@ -3877,7 +3877,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle-mysql/000",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle-mysql/000",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "91700499032fb516feb8d335053bab5c74e967fa5559d22ab3daf5589c4f607d",
         "bytes": 2154,
@@ -3893,7 +3893,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "73d0807c58e541dc3eaf175909fb5acc966faed61f74ff659d9d55027bf3e25b",
         "bytes": 155,
@@ -3909,7 +3909,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.mysql.con",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.mysql.con",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "37fe7b36dc6d521fa83fdf5330b9aa079e9963fdde9e96c3dc6fa01ea1648476",
         "bytes": 326,
@@ -3930,7 +3930,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0000_supp",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0000_supp",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1ad9d81986e08dbb24280ce1faa77e56478bc0c4dd79b2fdf74eb948c9ed0653",
         "bytes": 25130,
@@ -3946,7 +3946,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0001_supp",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0001_supp",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "04e328f4423a34e70bf54d23261b78073977107a9806ad5c4029fa31e3b2db3b",
         "bytes": 2439,
@@ -3962,7 +3962,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0002_purc",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0002_purc",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "194f3535d79b358081ae44f1ad5b620c763b9c4ce9c51dff878e788c8257d158",
         "bytes": 3292,
@@ -3978,7 +3978,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0003_sku_",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0003_sku_",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6f0086219e89a8ac4f18f4c0842e4176069164646906035c65c70ea49a93ce20",
         "bytes": 3524,
@@ -3994,7 +3994,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0004_inve",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0004_inve",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "860a80bd7bcc310d844210f1c0bbbb0e095308a401bc3c4ab4cb9544336ec7f3",
         "bytes": 3595,
@@ -4010,7 +4010,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0005_ship",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0005_ship",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "02b724cc8fb7eb498262969b3ac7dccb34218cff92fb6d8dd3451fb597013685",
         "bytes": 2134,
@@ -4026,7 +4026,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0006_gove",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0006_gove",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4976973412fde0bab2f13d5a4358853cad16f550b415271a7c12f02099e8cd03",
         "bytes": 9291,
@@ -4042,7 +4042,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0007_invo",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0007_invo",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "76331e49b23579524c251ec58892133d7fcf428fcce4c52fe3d2a3fd10cd877f",
         "bytes": 877,
@@ -4058,7 +4058,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0008_prod",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0008_prod",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2e8133c5e92e5c95305cd49f343f522b52d382baee84069c355ffd8f8e163b58",
         "bytes": 1554,
@@ -4074,7 +4074,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0009_invo",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0009_invo",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c0522259eaf961c7a16ada9136bc1e699c589ea33bc7ac701aedfad09f91c9aa",
         "bytes": 1982,
@@ -4090,7 +4090,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/meta/_jou",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/meta/_jou",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d908e9a7b93091b050107ba5788ed90088d6d14c135d73515a118335ab38c314",
         "bytes": 1532,
@@ -4106,7 +4106,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/eslint.config.mjs",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/eslint.config.mjs",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "275a07c13fc7c83a652efcfa9fb6a207c451a2f5088e6793415ce44281285720",
         "bytes": 483,
@@ -4122,7 +4122,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/examples/d1/db/sc",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/examples/d1/db/sc",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1acd70317bcaf22cb140436fb47754c2144e7c2adfc59a3f427ecb1d816fa0f3",
         "bytes": 379,
@@ -4138,7 +4138,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_PACKAGE_MA",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_PACKAGE_MA",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6ee9b41ec02816969684ddd10c8a32c2842cb4f7bd73f0f2b93235ac6300d677",
         "bytes": 662,
@@ -4154,7 +4154,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_UPLOAD_GUI",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_UPLOAD_GUI",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8c6f49dcd013881665e3e8516c90751672c6e7924b1612d47571809a0cf6dda7",
         "bytes": 1050,
@@ -4170,7 +4170,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next-env.d.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next-env.d.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4e4da12aa061aac172fb1bcb48e9b6e4b293080d2f494327925fdba8f39632ac",
         "bytes": 253,
@@ -4186,7 +4186,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "656c20c4f080dfdc1f633df9a51e0cc9c8db90f1506c6dd657fef93bff5c1d76",
         "bytes": 285,
@@ -4202,7 +4202,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/package.json",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/package.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f59d84e87c903e42c3892f86c424283f2f5a29f74365bf7fbd8c8bf5ef0774a2",
         "bytes": 1884,
@@ -4218,7 +4218,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-lock.yaml",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-lock.yaml",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "928e55b73e213590c1bda48f06c7ec03550c2b1f572adcd8383ee340dc4e8102",
         "bytes": 262599,
@@ -4234,7 +4234,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-workspace.ya",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-workspace.ya",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c7c8996d280686006b5c9ea997dcfc898549fba0d7925189a4a4ec9d8326db36",
         "bytes": 189,
@@ -4250,7 +4250,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/postcss.config.mj",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/postcss.config.mj",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7b299d3d3b16699ddda397c0b2373b3af4f25f8fc9ccc9b3d9e64ef083bc1c21",
         "bytes": 101,
@@ -4266,7 +4266,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/PROJECT_STATUS.md",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/PROJECT_STATUS.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "d67ab8057a7b6a257dda888b3c8707ad3690aa85f3472b29f553f0ddee404634",
         "bytes": 22618,
@@ -4282,7 +4282,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/favicon.sv",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/favicon.sv",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3e8863288c2d43dd33d2a71de317dcf9198f09932ea8d61e0def1b846a865435",
         "bytes": 718,
@@ -4298,7 +4298,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/file.svg",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/file.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2b67812c325c199a02536cdbeea0c593a72f707d323b72ee3e08dbab06753bd4",
         "bytes": 391,
@@ -4314,7 +4314,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/globe.svg",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/globe.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b614b9bf183925957661ac851498fe1d8029fd43a62fbfed86f9e2624a57e7cf",
         "bytes": 1035,
@@ -4330,7 +4330,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/og.png",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/og.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "651757c37cf5f5654bb9dbf8496df1efd221d1da38127421f202ae1d56757bfa",
         "bytes": 1721683,
@@ -4346,7 +4346,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/window.svg",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/window.svg",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "644768c4aaeb4767bce293344eeb0c125fb804a94d801440424072202d85e3a1",
         "bytes": 385,
@@ -4362,7 +4362,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/README.md",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/README.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b75851c09d39a0fe49520c323d810a08fc9c9c81f8cdb046e0ef7c88175f50c5",
         "bytes": 3843,
@@ -4378,7 +4378,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/bootstrap",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/bootstrap",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "365b0b3eca0f9afb9ea1fa86305ecbd516f079d41ca889786dff53d03c06eee9",
         "bytes": 6224,
@@ -4399,7 +4399,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/check-pro",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/check-pro",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "4203c5b844e39362852775eae2da03c4a3ac33e0dab0a4ac4a150a83f872eb44",
         "bytes": 2197,
@@ -4415,7 +4415,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/generate-",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/generate-",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2e42df28557381d7d333519cd14754d93ca279ac65b5b278f4d65aac1aaa0771",
         "bytes": 2371,
@@ -4431,7 +4431,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/preflight",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/preflight",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "dcc83e919f9ac8d032dbc984580277076eb4c2d14cced4043b72e92b05243d5e",
         "bytes": 880,
@@ -4447,7 +4447,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SECURITY.md",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SECURITY.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b8c0a01caa8d5533faf6860bd983a102eb69b03f0deb29173e58e337719738ee",
         "bytes": 888,
@@ -4463,7 +4463,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SOURCE_FILE_MANIF",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SOURCE_FILE_MANIF",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f17c712fc7a0f7410ae726c9b6043fb505dd7f09c3649cb5104103b5b7dd16ca",
         "bytes": 14015,
@@ -4479,7 +4479,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/business-ru",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/business-ru",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8135495bec7a20aa33296cc345ef3ded32f4f5e79bad87355a4728243a1571bc",
         "bytes": 3269,
@@ -4495,7 +4495,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/rendered-ht",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/rendered-ht",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "daaffb09d3f94995e859d4a83e4e8129b9b8cfdb68ff1face21d295317465244",
         "bytes": 1772,
@@ -4511,7 +4511,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tsconfig.json",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tsconfig.json",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "fbff01604d6cb54694be707f26e7a0eb21a6ef796b888c6a1dab1839fa7c6ccc",
         "bytes": 700,
@@ -4527,7 +4527,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/types/cloudflare-",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/types/cloudflare-",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e7e1f139e95c0d2a8f292a1b256497c0a85d41f4dda5bdb38ac6f8f24e44150a",
         "bytes": 545,
@@ -4543,7 +4543,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/vite.config.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/vite.config.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "5d68239b2f24f42354e8a05cf69b83fd8f3ce34727f2edf2b55283e4f732c77a",
         "bytes": 1756,
@@ -4559,7 +4559,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/worker/index.ts",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/worker/index.ts",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6f8983ab616309202039ad672b1a46a835bede1bb77636dc751613c664f969e5",
         "bytes": 1778,
@@ -4575,7 +4575,7 @@
       "category": "deliveries",
       "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/README-FIRST.md",
       "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/README-FIRST.md",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8c6f49dcd013881665e3e8516c90751672c6e7924b1612d47571809a0cf6dda7",
         "bytes": 1050,
@@ -4591,7 +4591,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/01_SKU主数据导入模板.xlsx",
       "target": "archive/deliveries/initial-data-templates/01_SKU主数据导入模板.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "547b7746f5f72c32cc4050f21dc7e953c3526972f4fcd0e91e787ceb9ffa10f8",
         "bytes": 30708,
@@ -4607,7 +4607,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/02_BOM导入模板.xlsx",
       "target": "archive/deliveries/initial-data-templates/02_BOM导入模板.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "2948ff51953987b513d7a2ff58d79fa54f2088a056e9322a381dbb404a2f62a8",
         "bytes": 29318,
@@ -4623,7 +4623,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/03_供应商主数据导入模板.xlsx",
       "target": "archive/deliveries/initial-data-templates/03_供应商主数据导入模板.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f1c9afa4853099c34af488c346be4a309e16dbe44325c817bbf93d9efa01b0eb",
         "bytes": 37349,
@@ -4639,7 +4639,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/04_期初库存导入模板.xlsx",
       "target": "archive/deliveries/initial-data-templates/04_期初库存导入模板.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "63f45f100816089f3607903859e5a257b0fccd5aa4353bf3d08ebc309b4fab3f",
         "bytes": 27191,
@@ -4655,7 +4655,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-填写说明.png",
       "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-填写说明.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3e7a27d3cb08d235de9e92a6edef6d3477afdcc332d45f55f708dfac7722ee9b",
         "bytes": 123176,
@@ -4671,7 +4671,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-字段字典.png",
       "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-字段字典.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8461873c8acd857c4afdd0e50b5f6caf673a960f2b7e27329f87eac514b06068",
         "bytes": 17415,
@@ -4687,7 +4687,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-数据导入.png",
       "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-数据导入.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "01d9d5c7c209f7a9e15b26c7bdaa841f905a1ccb27ca4d358227a4cef6c3050d",
         "bytes": 229417,
@@ -4703,7 +4703,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/02_BOM导入模板-填写说明.png",
       "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-填写说明.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "daa6f3756af30725ee09abde81f3737f71eddaef1cd251a101fed8c73cc2be33",
         "bytes": 124485,
@@ -4719,7 +4719,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/02_BOM导入模板-字段字典.png",
       "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-字段字典.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ea5b46452530f7d5f0c018ebd32e5ce11e1471d743adefe066668d2ca90bac2c",
         "bytes": 19141,
@@ -4735,7 +4735,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/02_BOM导入模板-数据导入.png",
       "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-数据导入.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1486671560aa2189d24cac9f6ca17b1dcbe5f98cb3828e5e897d60ab6983e2bc",
         "bytes": 217282,
@@ -4751,7 +4751,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-供应SKU关�",
       "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-供应SKU关�",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1fb69695c16728b5e5d1699588abfbaf7af365ec2cae11eb2c2a22bdad5fc4a1",
         "bytes": 161198,
@@ -4767,7 +4767,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-填写说明.p",
       "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-填写说明.p",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c8b689ca6c4f9c2a78ba6f325468a2fc4d52d9b04bccb5174e88ad3d74448579",
         "bytes": 121655,
@@ -4783,7 +4783,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-字段字典.p",
       "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-字段字典.p",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "f43d8afc84d45c7f06ba34895a106a718f228ac31a7822403f4bac0472170746",
         "bytes": 30477,
@@ -4799,7 +4799,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-数据导入.p",
       "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-数据导入.p",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7d2c358452859b0d84b47a65a6fbe90f019ab5c94b5c761006a7c0b7cfbe71bd",
         "bytes": 238149,
@@ -4815,7 +4815,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-填写说明.png",
       "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-填写说明.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "113732d2cbda0149c9dce610776201cf6ca97a66e891e8d61b365dcd92f62e05",
         "bytes": 117534,
@@ -4831,7 +4831,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-字段字典.png",
       "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-字段字典.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ca7cc881914b452abb4ac5e7445bc11a1698d1b9e3e29c269951317779d55a3f",
         "bytes": 29900,
@@ -4847,7 +4847,7 @@
       "category": "deliveries",
       "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-数据导入.png",
       "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-数据导入.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6011b0e1a5b36e09875aee62acc13f99564cb897e13530b173e42c0ebaf0b6a2",
         "bytes": 219837,
@@ -4863,7 +4863,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/01_SKU待核验清单及BOM草稿.xlsx",
       "target": "archive/deliveries/staging-workbooks/01_SKU待核验清单及BOM草稿.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "edb6ae190ce0937b54663492568274e3746117798fe4d86772e7e7527dbd1fdd",
         "bytes": 82481,
@@ -4879,7 +4879,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/02_期初库存盲盘底稿.xlsx",
       "target": "archive/deliveries/staging-workbooks/02_期初库存盲盘底稿.xlsx",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b8073004f3be626de87b9dab5fd9aa72b744a65cf86565c617ba223e5ff456ac",
         "bytes": 37061,
@@ -4895,7 +4895,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-BOM待审核草稿",
       "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-BOM待审核草稿",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "85ecfd03e73c67a214ae0fc10c2050c7f32ce42d15bec61b99ab0ac93b20f85f",
         "bytes": 416244,
@@ -4911,7 +4911,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-SKU待核验.png",
       "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-SKU待核验.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "7fc35cf3c547db075a9ef18001fd0c96ca44ecb77dc39085573cd24790ca5423",
         "bytes": 641788,
@@ -4927,7 +4927,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-填写说明.png",
       "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-填写说明.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "b9d42109e254026f960a0ea6d7e140aa67268816aaf96dae56086a1592880cb8",
         "bytes": 118318,
@@ -4943,7 +4943,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-仓库待核验.png",
       "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-仓库待核验.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6a6d4320bb6682d39c18df646eea3caa42b5d89dfa6d294a6d41456c8bcfa0c0",
         "bytes": 99691,
@@ -4959,7 +4959,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-填写说明.png",
       "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-填写说明.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ad773f911ae871393240c24461b40269fe4d69bf56c8955fe480017d1d76a535",
         "bytes": 125723,
@@ -4975,7 +4975,7 @@
       "category": "deliveries",
       "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-期初盲盘底稿.png",
       "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-期初盲盘底稿.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "551ff0a1254aad2ee09f5807b6a4ff8d2535bdcac3df64429487b493769508ff",
         "bytes": 430658,
@@ -4991,7 +4991,7 @@
       "category": "deliveries",
       "source": "outputs/topology-scm-prod-20260729.tar.gz",
       "target": "archive/deliveries/topology-scm-prod-20260729.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "3a4ae2d14ce23f2a2564426139530d55aef0dcdc65b1537c3edddfd9d9cff825",
         "bytes": 1732493,
@@ -5016,7 +5016,7 @@
       "category": "deliveries",
       "source": "outputs/topology-scm-ram-role-update-20260730.tar.gz",
       "target": "archive/deliveries/topology-scm-ram-role-update-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "ff9c7b7566ca7d30507df5cc3f31fb358fb78592e11acdb4870303311dcd27ab",
         "bytes": 88250,
@@ -5037,7 +5037,7 @@
       "category": "deliveries",
       "source": "outputs/topology-scm-secure-config-20260730.tar.gz",
       "target": "archive/deliveries/topology-scm-secure-config-20260730.tar.gz",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "1e296944169e8bba703e4df725de9d2ab804e6dba58c9f0647b11de50466ab34",
         "bytes": 1191,
