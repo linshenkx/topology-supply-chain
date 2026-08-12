@@ -1,26 +1,29 @@
 # T3 工程规范化全量最终验收报告
 
 > 验收日期：2026-08-13（Asia/Shanghai）
-> 生产代码验收对象：`068ef0574087f81b0277ad49d1f41536a8131b18`
-> 结论：**NO-GO**
+> 全量生产代码验收对象：`068ef0574087f81b0277ad49d1f41536a8131b18`
+> 两项阻断 accepted fix：`c9874437580c2e8d1048efa5ae70c2e713a9536b`
+> 结论：**GO**
 > 范围：Scope A 工程、构建、数据库、部署边界和资源；不含 T4 Web 搬迁，不含 Scope B
 > 写入边界：除本报告外未修改生产代码、测试、配置、依赖、lock、SQL、migration 或持久化 identity
 
 ## 1. 最终裁决
 
-当前实现的源码行为、真实 MySQL、三镜像和部署安全门禁在给定的 `codex-software` 路径上均通过，但 clean environment 门禁存在两个可重复的 **Important** 阻断项。Stage 8 要求任一未解释 Critical/Important 即 NO-GO，因此不能用后续定向通过覆盖首次失败。
+`068ef057...` 的全量验收曾因两个可重复的 clean-environment **Important** 判定 NO-GO。唯一内部写者随后在精确父提交 `75882555...` 上形成 accepted fix `c987443...`，只改根 `package.json`、legacy GET 定向测试和本报告。原 T3 按冻结矩阵在非 `codex-software` 目录独立复验，两项均闭合且直接回归全绿；因此最终裁决转为 **GO**。首次失败仍保留在下表，不以复跑覆盖。
 
-| ID | 级别 | 客观失败 | 复现与诊断 | 裁决 |
+| ID | 原 Important | accepted fix | 冻结复验 | 终态 |
 | --- | --- | --- | --- | --- |
-| T3-I-001 | Important | clean frozen install 后直接执行 `pnpm typecheck` / `pnpm verify:local` 失败 | 新 checkout 中 `packages/contracts/dist` 不存在；根 `typecheck` 先运行 Contracts 的 `--noEmit`，随后 API 按 package exports 解析 `@topology/contracts` 的 `dist`，产生 `TS2307` 及连带类型错误，exit 2。先运行既有 `pnpm build:contracts` 后四套 TypeScript 全通过 | 发布候选门禁依赖预存 generated `dist`，不满足 clean repeatability；阻断 |
-| T3-I-002 | Important | clean checkout 不叫 `codex-software` 时 non-MySQL suite 稳定失败 | `apps/api/test/legacy-get-boundary.test.mjs` 用 `url.pathname.split("/codex-software/")[1]` 枚举 18 个旧 GET；任意其他目录名得到 18 个 `undefined`。同一 clean checkout 连续两次均为 `354 pass / 1 fail / 0 skip`；给定路径复跑为 `355/0/0` | 测试依赖绝对目录 basename，不满足 clean environment 可重复性；阻断 |
+| T3-I-001 | clean frozen install 后直接 `pnpm typecheck` / `pnpm verify:local` 因缺少 Contracts `dist` 失败 | 根 `typecheck` 先执行 `build:contracts`，再依次执行 Web、Contracts、API、Worker typecheck；未改 exports、tsconfig、依赖或 lock | 新非标准目录 frozen install 后确认 `dist` 不存在；直接 `typecheck` exit 0，随后 `verify:local` exit 0 | **CLOSED** |
+| T3-I-002 | legacy GET 测试硬编码 `/codex-software/` basename，其他目录稳定 `354 pass / 1 fail / 0 skip` | 用 `fileURLToPath(root)` 与 `path.relative` 生成仓库相对 POSIX 路径；18 条清单和 410-only helper 断言保留 | 同一非标准目录 non-MySQL `355/355`、Web system `4/4`；定向测试 `2/2`，0 fail / 0 skip | **CLOSED** |
 
-无 Critical。除上述两项外没有新的未解释 Important。
+无 Critical；两个 Important 均有精确增量、独立复验和直接回归证据，未发现新的未解释 Important。
 
 ## 2. 基线、父链和差量边界
 
-- 入口 HEAD 精确为 `068ef0574087f81b0277ad49d1f41536a8131b18`，入口工作树 clean，detached HEAD。
-- 当前提交父为 `654ed1f22505004feb3d5d92f296532cc54b0ea6`。
+- 首轮全量入口 HEAD 精确为 `068ef0574087f81b0277ad49d1f41536a8131b18`，入口工作树 clean，detached HEAD；其父为 `654ed1f22505004feb3d5d92f296532cc54b0ea6`。
+- 原 T3 报告提交为 `75882555fc0f4e224a2c5b53bd7b0f0df4ebd962`，精确父提交为 `068ef057...`。
+- accepted fix 为 `c9874437580c2e8d1048efa5ae70c2e713a9536b`，精确父提交为 `75882555...`；复验入口从原报告提交 clean checkout 到该 SHA，未重写历史。
+- `c987443...` 相对原报告只改 `package.json`、`apps/api/test/legacy-get-boundary.test.mjs` 和同一 T3 报告；`git diff --check` exit 0。
 - T1 accepted 尾提交 `a9e96357b252fbfaf80ca92d23ffcb6e86a557b4` 是验收对象祖先；T2 为 12 个线性提交、0 merge。
 - T2 差量为 24 files、`943 insertions / 788 deletions`；`git diff --check` 通过。
 - T2 未改 `package.json`、`pnpm-lock.yaml`、任一 workspace package、Contracts、SQL/schema/migration、release/deploy/rollback、三 Dockerfile 或持久化 identity。
@@ -66,14 +69,14 @@
 
 | 命令 | 结果 |
 | --- | --- |
-| `corepack pnpm install --frozen-lockfile`（独立 clean Git archive checkout） | PASS；4 workspace projects、682 packages、0 download、pnpm 11.9.0、lock policy PASS；lock 未改 |
-| `corepack pnpm typecheck`（clean install 后，无 dist） | **FAIL / exit 2**；T3-I-001 |
-| `corepack pnpm build:contracts` 后逐项 `typecheck:web/contracts/api/worker` | 4/4 PASS |
+| `corepack pnpm install --frozen-lockfile`（初次全量与 fix 后独立 clean checkout） | PASS；fix 复验为 Node v24.19.0、pnpm 11.9.0、4 workspace projects、682 packages、0 download；lock 未改，安装后 Contracts `dist` 仍不存在 |
+| `corepack pnpm typecheck`（fix 后 clean install、初始无 dist） | PASS / exit 0；日志确认 `build:contracts → typecheck:web → contracts → api → worker`，4/4 |
+| `corepack pnpm verify:local`（fix 后非 `codex-software` clean checkout） | PASS / exit 0；non-MySQL 54 files、355/355、0 skip；Web system 4/4、0 skip；Next 47/47 pages |
 | `corepack pnpm lint:baseline` | PASS；0 errors / 102 warnings；19 个 file/rule warning entry 均有非空逐项 reason |
 | `corepack pnpm docker:check-context` | PASS；17 exclusions |
 | `corepack pnpm deploy:check-env-contract` | PASS；46 declared variables；Web/API/Worker 显式注入；migrator debt 被明确承认 |
-| `corepack pnpm test:non-mysql`（clean checkout basename 非 `codex-software`，连续两次） | **FAIL**；每次 355 tests：354 pass / 1 fail / 0 skip；T3-I-002；Web system 因聚合 fail-fast 未进入 |
-| `corepack pnpm test:non-mysql`（给定 accepted worktree） | PASS；54 files、355/0/0；Web system 4/0/0 |
+| `node --test apps/api/test/legacy-get-boundary.test.mjs`（fix 后非标准目录与 accepted checkout） | 两处均 PASS；各 2/2、0 fail / 0 skip；显式枚举 18 条并逐项检查 410-only helper |
+| `corepack pnpm typecheck` 与 `lint:baseline`（fix accepted checkout 直接回归） | PASS；TypeScript 4/4；ESLint 0 errors / 102 frozen warnings |
 | `corepack pnpm verify:mysql` | PASS；8 integration files、21/0/0 |
 | release/deployment/command 定向三文件 | PASS；13 + 17 + 6 = 36 tests，0 fail / 0 skip |
 | `corepack pnpm build:web:preview` | PASS；Vinext/Vite 五阶段完成，46 个 Web API route 文件保持 |
@@ -84,11 +87,11 @@
 
 给定路径的 355 个 non-MySQL 测试与 21 个 MySQL 测试共同覆盖：旧 GET/写退役、session/RBAC/data scope/scope-before-LIMIT、CSRF/Origin、Step-up、事务/lock/CAS/deadline、幂等与 unknown outcome、audit/outbox、file quarantine/ACL、Worker lease/retry/dead/fence、migration history、release/rollback。所有 runner 均显式禁止 skip。
 
-### 4.2 clean gate 失败与源码行为的区分
+### 4.2 clean gate 闭合与增量边界
 
-- T3-I-001 不是源码 TypeScript 本身失败：Contracts build 后四套 TS 全绿；失败点是 clean gate 的顺序/生成物依赖。
-- T3-I-002 不是 18 个退役 GET 行为失败：给定目录名下同一 suite 为 355/355，Web system 的 suppliers/approvals 都返回精确 410；失败点是测试把仓库 basename 硬编码为 `codex-software`。
-- 本任务按授权只诊断和分级，未改 package script、测试或源码来让门禁通过。
+- 首次失败定位准确：T3-I-001 是根 typecheck 编排/生成物依赖，T3-I-002 是测试路径可移植性；accepted fix 仅触及对应的 package script 与测试路径生成。
+- fix 后在新的非 `codex-software` 目录从无 `dist` 的 frozen install 起步，直接 `typecheck` 和完整 `verify:local` 均通过，证明不是依赖旧 checkout 生成物或特定 basename 的偶然绿色。
+- 本轮只复核两个已确认问题及直接回归。真实 MySQL、Docker、migration、部署/回滚和供应链门禁均来自同一生产祖先 `068ef057...`，且 fix 未改其代码、配置、依赖、lock、SQL/migration 或镜像定义，因此不做昂贵重复执行。
 
 ## 5. 真实 MySQL 与 migration
 
@@ -148,20 +151,20 @@ API closure 含 Fastify/mysql2、不含 Next/API src；Worker closure 含 mysql2
 
 ### 决定
 
-- 严格把 accepted 生产 SHA 与 docs-only 报告提交分开；所有运行证据来自 `068ef057...`。
-- 因 archive 内容按设计不随 Git worktree 传播，在同一 accepted SHA、clean 的主 checkout 只读验收真实资产；不复制或修复到 T3 worktree。
-- 无生产凭据时保留 Web health 的受控 503，不伪造 OSS 绿色。
-- 两个 clean gate 问题均停留在诊断；不利用 T3 越权修 test/script。
+- 严格区分三层证据：`068ef057...` 的全量只读验收、`c987443...` 的两个目标文件修订，以及本报告的 docs-only 最终提交。
+- 冻结复验只检查已确认的 T3-I-001/T3-I-002 和直接回归，不广泛重跑未受差量影响的 MySQL、Docker、供应链或部署门禁。
+- 使用新的非 `codex-software` detached clean worktree，从 frozen install 且 Contracts `dist` 不存在的状态起步，避免复用先前 generated artifacts。
+- archive、Web health、T4 和 Scope B 的原边界不变；不复制 archive、不使用生产 OSS/RAM 凭据、不进入 T4/Scope B。
 
-### 偏离
+### 偏离与处置
 
-- `verify:local` 无法从 clean install 完成；为继续区分 gate 编排与源码行为，后续只用既有 `build:contracts` 生成 dist，再逐门复验。这个补充步骤不改变首次失败结论。
-- clean checkout 路径测试失败后，在用户给定的 `codex-software` 路径完整复跑；该成功只证明行为本身，不抵销路径可移植性失败。
+- 验证本身无偏离。清理时 `git worktree remove --force` 已解除临时 worktree 注册，但 Windows 长路径令目录本体和当前 `node_modules` 出现残留；在确认两个绝对路径均属于本任务后，使用 Node 长路径文件 API 精确删除并复核为 0。
+- 没有为了复验通过而修改 package script、测试、生产代码、配置、依赖或 lock；唯一 T3 写入是本报告。
 
 ### 未决项
 
-- Scope A 最终状态应保持 NO-GO，等待主任务决定是否授权原责任任务对 T3-I-001/T3-I-002 各做一次极窄修订并重新 T3；本任务不自动派修。
-- 不进入 T4，不进入 Scope B，不 push/merge/deploy。
+- 没有未闭合的 Critical/Important。第 7 节的 25 advisories/14 High、102 lint warnings、migrator env、根 Web/T4、legacy 删除事实和构建 warnings 继续作为已批准的非阻断债务。
+- 不 push、不 merge、不 deploy、不使用生产凭据、不进入 Scope B；Scope A 后续是否进入发布流程由主任务另行裁决。
 
 ## 9. 资源与终态
 
@@ -169,36 +172,33 @@ API closure 含 Fastify/mysql2、不含 Next/API src；Worker closure 含 mysql2
 - 已删除精确 network `codex-t3-scopea-068ef057-net` 与三项 `codex-t3-scopea-068ef057-*:acceptance` 镜像。
 - 已删除两个 `codex-t3-scopea-068ef057-*-019ff7d2` 临时 checkout及本任务创建的 worktree build/install 目录。
 - 清理后：task containers/networks/images/temp 均 0；`33320/33321/33322/33326` 监听均 0；archive restore temp 0。
+- 本轮冻结复验创建的唯一临时 worktree `t3-freeze-c987443-019ff7d2`、其注册与目录均已删除；当前 checkout 本轮生成的 `node_modules` 和 `packages/contracts/dist` 均已删除。
+- 本轮没有创建 MySQL、Docker container/network/image、服务、监听端口或生产凭据。
 - 未删除共享基础镜像、未知 Docker 资源、主 checkout archive、生产数据或任何非本任务资源。
-- 本报告提交前生产验收 worktree 回到 `068ef057...` 且 Git clean；报告形成单独 docs-only 提交，父提交必须为该 accepted SHA。
+- 本报告提交前 accepted fix worktree 位于 `c987443...`；除本报告外没有 tracked 变更。报告形成单独 docs-only 提交，精确父提交必须为该 accepted fix SHA。
 
 ## 10. 终止声明
 
-最终推荐：**Scope A 工程规范化全量门禁 NO-GO**，仅因 T3-I-001 与 T3-I-002 两个 clean-environment Important。其余已执行矩阵为绿色或属于计划明确接受的非阻断债务。本任务在报告提交后停止，等待主任务向用户提出 Scope A 最终 GO/NO-GO；不 push、不 merge、不 deploy、不使用生产凭据、不修生产代码、不启动 Scope B。
+最终推荐：**Scope A 工程规范化全量门禁 GO**。T3-I-001 与 T3-I-002 已在 accepted fix `c987443...` 上以非标准目录、无预存 Contracts `dist` 的 clean frozen 环境独立闭合；所有直接回归通过，无未解释 Critical/Important。第 7/8 节债务继续保留为计划明确接受的非阻断项。本任务在 docs-only 报告提交后停止，等待主任务吸收最终 GO；不 push、不 merge、不 deploy、不使用生产凭据、不修代码、不启动 Scope B。
 
-## 11. 阻断修订 Implementation Notes（待 T3 复验）
+## 11. 阻断修订冻结复验明细
 
 ### 来源与冻结边界
 
-- 来源：主任务已授权对 T3-I-001 与 T3-I-002 各做一次极窄修订。
-- 仅允许调整根 `package.json` 的 typecheck 编排、`apps/api/test/legacy-get-boundary.test.mjs` 的仓库相对路径生成，以及本节验证记录。
-- 本报告结论继续保持 NO-GO；修订完成不代表 T3 或 Scope A 自动转为 GO。
+- 来源：用户已授权原 T3 在 accepted fix `c987443...` 上只做冻结复验与最终报告更新。
+- 入口核对：原 T3 worktree clean、HEAD=`75882555...`；fix 精确父为该提交，差量仅 `package.json`、legacy GET 测试和本报告；detached checkout 后 HEAD 精确为 fix SHA。
+- 本轮没有变更两个修订目标文件；最终 diff 只能包含本报告。
 
 ### 设计决定
 
-- T3-I-001：根 `typecheck` 先且仅先执行一次 `build:contracts`，再依次执行 Web、Contracts、API、Worker typecheck；不改变 package exports、tsconfig、依赖或 lockfile。
-- T3-I-002：以 `fileURLToPath(root)` 取得仓库根路径，再用 `path.relative` 生成路由文件相对路径，并按 POSIX `/` 归一化；移除仓库 basename 假设，18 个 legacy GET 清单和 410 body 断言保持不变。
+- T3-I-001：确认根 `typecheck` 先执行一次 `build:contracts`，再依次执行 Web、Contracts、API、Worker typecheck；package exports、tsconfig、依赖与 lockfile 均未在 fix 中改变。
+- T3-I-002：确认测试使用 `fileURLToPath(root)` 与 `path.relative` 生成仓库相对 POSIX 路径，不再依赖仓库 basename；18 条 legacy GET 清单及 410-only helper 检查不变。
 
-### 偏离、权衡与未决项
+### 冻结命令与结果
 
-- 偏离：无；实现仅触及冻结的两个目标文件与本节记录。
-- 权衡：`pnpm typecheck` 会有意生成可再生的 Contracts declarations，换取 clean install 后 API/Worker NodeNext 解析的确定性；没有在 `typecheck:api` 内再次触发构建，避免根调用链重复执行。
-- 未决项：修订结果必须由原 T3/主任务独立复验并作最终裁决。
-
-### 验证记录
-
-- PASS：以限定 `git clean -fdX -- packages/contracts/dist` 删除 declarations 后，`pnpm typecheck` exit 0；日志确认 `build:contracts` 先于四组 typecheck 且无递归。
-- PASS：当前 checkout 执行 `node --test apps/api/test/legacy-get-boundary.test.mjs`，2/2 passed；仍显式断言 18 个 legacy business GET。
-- PASS：在 `C:\Users\15588\AppData\Local\Temp\topology-t3-portability-eafd0ce` 创建不含 `codex-software` basename 的 detached clean checkout，同一定向测试 2/2 passed，测试后 Git 仍 clean；临时 worktree 随后已精确删除。
-- PASS：`pnpm verify:local` exit 0；non-mysql 54 files、355/355 tests、0 skipped，Web system 4/4，生产 Web build 完成；既有 102 条 ESLint warning baseline 未变化。
-- PASS：提交前 `git diff --check` exit 0。
+- PASS：非标准目录 `t3-freeze-c987443-019ff7d2`，Node v24.19.0、pnpm 11.9.0；`corepack pnpm install --frozen-lockfile` 安装 4 workspaces / 682 packages / 0 download，安装前后 Contracts `dist=false`，Git clean。
+- PASS：同目录直接 `corepack pnpm typecheck` exit 0；Contracts build 后四套 TypeScript 4/4，`dist=true` 符合新编排预期。
+- PASS：同目录直接 `corepack pnpm verify:local` exit 0；non-MySQL 355 tests、355 pass、0 fail、0 skip；Web system 4/4、0 fail、0 skip；生产 Web build Next 16.2.11、47/47 pages。
+- PASS：同目录 `node --test apps/api/test/legacy-get-boundary.test.mjs` 为 2/2、0 fail、0 skip；测试名与断言确认 18 条 legacy business GET 均走 410-only helper。
+- PASS：accepted fix checkout 的同一定向测试 2/2；根 `typecheck` 四套 4/4；`lint:baseline` 为 0 errors / 102 warnings；`git diff --check HEAD^ HEAD` exit 0。
+- PASS：复验后临时 worktree 注册/目录、当前 `node_modules`、Contracts `dist` 均为 0；accepted fix checkout 在编辑本报告前 Git clean。
