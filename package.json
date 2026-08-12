@@ -23,7 +23,7 @@
     "typecheck:api": "tsc -p apps/api/tsconfig.json --noEmit --incremental false",
     "typecheck:worker": "tsc -p apps/worker/tsconfig.json --noEmit --incremental false",
     "typecheck:contracts": "tsc -p packages/contracts/tsconfig.json --noEmit --incremental false",
-    "typecheck": "pnpm typecheck:web && pnpm typecheck:contracts && pnpm typecheck:api && pnpm typecheck:worker",
+    "typecheck": "pnpm build:contracts && pnpm typecheck:web && pnpm typecheck:contracts && pnpm typecheck:api && pnpm typecheck:worker",
     "test": "pnpm test:root",
     "test:root": "pnpm build:web:preview && node scripts/run-test-suite.mjs root && node scripts/run-web-system-test.mjs",
     "test:api": "pnpm build:api && node scripts/run-test-suite.mjs api",

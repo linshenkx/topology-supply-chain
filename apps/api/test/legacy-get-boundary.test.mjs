@@ -1,8 +1,11 @@
 import assert from "node:assert/strict";
 import { readdir, readFile } from "node:fs/promises";
+import path from "node:path";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 const root = new URL("../../../", import.meta.url);
+const rootPath = fileURLToPath(root);
 
 const legacyBusinessGets = new Map([
   ["app/api/approvals/route.ts", "/api/v1/approvals"],
@@ -46,7 +49,7 @@ async function enumerateGetRoutes(directory = new URL("app/api/", root)) {
     if (entry.isFile() && entry.name === "route.ts") {
       const source = await readFile(url, "utf8");
       if (/export (?:async function|const) GET/u.test(source)) {
-        routes.push(decodeURIComponent(url.pathname.split("/codex-software/")[1]).replaceAll("/", "\\"));
+        routes.push(path.relative(rootPath, fileURLToPath(url)).split(path.sep).join("/"));
       }
     }
   }
@@ -56,15 +59,15 @@ async function enumerateGetRoutes(directory = new URL("app/api/", root)) {
 test("all 18 legacy business GETs are 410-only without independent DB or authorization logic", async () => {
   const allGets = await enumerateGetRoutes();
   const enumeratedLegacyBusinessGets = allGets.filter((path) =>
-    !path.startsWith("app\\api\\v1\\") &&
+    !path.startsWith("app/api/v1/") &&
     ![
-      "app\\api\\files\\route.ts", "app\\api\\health\\route.ts",
-      "app\\api\\notifications\\route.ts", "app\\api\\session\\route.ts",
-      "app\\api\\users\\route.ts",
+      "app/api/files/route.ts", "app/api/health/route.ts",
+      "app/api/notifications/route.ts", "app/api/session/route.ts",
+      "app/api/users/route.ts",
     ].includes(path),
   );
   assert.equal(legacyBusinessGets.size, 18);
-  assert.deepEqual(enumeratedLegacyBusinessGets, [...legacyBusinessGets.keys()].map((path) => path.replaceAll("/", "\\")).sort());
+  assert.deepEqual(enumeratedLegacyBusinessGets, [...legacyBusinessGets.keys()].sort());
   for (const [path, successor] of legacyBusinessGets) {
     const source = await readFile(new URL(path, root), "utf8");
     const body = getBody(source);

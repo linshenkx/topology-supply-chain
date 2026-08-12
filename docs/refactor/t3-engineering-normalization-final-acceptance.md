@@ -175,3 +175,30 @@ API closure 含 Fastify/mysql2、不含 Next/API src；Worker closure 含 mysql2
 ## 10. 终止声明
 
 最终推荐：**Scope A 工程规范化全量门禁 NO-GO**，仅因 T3-I-001 与 T3-I-002 两个 clean-environment Important。其余已执行矩阵为绿色或属于计划明确接受的非阻断债务。本任务在报告提交后停止，等待主任务向用户提出 Scope A 最终 GO/NO-GO；不 push、不 merge、不 deploy、不使用生产凭据、不修生产代码、不启动 Scope B。
+
+## 11. 阻断修订 Implementation Notes（待 T3 复验）
+
+### 来源与冻结边界
+
+- 来源：主任务已授权对 T3-I-001 与 T3-I-002 各做一次极窄修订。
+- 仅允许调整根 `package.json` 的 typecheck 编排、`apps/api/test/legacy-get-boundary.test.mjs` 的仓库相对路径生成，以及本节验证记录。
+- 本报告结论继续保持 NO-GO；修订完成不代表 T3 或 Scope A 自动转为 GO。
+
+### 设计决定
+
+- T3-I-001：根 `typecheck` 先且仅先执行一次 `build:contracts`，再依次执行 Web、Contracts、API、Worker typecheck；不改变 package exports、tsconfig、依赖或 lockfile。
+- T3-I-002：以 `fileURLToPath(root)` 取得仓库根路径，再用 `path.relative` 生成路由文件相对路径，并按 POSIX `/` 归一化；移除仓库 basename 假设，18 个 legacy GET 清单和 410 body 断言保持不变。
+
+### 偏离、权衡与未决项
+
+- 偏离：无；实现仅触及冻结的两个目标文件与本节记录。
+- 权衡：`pnpm typecheck` 会有意生成可再生的 Contracts declarations，换取 clean install 后 API/Worker NodeNext 解析的确定性；没有在 `typecheck:api` 内再次触发构建，避免根调用链重复执行。
+- 未决项：修订结果必须由原 T3/主任务独立复验并作最终裁决。
+
+### 验证记录
+
+- PASS：以限定 `git clean -fdX -- packages/contracts/dist` 删除 declarations 后，`pnpm typecheck` exit 0；日志确认 `build:contracts` 先于四组 typecheck 且无递归。
+- PASS：当前 checkout 执行 `node --test apps/api/test/legacy-get-boundary.test.mjs`，2/2 passed；仍显式断言 18 个 legacy business GET。
+- PASS：在 `C:\Users\15588\AppData\Local\Temp\topology-t3-portability-eafd0ce` 创建不含 `codex-software` basename 的 detached clean checkout，同一定向测试 2/2 passed，测试后 Git 仍 clean；临时 worktree 随后已精确删除。
+- PASS：`pnpm verify:local` exit 0；non-mysql 54 files、355/355 tests、0 skipped，Web system 4/4，生产 Web build 完成；既有 102 条 ESLint warning baseline 未变化。
+- PASS：提交前 `git diff --check` exit 0。
