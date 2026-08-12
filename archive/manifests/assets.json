@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "baseline": "db63839bcd4ce8c852a18310f1f0ef7bca83c269",
-  "status": "partially-archived",
+  "status": "archived",
   "totals": {
     "legacy-deliveries": 29,
     "deliveries": 278,
@@ -5592,7 +5592,7 @@
       "category": "diagrams",
       "source": "work/00_system_context.png",
       "target": "archive/diagrams/00_system_context.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "a56b1480a432ccc63960b4ef018cd62c53265c034ba0f20c26ada241f3c7f36b",
         "bytes": 129934,
@@ -5608,7 +5608,7 @@
       "category": "diagrams",
       "source": "work/01_purchase_to_execution.png",
       "target": "archive/diagrams/01_purchase_to_execution.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "c62747fc4783b7cf3fcafdd0befa5ccf151905f327550cfef11d601a83a6ffa5",
         "bytes": 192856,
@@ -5624,7 +5624,7 @@
       "category": "diagrams",
       "source": "work/02_replenishment_inbound.png",
       "target": "archive/diagrams/02_replenishment_inbound.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "16beecfc17ddb64ca1aeaf5bab1cedc737fd7e335f649192e0c67410a201b1c8",
         "bytes": 161840,
@@ -5640,7 +5640,7 @@
       "category": "diagrams",
       "source": "work/03_production_quality.png",
       "target": "archive/diagrams/03_production_quality.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "6a637cf0cf58151a795da5e1d305fb21ffb3882ef657084cc0d2415fb20d3c0a",
         "bytes": 174841,
@@ -5656,7 +5656,7 @@
       "category": "diagrams",
       "source": "work/04_shipment_completion.png",
       "target": "archive/diagrams/04_shipment_completion.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "8b5ac1257c62b5116fd5608acc405a01085cbafd17602c9a34506722f2a8826c",
         "bytes": 119022,
@@ -5672,7 +5672,7 @@
       "category": "diagrams",
       "source": "work/05_transfer_stocktake.png",
       "target": "archive/diagrams/05_transfer_stocktake.png",
-      "status": "inspected",
+      "status": "archived",
       "evidence": {
         "sha256": "e0dc87e16ff854177e95d33aa0c28eebe548d9ef1c86c8090a981e0df848f126",
         "bytes": 75544,
