@@ -1,0 +1,2415 @@
+{
+  "schemaVersion": 1,
+  "baseline": "db63839bcd4ce8c852a18310f1f0ef7bca83c269",
+  "status": "planned",
+  "totals": {
+    "legacy-deliveries": 29,
+    "deliveries": 278,
+    "working-notes": 30,
+    "diagrams": 6
+  },
+  "restoreDryRun": null,
+  "entries": [
+    {
+      "category": "working-notes",
+      "source": ".tmp/dev.err.log",
+      "target": "archive/working-notes/dev.err.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/dev.out.log",
+      "target": "archive/working-notes/dev.out.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/fastify-api-implementation-notes.md",
+      "target": "archive/working-notes/fastify-api-implementation-notes.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/initial-data-templates/build.mjs",
+      "target": "archive/working-notes/initial-data-templates/build.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/initial-data-templates/verify.mjs",
+      "target": "archive/working-notes/initial-data-templates/verify.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/lingxing-analysis/inspect.mjs",
+      "target": "archive/working-notes/lingxing-analysis/inspect.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/lingxing-analysis/summarize.mjs",
+      "target": "archive/working-notes/lingxing-analysis/summarize.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/lingxing-sku-analysis/analyze.mjs",
+      "target": "archive/working-notes/lingxing-sku-analysis/analyze.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-2.err.log",
+      "target": "archive/working-notes/pnpm-install-2.err.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-2.out.log",
+      "target": "archive/working-notes/pnpm-install-2.out.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-cn.err.log",
+      "target": "archive/working-notes/pnpm-install-cn.err.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-cn.out.log",
+      "target": "archive/working-notes/pnpm-install-cn.out.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-final.err.log",
+      "target": "archive/working-notes/pnpm-install-final.err.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install-final.out.log",
+      "target": "archive/working-notes/pnpm-install-final.out.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install.err.log",
+      "target": "archive/working-notes/pnpm-install.err.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/pnpm-install.out.log",
+      "target": "archive/working-notes/pnpm-install.out.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api-final.stderr.log",
+      "target": "archive/working-notes/stage3-api-final.stderr.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api-final.stdout.log",
+      "target": "archive/working-notes/stage3-api-final.stdout.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api-live.stderr.log",
+      "target": "archive/working-notes/stage3-api-live.stderr.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api-live.stdout.log",
+      "target": "archive/working-notes/stage3-api-live.stdout.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api.stderr.log",
+      "target": "archive/working-notes/stage3-api.stderr.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/stage3-api.stdout.log",
+      "target": "archive/working-notes/stage3-api.stdout.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/staging-workbooks/build.mjs",
+      "target": "archive/working-notes/staging-workbooks/build.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/staging-workbooks/verify.mjs",
+      "target": "archive/working-notes/staging-workbooks/verify.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/start-vinext-dev.cmd",
+      "target": "archive/working-notes/start-vinext-dev.cmd",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/start-vinext-dev.ps1",
+      "target": "archive/working-notes/start-vinext-dev.ps1",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/supplier-analysis/analyze.mjs",
+      "target": "archive/working-notes/supplier-analysis/analyze.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/vinext-dev-cmd.log",
+      "target": "archive/working-notes/vinext-dev-cmd.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/vinext-dev.log",
+      "target": "archive/working-notes/vinext-dev.log",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "working-notes",
+      "source": ".tmp/warehouse-analysis/analyze.mjs",
+      "target": "archive/working-notes/warehouse-analysis/analyze.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1-SHA256.txt",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1-SHA256.txt",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1-VALIDATION.txt",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1-VALIDATION.txt",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1.zip",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1.zip",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/.dockerignore",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.dockerignore",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/.env.example",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.env.example",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/.github/pull_request_template.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.github/pull_request_template.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/.gitignore",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.gitignore",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/.openai/hosting.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/.openai/hosting.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/approvals/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/approvals/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/audit-logs/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/audit-logs/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/login/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/login/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/logout/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/logout/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/step-up/request/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/step-up/request/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/step-up/verify/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/step-up/verify/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/auth/verify/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/auth/verify/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/files/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/files/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/finance/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/finance/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/health/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/health/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/commit/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/commit/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/diff/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/diff/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/preview/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/preview/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/imports/stage/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/imports/stage/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/inventory/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/inventory/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/inventory/transfers/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/inventory/transfers/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/jobs/email/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/jobs/email/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/jobs/reminders/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/jobs/reminders/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/master-data/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/master-data/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/notifications/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/notifications/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/production-orders/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/production-orders/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/purchase-orders/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/purchase-orders/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/purchase-plans/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/purchase-plans/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/quality-inspections/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/quality-inspections/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/returns/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/returns/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/session/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/session/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/shipments/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/shipments/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/stocktakes/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/stocktakes/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-performance/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-performance/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-prices/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-prices/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/supplier-skus/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/supplier-skus/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/suppliers/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/suppliers/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/users/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/users/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/api/warehouses/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/api/warehouses/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/approval.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/approval.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/audit.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/audit.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/chatgpt-auth.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/chatgpt-auth.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/AuditWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/AuditWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/FinanceExceptionWorkspace",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/FinanceExceptionWorkspace",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/FinanceWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/FinanceWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/InventoryWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/InventoryWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/MasterDataWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/MasterDataWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/ProductionWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/ProductionWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/PurchaseWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/PurchaseWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/ShippingWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/ShippingWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/StocktakeWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/StocktakeWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierPerformanceWorkspa",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierPerformanceWorkspa",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierPriceWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierPriceWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/SupplierWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/SupplierWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/components/WarehouseWorkspace.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/components/WarehouseWorkspace.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/finance.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/finance.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/globals.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/globals.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/layout.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/layout.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/audit.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/audit.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/authz.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/authz.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/business-rules.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/business-rules.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/crypto.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/crypto.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/inventory-freeze.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/inventory-freeze.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/oss-store.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/oss-store.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/production-finalization.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/production-finalization.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/reminders.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/reminders.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/runtime-env.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/runtime-env.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/sessions.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/sessions.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/lib/sms.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/lib/sms.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/page.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/page.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/performance.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/performance.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/app/shipping.css",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/app/shipping.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/CONTRIBUTING.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/CONTRIBUTING.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/index.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/index.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/insert-one.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/insert-one.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/mysql.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/mysql.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/schema.mysql.generated.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/schema.mysql.generated.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/schema.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/schema.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/db/transaction.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/db/transaction.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/.env.production.template",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/.env.production.template",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/AUDIT_CENTER_DEPLOY.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/AUDIT_CENTER_DEPLOY.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-alinux3.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-alinux3.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-ubuntu.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/bootstrap-ubuntu.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/configure-production-env.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/configure-production-env.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/DEPLOY_FINANCE_EXCEPTIONS_2",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/DEPLOY_FINANCE_EXCEPTIONS_2",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-audit-center.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-audit-center.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-bom-versions.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy-bom-versions.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/deploy.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/docker-compose.yml",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/docker-compose.yml",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/install-jobs.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/install-jobs.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/nginx-scm.conf",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/nginx-scm.conf",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/README.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/README.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/resource-checklist.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/resource-checklist.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/deploy/aliyun/rollback.sh",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/deploy/aliyun/rollback.sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/Dockerfile.aliyun",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/Dockerfile.aliyun",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/0000_hot_firestar.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/0000_hot_firestar.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/0001_thankful_slyde.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/0001_thankful_slyde.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/_journal.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/_journal.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0000_snapshot.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0000_snapshot.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0001_snapshot.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle-mysql/meta/0001_snapshot.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle.mysql.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle.mysql.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0000_supply_chain.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0000_supply_chain.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0001_supplier_governance.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0001_supplier_governance.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0002_purchase_plans.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0002_purchase_plans.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0003_sku_bom_production.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0003_sku_bom_production.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0004_inventory_batches_stocktakes",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0004_inventory_batches_stocktakes",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0005_shipping_collaboration.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0005_shipping_collaboration.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0006_governance_ai.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0006_governance_ai.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0007_invoice_allocations.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0007_invoice_allocations.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0008_product_return_workflow.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0008_product_return_workflow.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/0009_invoice_exceptions.sql",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/0009_invoice_exceptions.sql",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/drizzle/meta/_journal.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/drizzle/meta/_journal.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/eslint.config.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/eslint.config.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/examples/d1/app/api/notes/route.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/examples/d1/app/api/notes/route.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/examples/d1/db/schema.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/examples/d1/db/schema.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/GITHUB_PACKAGE_MANIFEST.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/GITHUB_PACKAGE_MANIFEST.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/GITHUB_UPLOAD_GUIDE.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/GITHUB_UPLOAD_GUIDE.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/next-env.d.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/next-env.d.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/next.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/next.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/package.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/package.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/pnpm-lock.yaml",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/pnpm-lock.yaml",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/pnpm-workspace.yaml",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/pnpm-workspace.yaml",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/postcss.config.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/postcss.config.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/PROJECT_STATUS.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/PROJECT_STATUS.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/public/favicon.svg",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/favicon.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/public/file.svg",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/file.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/public/globe.svg",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/globe.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/public/og.png",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/og.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/public/window.svg",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/public/window.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/README.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/README.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/scripts/bootstrap-admin.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/bootstrap-admin.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/scripts/check-production-env.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/check-production-env.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/scripts/generate-mysql-schema.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/generate-mysql-schema.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/scripts/preflight-supplier-performance-mi",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/scripts/preflight-supplier-performance-mi",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/SECURITY.md",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/SECURITY.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/SOURCE_FILE_MANIFEST.tsv",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/SOURCE_FILE_MANIFEST.tsv",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/tests/business-rules.test.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tests/business-rules.test.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/tests/rendered-html.test.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tests/rendered-html.test.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/tsconfig.json",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/tsconfig.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/types/cloudflare-runtime.d.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/types/cloudflare-runtime.d.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/vite.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/vite.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-20260804-v1/worker/index.ts",
+      "target": "archive/deliveries/github/topology-scm-github-20260804-v1/worker/index.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.dockerignore",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.dockerignore",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.env.example",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.env.example",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.github/pull_requ",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.github/pull_requ",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.gitignore",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.gitignore",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.openai/hosting.j",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/.openai/hosting.j",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/files/rou",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/files/rou",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/finance/r",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/finance/r",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/health/ro",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/health/ro",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/returns/r",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/returns/r",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/session/r",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/session/r",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/users/rou",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/api/users/rou",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/approval.css",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/approval.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/audit.css",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/audit.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/chatgpt-auth",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/chatgpt-auth",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Au",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Au",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Fi",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Fi",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/In",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/In",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Ma",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Ma",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pr",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pr",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pu",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Pu",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Sh",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Sh",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/St",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/St",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Su",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Su",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Wa",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/components/Wa",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/finance.css",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/finance.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/globals.css",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/globals.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/layout.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/layout.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/audit.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/audit.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/authz.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/authz.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/business-",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/business-",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/crypto.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/crypto.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/inventory",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/inventory",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/oss-store",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/oss-store",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/productio",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/productio",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/reminders",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/reminders",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/runtime-e",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/runtime-e",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sessions",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sessions",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sms.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/lib/sms.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/page.tsx",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/page.tsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/performance.c",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/performance.c",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/shipping.css",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/app/shipping.css",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/CONTRIBUTING.md",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/CONTRIBUTING.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/index.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/index.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/insert-one.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/insert-one.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/mysql.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/mysql.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.mysql.g",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.mysql.g",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/schema.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/transaction.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/db/transaction.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-01/deploy/aliyun/.en",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-01/deploy/aliyun/.en",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/AUD",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/AUD",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/boo",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/boo",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/co_",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/co_",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/dep",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/dep",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/doc",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/doc",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ins",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ins",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ngi",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/ngi",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/REA",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/REA",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/res",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/res",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/rol",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/deploy/aliyun/rol",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/Dockerfile.aliyun",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/Dockerfile.aliyun",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle-mysql/000",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle-mysql/000",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.mysql.con",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle.mysql.con",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0000_supp",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0000_supp",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0001_supp",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0001_supp",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0002_purc",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0002_purc",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0003_sku_",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0003_sku_",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0004_inve",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0004_inve",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0005_ship",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0005_ship",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0006_gove",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0006_gove",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0007_invo",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0007_invo",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0008_prod",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0008_prod",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0009_invo",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/0009_invo",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/meta/_jou",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/drizzle/meta/_jou",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/eslint.config.mjs",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/eslint.config.mjs",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/examples/d1/db/sc",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/examples/d1/db/sc",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_PACKAGE_MA",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_PACKAGE_MA",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_UPLOAD_GUI",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/GITHUB_UPLOAD_GUI",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next-env.d.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next-env.d.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/next.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/package.json",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/package.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-lock.yaml",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-lock.yaml",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-workspace.ya",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/pnpm-workspace.ya",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/postcss.config.mj",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/postcss.config.mj",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/PROJECT_STATUS.md",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/PROJECT_STATUS.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/favicon.sv",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/favicon.sv",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/file.svg",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/file.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/globe.svg",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/globe.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/og.png",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/og.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/window.svg",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/public/window.svg",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/README.md",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/README.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/bootstrap",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/bootstrap",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/check-pro",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/check-pro",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/generate-",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/generate-",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/preflight",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/scripts/preflight",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SECURITY.md",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SECURITY.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SOURCE_FILE_MANIF",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/SOURCE_FILE_MANIF",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/business-ru",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/business-ru",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/rendered-ht",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tests/rendered-ht",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tsconfig.json",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/tsconfig.json",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/types/cloudflare-",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/types/cloudflare-",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/vite.config.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/vite.config.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/batch-02/worker/index.ts",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/batch-02/worker/index.ts",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/github/topology-scm-github-upload-batches-20260804-v1/README-FIRST.md",
+      "target": "archive/deliveries/github/topology-scm-github-upload-batches-20260804-v1/README-FIRST.md",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/01_SKU主数据导入模板.xlsx",
+      "target": "archive/deliveries/initial-data-templates/01_SKU主数据导入模板.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/02_BOM导入模板.xlsx",
+      "target": "archive/deliveries/initial-data-templates/02_BOM导入模板.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/03_供应商主数据导入模板.xlsx",
+      "target": "archive/deliveries/initial-data-templates/03_供应商主数据导入模板.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/04_期初库存导入模板.xlsx",
+      "target": "archive/deliveries/initial-data-templates/04_期初库存导入模板.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-填写说明.png",
+      "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-填写说明.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-字段字典.png",
+      "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-字段字典.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/01_SKU主数据导入模板-数据导入.png",
+      "target": "archive/deliveries/initial-data-templates/previews/01_SKU主数据导入模板-数据导入.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/02_BOM导入模板-填写说明.png",
+      "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-填写说明.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/02_BOM导入模板-字段字典.png",
+      "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-字段字典.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/02_BOM导入模板-数据导入.png",
+      "target": "archive/deliveries/initial-data-templates/previews/02_BOM导入模板-数据导入.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-供应SKU关�",
+      "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-供应SKU关�",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-填写说明.p",
+      "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-填写说明.p",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-字段字典.p",
+      "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-字段字典.p",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/03_供应商主数据导入模板-数据导入.p",
+      "target": "archive/deliveries/initial-data-templates/previews/03_供应商主数据导入模板-数据导入.p",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-填写说明.png",
+      "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-填写说明.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-字段字典.png",
+      "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-字段字典.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/initial-data-templates/previews/04_期初库存导入模板-数据导入.png",
+      "target": "archive/deliveries/initial-data-templates/previews/04_期初库存导入模板-数据导入.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/01_SKU待核验清单及BOM草稿.xlsx",
+      "target": "archive/deliveries/staging-workbooks/01_SKU待核验清单及BOM草稿.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/02_期初库存盲盘底稿.xlsx",
+      "target": "archive/deliveries/staging-workbooks/02_期初库存盲盘底稿.xlsx",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-BOM待审核草稿",
+      "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-BOM待审核草稿",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-SKU待核验.png",
+      "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-SKU待核验.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-填写说明.png",
+      "target": "archive/deliveries/staging-workbooks/previews/01_SKU待核验清单及BOM草稿-填写说明.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-仓库待核验.png",
+      "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-仓库待核验.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-填写说明.png",
+      "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-填写说明.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/staging-workbooks/previews/02_期初库存盲盘底稿-期初盲盘底稿.png",
+      "target": "archive/deliveries/staging-workbooks/previews/02_期初库存盲盘底稿-期初盲盘底稿.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/topology-scm-prod-20260729.tar.gz",
+      "target": "archive/deliveries/topology-scm-prod-20260729.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/topology-scm-ram-role-update-20260730.tar.gz",
+      "target": "archive/deliveries/topology-scm-ram-role-update-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "deliveries",
+      "source": "outputs/topology-scm-secure-config-20260730.tar.gz",
+      "target": "archive/deliveries/topology-scm-secure-config-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-admin-bootstrap-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-admin-bootstrap-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-ali-oss-external-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-ali-oss-external-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-aliyun-sms-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-aliyun-sms-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-audit-center-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-audit-center-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-bom-versions-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-bom-versions-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-delivery-performance-v1-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-delivery-performance-v1-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-finance-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-finance-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-finance-exceptions-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-finance-exceptions-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-health-log-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-health-log-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-inventory-transfer-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-inventory-transfer-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-master-data-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-master-data-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-order-confirmation-20260731.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-order-confirmation-20260731.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-oss-esm-fix-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-oss-esm-fix-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-oss-imdsv2-fix-20260730.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-oss-imdsv2-fix-20260730.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-production-flow-20260731.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-production-flow-20260731.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-production-inventory-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-production-inventory-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-purchase-execution-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-purchase-execution-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-purchase-workspace-20260731.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-purchase-workspace-20260731.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-quality-performance-v1-fixed-20260803.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-quality-performance-v1-fixed-20260803.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-real-admin-stepup-20260731.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-real-admin-stepup-20260731.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-role-approval-20260731.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-role-approval-20260731.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-shipping-returns-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-shipping-returns-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-stocktake-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-stocktake-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-supplier-network-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-supplier-network-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-supplier-performance-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-supplier-performance-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-supplier-performance-mysql-fix-20260802.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-supplier-performance-mysql-fix-20260802.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-supplier-performance-stable-v1-20260804.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-supplier-performance-stable-v1-20260804.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-supplier-pricing-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-supplier-pricing-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "legacy-deliveries",
+      "source": "topology-scm-warehouse-management-20260801.tar.gz",
+      "target": "archive/legacy-deliveries/topology-scm-warehouse-management-20260801.tar.gz",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/00_system_context.png",
+      "target": "archive/diagrams/00_system_context.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/01_purchase_to_execution.png",
+      "target": "archive/diagrams/01_purchase_to_execution.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/02_replenishment_inbound.png",
+      "target": "archive/diagrams/02_replenishment_inbound.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/03_production_quality.png",
+      "target": "archive/diagrams/03_production_quality.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/04_shipment_completion.png",
+      "target": "archive/diagrams/04_shipment_completion.png",
+      "status": "planned",
+      "evidence": null
+    },
+    {
+      "category": "diagrams",
+      "source": "work/05_transfer_stocktake.png",
+      "target": "archive/diagrams/05_transfer_stocktake.png",
+      "status": "planned",
+      "evidence": null
+    }
+  ]
+}

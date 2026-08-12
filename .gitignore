@@ -49,6 +49,10 @@ next-env.d.ts
 /.tmp/
 /build/
 /backups/
+/archive/**
+!/archive/README.md
+!/archive/manifests/
+!/archive/manifests/**
 *.tar.gz
 *.zip
 *.tsbuildinfo
