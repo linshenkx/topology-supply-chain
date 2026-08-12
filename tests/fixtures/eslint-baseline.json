@@ -1,7 +1,7 @@
 {
   "version": 1,
   "errors": 0,
-  "warnings": 113,
+  "warnings": 105,
   "entries": {
     "app/api/approvals/route.ts::warning::@typescript-eslint/no-unused-vars": 1,
     "app/api/finance/route.ts::warning::@typescript-eslint/no-unused-vars": 1,
@@ -17,13 +17,11 @@
     "app/api/supplier-skus/route.ts::warning::@typescript-eslint/no-unused-vars": 10,
     "app/api/suppliers/route.ts::warning::@typescript-eslint/no-unused-vars": 8,
     "app/components/AuditWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
-    "app/components/ShippingWorkspace.tsx::warning::@typescript-eslint/no-unused-vars": 1,
     "app/components/StocktakeWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/SupplierPerformanceWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/SupplierPriceWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/SupplierWorkspace.tsx::warning::react-hooks/exhaustive-deps": 2,
     "app/lib/oss-store.ts::warning::<parser>": 1,
-    "app/page.tsx::warning::@typescript-eslint/no-unused-vars": 7,
     "app/page.tsx::warning::react-hooks/exhaustive-deps": 2,
     "db/index.ts::warning::<parser>": 1,
     "db/mysql.ts::warning::<parser>": 1
