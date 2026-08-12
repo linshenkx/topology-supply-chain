@@ -7,9 +7,29 @@ services:
       target: runner
     image: topology-scm:${APP_IMAGE_TAG:-latest}
     restart: unless-stopped
-    env_file:
-      - .env.production
     environment:
+      APP_BASE_URL: "${APP_BASE_URL:-}"
+      APP_ENV: production
+      SESSION_SECRET: "${SESSION_SECRET:-}"
+      API_SESSION_SIGNING_KEY: "${API_SESSION_SIGNING_KEY:-}"
+      JOB_TOKEN: "${JOB_TOKEN:-}"
+      DATABASE_URL: "${DATABASE_URL:-}"
+      DB_POOL_SIZE: "${DB_POOL_SIZE:-10}"
+      DB_SSL: "${DB_SSL:-enabled}"
+      DB_SSL_REJECT_UNAUTHORIZED: "${DB_SSL_REJECT_UNAUTHORIZED:-true}"
+      OSS_REGION: "${OSS_REGION:-}"
+      OSS_BUCKET: "${OSS_BUCKET:-}"
+      OSS_ECS_RAM_ROLE: "${OSS_ECS_RAM_ROLE:-}"
+      OSS_INTERNAL_ENDPOINT: "${OSS_INTERNAL_ENDPOINT:-true}"
+      OSS_ACCESS_KEY_ID: "${OSS_ACCESS_KEY_ID:-}"
+      OSS_ACCESS_KEY_SECRET: "${OSS_ACCESS_KEY_SECRET:-}"
+      SMS_ECS_RAM_ROLE: "${SMS_ECS_RAM_ROLE:-}"
+      SMS_REGION_ID: "${SMS_REGION_ID:-cn-hangzhou}"
+      ALIYUN_SMS_SIGN_NAME: "${ALIYUN_SMS_SIGN_NAME:-}"
+      ALIYUN_SMS_TEMPLATE_CODE: "${ALIYUN_SMS_TEMPLATE_CODE:-}"
+      SMS_WEBHOOK_URL: "${SMS_WEBHOOK_URL:-}"
+      SMS_WEBHOOK_API_KEY: "${SMS_WEBHOOK_API_KEY:-}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       DEPLOY_TARGET: aliyun
       NODE_ENV: production
       PORT: "3000"

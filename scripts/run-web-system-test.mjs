@@ -2,6 +2,8 @@ import { spawn, spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 
+import { assertTapHasNoSkips } from "./tap-skip.mjs";
+
 const root = new URL("..", import.meta.url);
 const vinextCli = fileURLToPath(new URL("../node_modules/vinext/dist/cli.js", import.meta.url));
 
@@ -69,9 +71,7 @@ try {
   if (result.stdout) process.stdout.write(result.stdout);
   if (result.stderr) process.stderr.write(result.stderr);
   if (result.error) throw result.error;
-  if (/(?:^|\n)\s*# SKIP\b/iu.test(result.stdout ?? "")) {
-    throw new Error("Web system suite reported a skipped test");
-  }
+  assertTapHasNoSkips(result.stdout ?? "", "Web system suite");
   process.exitCode = result.status ?? 1;
 } finally {
   await stop(child);

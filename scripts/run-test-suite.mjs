@@ -2,6 +2,8 @@ import { spawnSync } from "node:child_process";
 import { readdirSync } from "node:fs";
 import { relative, resolve } from "node:path";
 
+import { assertTapHasNoSkips } from "./tap-skip.mjs";
+
 const root = resolve(import.meta.dirname, "..");
 const locations = ["tests", "apps/api/test", "apps/worker/test"];
 const suite = process.argv[2];
@@ -65,8 +67,10 @@ const result = spawnSync(process.execPath, [
 if (result.stdout) process.stdout.write(result.stdout);
 if (result.stderr) process.stderr.write(result.stderr);
 if (result.error) throw result.error;
-if (/(?:^|\n)\s*# SKIP\b/iu.test(result.stdout ?? "")) {
-  console.error(`Suite ${suite} reported a skipped test; skip is not a passing gate.`);
+try {
+  assertTapHasNoSkips(result.stdout ?? "", `Suite ${suite}`);
+} catch (error) {
+  console.error(error.message);
   process.exit(1);
 }
 process.exit(result.status ?? 1);

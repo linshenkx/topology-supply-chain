@@ -1,6 +1,8 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 const dockerfile = readFileSync(new URL("../Dockerfile.api", import.meta.url), "utf8");
@@ -27,6 +29,7 @@ const compose = readFileSync(
   new URL("../deploy/aliyun/docker-compose.yml", import.meta.url),
   "utf8",
 );
+const composePath = fileURLToPath(new URL("../deploy/aliyun/docker-compose.yml", import.meta.url));
 const nginx = readFileSync(
   new URL("../deploy/aliyun/nginx-scm.conf", import.meta.url),
   "utf8",
@@ -204,10 +207,73 @@ test("Web image and compose service enforce a read-only, least-privilege runtime
 
   assert.match(aliyunDockerfile, /^USER nextjs$/m);
   assert.doesNotMatch(app, /dockerfile: Dockerfile\.(?:api|worker)/);
+  assert.doesNotMatch(app, /^\s+env_file:/m);
+  assert.deepEqual(composeMappingKeys(app, "environment"), [
+    "ALIYUN_SMS_SIGN_NAME",
+    "ALIYUN_SMS_TEMPLATE_CODE",
+    "API_SESSION_SIGNING_KEY",
+    "APP_BASE_URL",
+    "APP_ENV",
+    "DATABASE_URL",
+    "DB_POOL_SIZE",
+    "DB_SSL",
+    "DB_SSL_REJECT_UNAUTHORIZED",
+    "DEPLOY_TARGET",
+    "JOB_TOKEN",
+    "NODE_ENV",
+    "OPENAI_API_KEY",
+    "OSS_ACCESS_KEY_ID",
+    "OSS_ACCESS_KEY_SECRET",
+    "OSS_BUCKET",
+    "OSS_ECS_RAM_ROLE",
+    "OSS_INTERNAL_ENDPOINT",
+    "OSS_REGION",
+    "PORT",
+    "SESSION_SECRET",
+    "SMS_ECS_RAM_ROLE",
+    "SMS_REGION_ID",
+    "SMS_WEBHOOK_API_KEY",
+    "SMS_WEBHOOK_URL",
+  ]);
+  for (const workerOnly of [
+    "EMAIL_WEBHOOK_API_KEY",
+    "EMAIL_WEBHOOK_HEALTH_URL",
+    "EMAIL_WEBHOOK_URL",
+    "FILE_SCAN_WEBHOOK_API_KEY",
+    "FILE_SCAN_WEBHOOK_HEALTH_URL",
+    "FILE_SCAN_WEBHOOK_URL",
+    "OTP_SEALING_KEYS_JSON",
+    "WORKER_DB_POOL_SIZE",
+  ]) assert.doesNotMatch(app, new RegExp(`^\\s+${workerOnly}:`, "m"));
   assert.match(app, /security_opt:\n\s+- no-new-privileges:true/);
   assert.match(app, /cap_drop:\n\s+- ALL/);
   assert.match(app, /read_only: true/);
   assert.match(app, /tmpfs:\n\s+- \/tmp:size=128m,mode=1777/);
+});
+
+test("normalized Compose config preserves explicit runtime allowlists and acknowledged migrator debt", () => {
+  const result = spawnSync("docker", [
+    "compose",
+    "--profile", "migration",
+    "-f", composePath,
+    "config",
+    "--no-env-resolution",
+    "--format", "json",
+  ], { encoding: "utf8", windowsHide: true });
+  assert.equal(result.status, 0, result.stderr);
+  const normalized = JSON.parse(result.stdout);
+  assert.equal(normalized.services.app.env_file, undefined);
+  for (const workerOnly of [
+    "EMAIL_WEBHOOK_API_KEY",
+    "FILE_SCAN_WEBHOOK_API_KEY",
+    "OTP_SEALING_KEYS_JSON",
+    "WORKER_DB_POOL_SIZE",
+  ]) assert.equal(Object.hasOwn(normalized.services.app.environment, workerOnly), false);
+  assert.equal(normalized.services.worker.environment.EMAIL_WEBHOOK_API_KEY, "");
+  assert.equal(normalized.services.worker.environment.FILE_SCAN_WEBHOOK_API_KEY, "");
+  assert.equal(normalized.services.worker.environment.OTP_SEALING_KEYS_JSON, "");
+  assert.equal(normalized.services.migrator.env_file.length, 1);
+  assert.match(normalized.services.migrator.env_file[0].path, /\.env\.production$/u);
 });
 
 test("compose applies a read-only, least-privilege API runtime boundary", () => {

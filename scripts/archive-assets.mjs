@@ -16,6 +16,8 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { buildArchivedRestorePlan } from "./archive-restore-contract.mjs";
+
 const repositoryRoot = path.resolve(fileURLToPath(new URL("..", import.meta.url)));
 const manifestPath = path.join(repositoryRoot, "archive", "manifests", "assets.json");
 const baseline = "db63839bcd4ce8c852a18310f1f0ef7bca83c269";
@@ -221,8 +223,13 @@ async function commandInspect() {
 
 async function commandRestoreDryRun() {
   const manifest = await loadManifest();
+  if (manifest.status === "archived") {
+    const plan = await buildArchivedRestorePlan(manifest, repositoryRoot);
+    console.log(JSON.stringify(plan, null, 2));
+    return;
+  }
   if (manifest.entries.some((entry) => entry.status !== "inspected" || !entry.evidence?.sha256)) {
-    throw new Error("Restore dry-run requires inspected, unmoved assets");
+    throw new Error("Restore dry-run requires uniformly inspected or archived assets");
   }
   const restoreRoot = await mkdtemp(path.join(tmpdir(), "codex-t1-archive-restore-"));
   try {
