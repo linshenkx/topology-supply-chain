@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "errors": 1,
+  "errors": 0,
   "warnings": 113,
   "entries": {
     "app/api/approvals/route.ts::warning::@typescript-eslint/no-unused-vars": 1,
@@ -19,7 +19,6 @@
     "app/components/AuditWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/ShippingWorkspace.tsx::warning::@typescript-eslint/no-unused-vars": 1,
     "app/components/StocktakeWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
-    "app/components/SupplierPerformanceWorkspace.tsx::error::react-hooks/set-state-in-effect": 1,
     "app/components/SupplierPerformanceWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/SupplierPriceWorkspace.tsx::warning::react-hooks/exhaustive-deps": 1,
     "app/components/SupplierWorkspace.tsx::warning::react-hooks/exhaustive-deps": 2,

@@ -29,6 +29,8 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
     const result = await response.json();
     if (!response.ok) return toast(result.error || "绩效数据加载失败");
     setData(result);
+    const current = result.weights.find((item: Weight) => item.tier === tier);
+    if (current) setWeights({ ...current, delivery: current.delivery / 100, quality: current.quality / 100, exception: current.exception / 100, preparation: current.preparation / 100, satisfaction: current.satisfaction / 100, sampling: current.sampling / 100 });
   };
   useEffect(() => {
     async function loadInitialData() {
@@ -37,11 +39,6 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
 
     void loadInitialData();
   }, [quarter, tier]);
-  useEffect(() => {
-    const current = data?.weights.find(item => item.tier === tier);
-    if (current) setWeights({ ...current, delivery: current.delivery / 100, quality: current.quality / 100, exception: current.exception / 100, preparation: current.preparation / 100, satisfaction: current.satisfaction / 100, sampling: current.sampling / 100 });
-  }, [data, tier]);
-
   const total = useMemo(() => (Object.keys(metricLabels) as MetricKey[]).reduce((sum, key) => sum + Number(weights[key] || 0), 0), [weights]);
   const saveReview = async () => {
     setBusy(true);
