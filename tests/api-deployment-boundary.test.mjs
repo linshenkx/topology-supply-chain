@@ -199,6 +199,17 @@ test("compose publishes Web, API, and Worker on separate loopback-only ports", (
   assert.match(migrator, /image: topology-scm-migrator:\$\{APP_IMAGE_TAG:-latest\}/);
 });
 
+test("Web image and compose service enforce a read-only, least-privilege runtime boundary", () => {
+  const app = composeService("app");
+
+  assert.match(aliyunDockerfile, /^USER nextjs$/m);
+  assert.doesNotMatch(app, /dockerfile: Dockerfile\.(?:api|worker)/);
+  assert.match(app, /security_opt:\n\s+- no-new-privileges:true/);
+  assert.match(app, /cap_drop:\n\s+- ALL/);
+  assert.match(app, /read_only: true/);
+  assert.match(app, /tmpfs:\n\s+- \/tmp:size=128m,mode=1777/);
+});
+
 test("compose applies a read-only, least-privilege API runtime boundary", () => {
   const api = composeService("api");
 
