@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
+import { tsImport } from "tsx/esm/api";
 
-import {
+const {
   buildSupplierPerformanceWeightCommand,
   loadSupplierPerformanceSnapshot,
-} from "../app/lib/supplier-performance-lifecycle.ts";
+} = await tsImport("../app/lib/supplier-performance-lifecycle.ts", import.meta.url);
 
 const root = new URL("../", import.meta.url);
 
