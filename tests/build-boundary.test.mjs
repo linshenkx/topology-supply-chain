@@ -17,6 +17,17 @@ test("archive, outputs, and generated state are excluded from source and image s
   }
 });
 
+test("Sites build tooling has a visible Cloudflare owner outside ignored build output", async () => {
+  const gitignore = await readFile(".gitignore", "utf8");
+  const viteConfig = await readFile("vite.config.ts", "utf8");
+  const plugin = await readFile("platform/cloudflare/sites-vite-plugin.ts", "utf8");
+
+  assert.match(gitignore, /^\/build\/$/mu);
+  assert.match(viteConfig, /\.\/platform\/cloudflare\/sites-vite-plugin/u);
+  assert.match(plugin, /name: "sites"/u);
+  await assert.rejects(readFile("build/sites-vite-plugin.ts", "utf8"), { code: "ENOENT" });
+});
+
 test("Worker runtime closure does not copy builder workspace or vendor inputs", async () => {
   const workerDockerfile = await readFile("Dockerfile.worker", "utf8");
   const runner = workerDockerfile.split("FROM node:22-alpine AS runner")[1];
