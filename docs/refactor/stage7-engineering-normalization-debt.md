@@ -293,36 +293,159 @@
 | `scripts`/`deploy`/Dockerfile | 建立命令目录与制品责任表 | 暂不移动 | 发布路径高风险 |
 | tar/`outputs`/`.tmp`/`work` | 建 tracked manifest；后续按类别迁入项目内 `archive/` | 本次否；Wave 3 受控移动 | 未知资产默认归档保留，删除需逐项授权 |
 
-### 6.2 可选长期形态（不是本轮既定答案）
+### 6.2 完整长期目录拓扑
 
-若后续 clean build 和部署证明可安全搬迁，长期可形成：
+下图是工程规范化完成后的**所有权目标**，不是一次性搬迁授权。`apps/web/`、`packages/shared-config/`、`packages/test-support/` 和 `database/preview-d1/` 都带条件门；未满足入口时保持当前路径或不创建。
 
 ```text
-apps/
-  web/                 # 可选：仅在根 Web 搬迁门禁通过后
-  api/
-  worker/
-packages/
-  contracts/
-tooling/               # 仅容纳已有且跨包复用的 lint/ts/build helper
-database/              # 仅在 migration owner 与 D1 去留裁决后
-  schema/
-  migrations/
-  tooling/
-archive/               # 项目内历史/未知资产；整体排除 Docker context
-  README.md             # tracked：分类、保留、敏感与恢复规则
-  manifests/            # tracked：原路径→归档路径、SHA-256、mtime、用途
-  legacy-deliveries/    # ignored：29 个历史 tar 等二进制交付包
-  deliveries/           # ignored：outputs 中经确认的交付制品
-  working-notes/        # 默认 ignored：.tmp 中经确认有保留价值的记录
-  diagrams/             # 默认 ignored：work 中经确认的历史图像
-deploy/
-tests/                 # system/contract/deployment；package tests 仍贴近 package
+topology-supply-chain/
+├─ apps/
+│  ├─ web/                              # 条件目标：Wave 8 门禁通过后才从根 Web 搬入
+│  │  ├─ app/                          # 页面、布局、bridge、legacy shim 与当前 health 兼容
+│  │  ├─ components/                   # 通用 UI
+│  │  ├─ features/                     # 按工作台/用户旅程组织的前端功能
+│  │  ├─ lib/
+│  │  │  └─ api/                       # 统一 API client、错误与 request-id 处理
+│  │  ├─ platform/
+│  │  │  └─ cloudflare/                # 条件 owner；宿主若要求根路径则保持根平台区
+│  │  ├─ public/
+│  │  ├─ test/
+│  │  ├─ next.config.ts                # Web 专属；移动时验证 standalone/Docker 路径
+│  │  ├─ postcss.config.mjs            # Web 专属
+│  │  ├─ vite.config.ts                # 条件移动；受 Vinext/Sites 根路径约束时留根
+│  │  ├─ package.json
+│  │  └─ tsconfig.json
+│  ├─ api/                              # Fastify 同步 API，独立镜像/进程/健康检查
+│  │  ├─ src/
+│  │  │  ├─ modules/                   # 现有领域模块；不预建空 DDD 层
+│  │  │  ├─ platform/                  # auth/commands/idempotency/step-up/audit/outbox/files
+│  │  │  ├─ infrastructure/            # MySQL、OSS、SMS、邮件等适配器
+│  │  │  ├─ app.ts
+│  │  │  └─ server.ts
+│  │  ├─ test/
+│  │  ├─ package.json
+│  │  └─ tsconfig.json
+│  └─ worker/                           # 异步任务，独立镜像/进程/健康检查
+│     ├─ src/
+│     │  ├─ consumers/                 # outbox/job consumer
+│     │  ├─ providers/                 # OSS、SMS、邮件、Webhook
+│     │  ├─ runtime/                   # claim/retry/fence/health
+│     │  └─ server.ts
+│     ├─ test/
+│     ├─ package.json
+│     └─ tsconfig.json
+├─ packages/
+│  ├─ contracts/                        # 当前以 API 为主；仅放有跨边界协议价值的契约
+│  ├─ shared-config/                    # 条件创建：至少两个真实消费者且 API 稳定
+│  └─ test-support/                     # 条件创建：已有重复 fixture/helper 可量化
+├─ database/
+│  ├─ schema/                           # 条件 owner：D1 source → MySQL generated 关系
+│  ├─ mysql/
+│  │  ├─ schema/                       # 生成/校验后的 production representation
+│  │  ├─ migrations/
+│  │  │  ├─ sql/                       # append-only SQL
+│  │  │  └─ meta/                      # journal/snapshot；历史字节冻结
+│  │  └─ tooling/                      # migrate/preflight/history/fresh-upgrade oracle
+│  └─ preview-d1/                       # 条件保留：D1 schema、migration、Drizzle config
+├─ infrastructure/
+│  ├─ docker/                           # Web/API/Worker Dockerfile 与 closure policy
+│  ├─ nginx/
+│  ├─ compose/
+│  └─ aliyun/                           # deploy/rollback/env/migration/fence/reconciliation scripts
+├─ tooling/                              # 条件创建：只接收两个以上消费者的稳定 helper
+│  ├─ build/
+│  ├─ eslint/
+│  ├─ typescript/
+│  └─ scripts/                          # 非部署类仓库维护工具
+├─ tests/                               # 只放跨运行时 contract/integration/system/deployment
+│  ├─ contract/
+│  ├─ integration/
+│  ├─ system/
+│  ├─ deployment/
+│  └─ fixtures/
+├─ docs/
+│  ├─ architecture/
+│  ├─ decisions/                        # ADR 与用户裁决
+│  ├─ operations/
+│  ├─ refactor/
+│  └─ business/                         # Scope B 规则；未授权前不放实现
+├─ archive/                              # 项目内历史/未知资产；不参与 runtime/build/deploy
+│  ├─ README.md                          # tracked：保留、敏感、恢复和删除授权规则
+│  ├─ manifests/                         # tracked：planned/archived 状态与恢复证据
+│  ├─ legacy-deliveries/                 # ignored：29 个历史 tar
+│  ├─ deliveries/                        # ignored：outputs 中的历史交付制品
+│  ├─ working-notes/                     # 默认 ignored：有保留价值的阶段记录
+│  ├─ diagrams/                          # 默认 ignored：历史图像
+│  └─ project-history/                   # tracked/ignored 按资产：旧指南与状态快照
+├─ vendor/                               # 有来源、许可证、SHA 与升级责任的 vendored 资产
+├─ examples/
+│  └─ d1/                               # 条件保留：随 D1 支持等级裁决，不误归档
+├─ .github/
+│  └─ workflows/
+├─ README.md
+├─ CONTRIBUTING.md
+├─ SECURITY.md                          # 仓库级安全策略
+├─ .env.example                         # 仓库级环境入口；owner/consumer 矩阵指向各 runtime
+├─ package.json                          # 仓库级命令；不放领域实现
+├─ pnpm-workspace.yaml
+├─ pnpm-lock.yaml
+├─ tsconfig.base.json
+├─ eslint.config.mjs
+├─ .gitignore
+└─ .dockerignore
 ```
 
-这仍是**前后端分离的 monorepo**：应用源码和发布单元分开，但 Git/lock/contracts 可以共享。`archive/` 是项目内受控历史区，不是 runtime package、构建输入或部署制品；其 README/manifest 可跟踪，二进制与可能敏感内容默认 ignored。是否改成 multi-repo 必须另做组织和发布裁决。
+根目录最终只保留仓库入口、workspace/lock、跨包配置和明确的一级所有权目录。应用专属配置原则上贴近对应 `apps/*`，但 `.openai/hosting.json`、Vite/Sites plugin、Cloudflare adapter/types 等受宿主根路径约束的文件只有在 D1/Vinext/Sites 支持等级和路径要求被验证后才移动；package 测试贴近 package；根 `tests/` 只保留跨运行时门禁。`archive/` 整体排除 Docker context，README/manifest 可跟踪，二进制与可能敏感内容默认 ignored。
 
-明确不预建：`shared-config/`、`test-support/`、`modules/`、`domain/`、`repository/`、`service/`。只有至少两个真实消费者、稳定 API 和可量化重复时才创建。
+`database/` 是**条件所有权目标**，不是已存在的单一 MySQL package。当前 SQLite/D1 `db/schema.ts` 同时是 MySQL generated schema 的源，D1 与 MySQL 有两套 migration lineage；移动前必须保留 source/generated 关系和两条历史。API/Worker 的 pool、deadline、transaction 生命周期继续属于各自应用的 `infrastructure`，不搬入共享 database runtime。顶层 `tooling/` 同样只在至少两个真实消费者和稳定 API 已成立时创建；Sites、Aliyun build、migration 和 release helper 默认留在各自 owner。
+
+### 6.3 运行时与数据流拓扑
+
+```mermaid
+flowchart LR
+    U["浏览器"] --> N["Nginx / HTTPS"]
+    N -->|"/"| W["Web :3000"]
+    N -->|"/api/v1/*"| A["Fastify API :3001"]
+    W -->|"Cookie + CSRF + request-id"| A
+    A --> DB["MySQL"]
+    A --> OSS["OSS"]
+    A --> OB["Transactional Outbox"]
+    K["Worker :3002"] --> DB
+    K --> OB
+    K --> OSS
+    K --> P["SMS / Email / Webhook"]
+    M["Migrator"] --> DB
+    C["packages/contracts"] -. "当前实际 compile-time consumer" .-> A
+    D1["D1 / Vinext preview"] -. "仅开发预览且经裁决" .-> W
+```
+
+- 目标状态是 Web 不直连生产数据库、不同步执行业务写并只经同域 `/api/v1/*` 进入 API；但当前 `/api/health` 仍直接检查 MySQL/OSS，Web 仍消费相应配置。Wave 8 机械搬迁必须先保持该健康/部署语义；Web 凭据最小化只能作为另一个有独立兼容证据的 Scope A 安全部署结果，不能伪装成目录移动。
+- API 负责鉴权、data scope、同步查询和命令事务；Worker 负责已提交 outbox/job 的异步副作用。
+- Migrator 是独立发布责任，不由应用启动时隐式改 schema；MySQL migration 保持 append-only 与 history preflight。
+- Contracts 是编译期契约，不成为运行时 service locator，也不反向依赖任一应用；当前实际引用仅在 API，Web/Worker 只有在真实使用时才算共享消费者，图中不预设 Worker 依赖。
+- D1/Vinext/Sites 只在明确保留预览支持后进入目标结构；不得与 Aliyun/MySQL 生产语义混为一套运行时。
+
+### 6.4 目录所有权与条件门
+
+| 所有权 | 可以包含 | 不得包含 | 建立/搬迁条件 |
+| --- | --- | --- | --- |
+| `apps/web` | UI、Web bridge、legacy 410 shim、当前 health 兼容、浏览器 client、Web-only preview adapter | 新增领域写入、后台 provider；生产 DB/OSS health 依赖仅可经独立结果退出 | Wave 0–7 门禁通过，Web build/Docker/Vinext/D1/health/route 引用 100% 枚举 |
+| `apps/api` | HTTP contract 实现、领域 policy、事务命令、读模型 | UI、定时消费循环、部署脚本 | 已成立；后续只做模块减法和职责收窄 |
+| `apps/worker` | claim/retry/consumer/provider/health | HTTP 业务 API、UI、迁移历史改写 | 已成立；provider 与 runtime 可按真实边界拆分 |
+| `packages/contracts` | Schema、DTO、枚举、公共错误、稳定 identity | DB client、Fastify/Next runtime、业务副作用 | 已成立；任何新增需有实际跨边界消费或公开协议价值，不虚构消费者 |
+| `packages/shared-config` | 纯解析、无生命周期的跨包配置 | DB pool、logger 实例、provider client | 至少两个真实消费者且重复可量化；否则不创建 |
+| `packages/test-support` | 跨包稳定 fixture/helper | 生产代码、领域判断 | 至少两个测试套件真实复用；否则不创建 |
+| `database` | D1 schema source、MySQL generated representation、两套 migration lineage 与 history tooling | API/Worker pool 和事务生命周期 | source/generated、journal、Docker/migrator 路径均有迁移映射后再移动 |
+| `database/preview-d1` | 被正式保留的预览 schema/tooling | 生产 MySQL migration | Wave 0 明确 D1 支持等级；不支持则进入历史保留方案 |
+| `infrastructure` | Docker/Nginx/Compose/Aliyun 发布与回滚 | 领域业务实现 | 发布命令与制品 owner 固定后按机械批次移动 |
+| `tooling` | 经证明有两个以上消费者的 lint/TS/build/repo helper | Sites 专属、Aliyun 专属、migration/release 专属脚本，生产 runtime、业务规则 | 有稳定 API 和重复证据才创建；否则 helper 贴近 owner |
+| `archive` | 历史/未知有价值资产及 manifest | runtime、构建输入、唯一未登记生产配置 | Wave 3 planned manifest、扫描、hash、恢复与 Docker 排除门禁通过 |
+
+这仍是**前后端分离的 monorepo**：Web、API、Worker 具有独立运行入口、镜像、健康检查和部署责任；Web 在 Wave 8 前仍由根 package 承载。单 Git、lock、contracts、migration/release manifest 支持原子协作。是否拆成 multi-repo 必须另做组织、发布节奏和兼容成本裁决，不能由目录规整自动触发。
+
+本节是当前工程规范化的目录裁决；`02-target-architecture.md` 中预设的 `packages/database`、`platform/modules/test-support` 等只保留为早期愿景，不再作为创建空 package 的实施授权。发生冲突时，以本 Stage 7 和对应 Stage 8 编排计划为当前工程结构事实源。
+
+明确不预建空 `domain/`、`repository/`、`service/`、CQRS、event-sourcing、微服务或新队列。Scope B 后续可能新增 receiving/material-execution/quality-inventory 等领域模块，但只有业务规则和状态机获批后才能进入 `apps/api/src/modules/`，不能借工程规范化提前落壳。
 
 ## 7. 工程债务清单
 
@@ -426,8 +549,8 @@ tests/                 # system/contract/deployment；package tests 仍贴近 pa
 
 ### Wave 4：命名与目录的纯机械批次
 
-- 允许：先解决 `worker/` 同名、`build/` ignore 冲突；可选 `apps/web` 另开独立批次。
-- 禁止：业务代码改义、格式化、抽象、API/SQL/migration/identity 改名。
+- 允许：先解决 `worker/` Cloudflare adapter 同名、`build/` ignore 冲突和已裁决的中立目录；在拆超大模块前把内部 R2/R3 路径/symbol 映射为稳定领域名，但不改任何持久化 identity。可选 `apps/web` 仍另开独立批次。
+- 禁止：业务代码改义、格式化、抽象、API/SQL/migration 改名；禁止改变 command/resource、writer fence、outbox topic/dedup、approval workflow/effect、file entity type、audit action/module/entity 等持久化 identity。
 - 入口：D1/Sites 支持状态已裁决；clean build 可复现。
 - 出口：所有 imports/config/Docker 路径更新，Git rename 可审计，生产行为不变。
 - 测试：Web/API/Worker build、Docker、route、preview（若支持）。
@@ -450,14 +573,14 @@ tests/                 # system/contract/deployment；package tests 仍贴近 pa
 - 测试：HTTP contract、错误码、SQL参数、真实 MySQL、负向 scope。
 - 回滚：每模块一提交。
 
-### Wave 7：legacy 与阶段命名减法
+### Wave 7：legacy 实现减法
 
-- 允许：有零调用/410/回滚窗口证据的 legacy 实现删除；内部 R2/R3 路径与 symbol 稳定命名。
-- 禁止：更改持久化 command/resource identity、writer generation、migration history、API 合同。
-- 入口：调用证据、identity mapping、生产回滚策略明确。
-- 出口：无第二业务实现；阶段名仅保留在兼容协议/历史文档。
-- 测试：identity manifest 零 diff、legacy 路径、API/Worker/MySQL、release/rollback。
-- 回滚：删除与 rename 分成不同提交。
+- 允许：仅删除有逐路由零调用、精确 successor、410 contract 和旧 writer 回滚窗口已关闭证据的不可达旧主体；薄 shim 是否保留逐路由裁决。
+- 禁止：把精确 `410 + WRITER_MOVED + successor Link` 泛化成 404；删除 `/api/health`、`/api/session` 或 `/api/v1` 开发 bridge；更改持久化 identity、writer generation、migration history 或 API 合同。
+- 入口：18 个 legacy 业务 GET 的逐路由兼容矩阵、调用方/生产证据、v1 替代、identity mapping 和生产回滚策略明确。无法取得生产事实则保留旧主体，不为降 LOC 强删。
+- 出口：删除获批的第二业务实现；未满足门禁的 shim/主体明确保留并记录原因。
+- 测试：逐路由精确 410、health/session/bridge、identity manifest 零 diff、API/Worker/MySQL、release/rollback。
+- 回滚：每域删除独立提交；恢复后重跑同一兼容矩阵。
 
 ### Wave 8：可选 Web 搬迁或多仓复议
 
