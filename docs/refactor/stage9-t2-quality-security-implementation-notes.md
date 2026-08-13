@@ -44,3 +44,4 @@
 - 剩余第三方/环境提示精确为：(1) `wrangler@4.120.0/wrangler-dist/cli.js:432180` 检测到当前代理环境并告知 fetch 将使用代理，不清除 proxy 以免改变网络语义；(2) `vinext@0.0.50/dist/build/report.js:614` 对 `/` 输出 Unknown，源码明确其静态分析无法识别 dynamic API，Next 同页 47/47 构建精确判为 static。不添加 `dynamic`/`revalidate` 来规避提示，以免改变缓存语义。
 - 完整 non-MySQL 门首次发现 7 条测试仍从已退役 legacy route 读取安全实现；测试已迁到 R3 successor handler，同时保留 legacy successor shim 断言，未改业务源码。完整门为 54 files / 357 tests / 0 skip，Web system 4/4。
 - 真实 MySQL 8.4 门使用 loopback-only 临时容器和四个精确测试库，不读取生产凭据；8 files / 21 tests / 0 skip 全绿，覆盖 platform/R2/R3、事务并发、Worker replay/fence、fresh install、migration upgrade/repeat/divergent lineage 与 rollback。唯一临时容器 `stage9-t2-mysql-9cfb` 已删除。
+- 最终 fresh Docker API/Worker/Web/migrator 四目标均通过；闭包与非 root 用户探针通过，migrator 默认不继承 `NODE_ENV`/`DEPLOY_TARGET`。临时镜像全部删除。完整计数、上游例外、冻结 identity 与残余 warning 见 `stage9-t2-quality-security-final-report.md`。
