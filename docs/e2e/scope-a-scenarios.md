@@ -1,6 +1,6 @@
 # Scope A 场景清单
 
-所有路径以 API `http://127.0.0.1:3001` 为例；Web 只作为同域入口/人工观察。请求体须使用 Contracts/OpenAPI 当前 schema 的最小合法测试夹具，本文不伪造未固化的业务字段或状态迁移。共同 header 是有效测试会话、Origin、CSRF，以及每个写操作的唯一 `idempotency-key`；R2 还使用 `x-request-digest`。记录实际 HTTP 状态和错误 code。
+所有路径先通过[Tier 1 就绪门](./tier1-readiness.md)；没有 fixture manifest、账号/OTP/stub provider/授权测试 MySQL 时，每条现场场景均为 `BLOCKED`。Web 只作为同域入口/人工观察。每个 R2/R3 的可复制字段模板、成功码与查询对象见[请求模板](./request-templates.md)，本文不伪造未固化的业务字段或状态迁移。共同 header 是有效测试会话、Origin、CSRF，以及每个写操作的唯一 `idempotency-key`；R2 可使用 `x-request-digest`。记录实际 HTTP 状态和错误 code。
 
 | ID | 操作入口与步骤 | 预期和取证 | 失败/人工检查点 |
 | --- | --- | --- | --- |

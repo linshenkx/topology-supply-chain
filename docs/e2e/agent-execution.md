@@ -1,6 +1,6 @@
 # Agent 执行规程
 
-Agent 只能在本地或明确授权的受控测试环境执行；不能自行取得凭据、打开公网服务、部署、push/PR、调用真实支付/OSS/provider，或修改生产代码、测试代码、配置、schema、migration、identity、Docker/deploy 文件。
+Agent 只能在本地或明确授权的受控测试环境执行；不能自行取得凭据、打开公网服务、部署、push/PR、调用真实支付/OSS/provider，或修改生产代码、测试代码、配置、schema、migration、identity、Docker/deploy 文件。开始前必须先通过[Tier 1 环境与 fixture 就绪门](./tier1-readiness.md)；仓库没有现成 fixture/账号/provider stub 时，状态只能是 `BLOCKED`/`human-checkpoint`。
 
 ## 变量、命名与进程
 

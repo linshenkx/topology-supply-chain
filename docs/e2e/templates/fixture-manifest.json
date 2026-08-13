@@ -1,0 +1,18 @@
+{
+  "schemaVersion": 1,
+  "runId": "E2E-YYYYMMDD-HHMMSS-xxxx",
+  "repositorySha": "<frozen-commit-sha>",
+  "fixtureSha": "<fixture-pack-content-sha>",
+  "owner": { "name": "<environment-owner>", "contact": "<approved-channel>" },
+  "expiresAt": "<ISO-8601>",
+  "ready": false,
+  "blockedReasons": ["replace until every required scenario fixture is verified"],
+  "accounts": [{ "role": "admin|supply_chain|factory|finance|approver|denied", "userRef": "<non-secret-ref>", "organizationId": "<id>", "factoryId": "<id-or-null>", "otpPath": "stub|test-device|human-checkpoint" }],
+  "entities": {
+    "factories": [], "suppliers": [], "skus": [], "boms": [], "warehouses": [], "batches": [],
+    "supplierSkus": [], "priceEvidenceFiles": [], "approvals": [], "purchasePlans": [], "purchaseOrders": [],
+    "productionOrders": [], "qualityInspections": [], "stocktakes": [], "shipments": [], "returns": [], "financeObjects": []
+  },
+  "providers": { "sms": "stub-ref", "email": "stub-ref", "fileScan": "stub-ref", "workerReady": false },
+  "database": { "loopbackOnly": true, "resourcePrefix": "E2E-...-", "cleanupOwner": "<owner>", "cleanupEvidence": null }
+}

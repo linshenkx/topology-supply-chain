@@ -15,7 +15,7 @@ README 是当前工程的唯一入口；本索引只负责把材料按证据属�
 
 | 文档 | 状态与边界 |
 | --- | --- |
-| [Stage 10 E2E 最终验收](./refactor/stage10-e2e-final-acceptance.md) | 当前 Stage 10 的文档与基础门禁验收；仅覆盖受控环境中的真人/Agent E2E 手册和已记录的自动化证据，不是生产部署验收。 |
+| [Stage 10 E2E 最终验收](./refactor/stage10-e2e-final-acceptance.md) | 当前 Stage 10 的文档与基础门禁验收；Tier 0 可立即运行，Tier 1 现场 E2E 须先具备受控环境、账号、fixture 与 provider 条件；不是生产部署验收。 |
 | [Stage 9 物理分离最终验收](./refactor/stage9-physical-separation-final-acceptance.md) | 当前最近一次 Scope A 阶段验收；结论为 GO，包含已运行门禁和已接受的非阻断观察项。 |
 | [Stage 9 T3 工程规范化最终验收](./refactor/t3-engineering-normalization-final-acceptance.md) | Stage 9 内部验收材料，供追溯，不替代最终验收。 |
 | [Stage 6 Scope A 验收](./refactor/stage6-scope-a-acceptance.md) | 早期阶段验收，保留其时点证据，不代表最新结果。 |

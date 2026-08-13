@@ -3,13 +3,14 @@
 > 验收基线：`59a36fa6bab3a3349b4225faf677b2506ad60c53`；父链含 Stage 10 T1/T2。
 > 适用环境：本机或受控测试环境。不得连接生产、使用生产凭据、调用真实 provider，或执行部署。
 
-本目录把已有合同和测试证据转成可重复的验收步骤，不宣称已完成业务全闭环。当前能力和已知缺口以[基础业务能力—测试覆盖矩阵](../business-capability-test-matrix.md)为准；本轮最终结论见[Stage 10 最终验收报告](../refactor/stage10-e2e-final-acceptance.md)。
+本目录把已有合同和测试证据转成可重复的验收步骤，不宣称已完成业务全闭环。它严格分为两层：可立即运行的[Tier 0 自动化基线](./tier0-automation.md)，和必须先通过就绪门的[Tier 1 现场 E2E](./tier1-readiness.md)。当前能力和已知缺口以[基础业务能力—测试覆盖矩阵](../business-capability-test-matrix.md)为准；本轮最终结论见[Stage 10 最终验收报告](../refactor/stage10-e2e-final-acceptance.md)。
 
 ## 执行入口
 
-1. 先读[真人执行规程](./human-execution.md)，由业务验收人确定角色、样本和签字范围。
-2. 自动化执行者必须完整遵守[Agent 执行规程](./agent-execution.md)；其中的停止条件高于“继续重试”的目标。
-3. 逐项执行[Scope A 场景清单](./scope-a-scenarios.md)。每项都要有 HTTP、数据库或审计/Outbox 中至少一种可复核证据；UI 没有稳定 selector 或夹具时，不得假装自动化完成。
+1. 先执行[Tier 0 自动化基线](./tier0-automation.md)。
+2. Tier 1 先过[环境与 fixture 就绪门](./tier1-readiness.md)，再由业务验收人按[真人执行规程](./human-execution.md)确定角色、样本和签字范围。
+3. 自动化执行者还必须完整遵守[Agent 执行规程](./agent-execution.md)，并使用[请求模板](./request-templates.md)与[fixture/evidence 模板](./templates/fixture-manifest.json)。
+4. 逐项执行[Scope A 场景清单](./scope-a-scenarios.md)。每项都要有 HTTP、数据库或审计/Outbox 中至少一种可复核证据；UI 没有稳定 selector 或夹具时，不得假装自动化完成。
 
 ## 环境和边界
 
