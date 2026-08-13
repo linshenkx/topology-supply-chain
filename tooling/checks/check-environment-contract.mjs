@@ -81,9 +81,7 @@ for (const [consumer, names] of explicitInjections) {
 for (const [name, contract] of Object.entries(ENVIRONMENT_CONTRACT)) {
   for (const consumer of contract.consumers) {
     if (consumer === "compose") continue;
-    const viaMigratorEnvFile = consumer === "migrator"
-      && sources["infrastructure/aliyun/.env.production.template"].has(name);
-    if (!explicitInjections.get(consumer)?.has(name) && !viaMigratorEnvFile) {
+    if (!explicitInjections.get(consumer)?.has(name)) {
       errors.push(`${name} declares ${consumer} but Compose does not inject it`);
     }
   }
@@ -92,12 +90,20 @@ for (const [name, contract] of Object.entries(ENVIRONMENT_CONTRACT)) {
 if ((composeConfig.services.app.env_file ?? []).length) {
   errors.push("Web app must use an explicit environment allowlist, not env_file");
 }
-const migratorEnvFiles = composeConfig.services.migrator.env_file ?? [];
-if (migratorEnvFiles.length !== 1 || !String(migratorEnvFiles[0].path ?? migratorEnvFiles[0]).endsWith(".env.production")) {
-  errors.push("Migrator's acknowledged production preflight env_file boundary changed");
+if ((composeConfig.services.migrator.env_file ?? []).length) {
+  errors.push("Migrator must use an explicit migration-only environment allowlist, not env_file");
 }
-if (!environmentGuide.includes("MIGRATOR_ENV_FILE_OVERINJECTION_DEBT")) {
-  errors.push("Environment guide must acknowledge the migrator env_file over-injection debt");
+const expectedMigrator = ["DATABASE_URL", "DB_SSL", "DB_SSL_REJECT_UNAUTHORIZED"];
+const actualMigrator = [...explicitInjections.get("migrator") ?? []].sort();
+if (JSON.stringify(actualMigrator) !== JSON.stringify(expectedMigrator)) {
+  errors.push(`Migrator environment must be exactly: ${expectedMigrator.join(", ")}`);
+}
+const preflightEnvFiles = composeConfig.services.preflight?.env_file ?? [];
+if (preflightEnvFiles.length !== 1 || !String(preflightEnvFiles[0].path ?? preflightEnvFiles[0]).endsWith(".env.production")) {
+  errors.push("Production preflight must receive the single production env file outside the migrator boundary");
+}
+if (!environmentGuide.includes("PRODUCTION_PREFLIGHT_ENV_BOUNDARY")) {
+  errors.push("Environment guide must document the production preflight env boundary");
 }
 
 const placeholder = /replace|example|configure|changeme|请填写|请生成|占位/iu;
@@ -115,4 +121,4 @@ if (errors.length) {
   process.exit(1);
 }
 console.log(`Environment contract covers ${actualNames.size} declared variables and verifies explicit Web/API/Worker Compose injection.`);
-console.log("Acknowledged env_file over-injection debt: short-lived migrator production preflight (MIGRATOR_ENV_FILE_OVERINJECTION_DEBT).");
+console.log("Production preflight is separated from the migration-only DATABASE_URL/DB_SSL allowlist.");

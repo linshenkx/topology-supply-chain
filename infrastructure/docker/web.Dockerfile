@@ -1,15 +1,18 @@
-FROM node:22-alpine AS builder
+FROM node:22-alpine AS base
 WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
+RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
+
+FROM base AS builder
 ENV NODE_ENV=production
 ENV APP_ENV=production
 ENV DEPLOY_TARGET=aliyun
-RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 COPY . .
 RUN pnpm install --frozen-lockfile --ignore-scripts
 RUN pnpm build:aliyun
 
-FROM builder AS migrator
+FROM base AS migrator
+COPY --from=builder /app /app
 CMD ["pnpm", "db:migrate:mysql"]
 
 FROM node:22-alpine AS runner

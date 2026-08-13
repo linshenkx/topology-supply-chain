@@ -256,7 +256,7 @@ test("Web image and compose service enforce a read-only, least-privilege runtime
   assert.match(app, /tmpfs:\n\s+- \/tmp:size=128m,mode=1777/);
 });
 
-test("normalized Compose config preserves explicit runtime allowlists and acknowledged migrator debt", () => {
+test("normalized Compose config separates production preflight from the migration allowlist", () => {
   const result = spawnSync("docker", [
     "compose",
     "--profile", "migration",
@@ -277,8 +277,12 @@ test("normalized Compose config preserves explicit runtime allowlists and acknow
   assert.equal(normalized.services.worker.environment.EMAIL_WEBHOOK_API_KEY, "");
   assert.equal(normalized.services.worker.environment.FILE_SCAN_WEBHOOK_API_KEY, "");
   assert.equal(normalized.services.worker.environment.OTP_SEALING_KEYS_JSON, "");
-  assert.equal(normalized.services.migrator.env_file.length, 1);
-  assert.match(normalized.services.migrator.env_file[0].path, /\.env\.production$/u);
+  assert.equal(normalized.services.migrator.env_file, undefined);
+  assert.deepEqual(Object.keys(normalized.services.migrator.environment).sort(), [
+    "DATABASE_URL", "DB_SSL", "DB_SSL_REJECT_UNAUTHORIZED",
+  ]);
+  assert.equal(normalized.services.preflight.env_file.length, 1);
+  assert.match(normalized.services.preflight.env_file[0].path, /\.env\.production$/u);
 });
 
 test("compose applies a read-only, least-privilege API runtime boundary", () => {
@@ -418,7 +422,7 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
   const build = commandIndex(deployScript, "docker compose build app api worker migrator");
   const envCheck = commandIndex(
     deployScript,
-    "docker compose --profile migration run --rm migrator node tooling/checks/check-production-env.mjs",
+    "docker compose --profile migration run --rm preflight",
   );
   const history = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node tooling/release/check-mysql-migration-history.mjs");
   const stop = commandIndex(deployScript, "docker compose stop app api worker");

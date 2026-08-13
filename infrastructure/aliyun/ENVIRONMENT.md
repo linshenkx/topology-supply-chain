@@ -28,7 +28,7 @@
 | `DB_SSL`, `DB_SSL_REJECT_UNAUTHORIZED` | Database / all MySQL consumers | 生产 `enabled` / `true`；本地测试显式 `disabled` |
 | `OSS_INTERNAL_ENDPOINT` | Files / Web+API | 生产同地域默认 `true`，本地示例 `false` |
 | `APP_ENV` | Repository / Web+API | Compose 固定 production；不得用于隐式 writer activation |
-| `DEPLOY_TARGET` | Repository / Web+API+Migrator | Compose 固定 aliyun；不得用于隐式 writer activation |
+| `DEPLOY_TARGET` | Repository / Web+API | Compose 固定 aliyun；不得用于隐式 writer activation |
 | `DOMAIN_REGISTRATION_MODULES` | API / API | Compose 固定 R2+R3 canonical manifest；不是可随意删减的 operator 开关 |
 | `NODE_ENV`, `HOST`, `PORT`, `WORKER_INTERNAL_URL` | Runtime/API / 对应进程 | Compose 中的硬编码 runtime 边界同样受机器合同覆盖，不再漏检 |
 
@@ -38,6 +38,6 @@
 
 Web、API、Worker 三个长期进程均使用 Compose 显式 allowlist。Web 不再加载整份 `.env.production`，因此不会获得 Email、File-scan、Worker OTP keyring 或 Worker pool 配置；它仍显式获得自身 DB/OSS/session/SMS 兼容路径所需变量。在长期 runtime 中，Worker 独占 Email/File-scan/OTP keyring secret；SMS endpoint/API key 因 Web 兼容发送路径而由 Web 与 Worker 共同消费。
 
-`MIGRATOR_ENV_FILE_OVERINJECTION_DEBT`：短生命周期 migrator 仍通过 `env_file: .env.production` 获得完整生产变量集，因为既有 deploy 在该镜像中先运行全量 `check-production-env.mjs` 再执行 migration/history/drain 门禁。它因此也能读取并不由 migration 消费的 provider secret；这是明确未闭合的过度注入债务，不属于长期 runtime 隔离。移除它需要单独重构生产预检凭据加载/执行位置，本次不改变 deploy、release、fence 或 migration 语义。
+`PRODUCTION_PREFLIGHT_ENV_BOUNDARY`：短生命周期 `preflight` 服务单独加载 `.env.production`，只运行全量生产配置检查，不执行 migration、history 或 drain。`migrator` 不再使用 `env_file`，仅显式接收 `DATABASE_URL`、`DB_SSL`、`DB_SSL_REJECT_UNAUTHORIZED`；发布仍按 preflight → history → stop → drain → migration → runtime readiness 的原顺序执行，不改变 release、rollback 或 writer fence 行为。
 
 普通 deploy 不设置 writer activation allowlist，也不改变 `writer_fences`。生产值只放在服务器的 ignored `.env.production` 或批准的外部 secret 管理中。

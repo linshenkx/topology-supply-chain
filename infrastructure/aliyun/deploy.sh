@@ -41,7 +41,7 @@ wait_for_service_health() {
 
 docker compose build app api worker migrator
 docker run --rm "topology-scm-migrator:${RELEASE_TAG}" node tooling/release/release-manifest.mjs print > "${MANIFEST_TEMP}"
-docker compose --profile migration run --rm migrator node tooling/checks/check-production-env.mjs
+docker compose --profile migration run --rm preflight
 docker compose --profile migration run --rm migrator node tooling/release/check-mysql-migration-history.mjs
 docker compose stop app api worker
 docker compose --profile migration run --rm migrator node tooling/release/check-write-drain.mjs

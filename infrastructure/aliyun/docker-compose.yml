@@ -157,7 +157,7 @@ services:
         max-size: 20m
         max-file: "10"
 
-  migrator:
+  preflight:
     build:
       context: ../..
       dockerfile: infrastructure/docker/web.Dockerfile
@@ -166,7 +166,17 @@ services:
     profiles: ["migration"]
     env_file:
       - .env.production
+    command: ["node", "tooling/checks/check-production-env.mjs"]
+
+  migrator:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/web.Dockerfile
+      target: migrator
+    image: topology-scm-migrator:${APP_IMAGE_TAG:-latest}
+    profiles: ["migration"]
     environment:
-      DEPLOY_TARGET: aliyun
-      NODE_ENV: production
+      DATABASE_URL: "${DATABASE_URL:-}"
+      DB_SSL: "${DB_SSL:-enabled}"
+      DB_SSL_REJECT_UNAUTHORIZED: "${DB_SSL_REJECT_UNAUTHORIZED:-true}"
     command: ["pnpm", "db:migrate:mysql"]
