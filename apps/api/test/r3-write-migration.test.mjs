@@ -107,7 +107,13 @@ test("legacy writers are fail-fast 410 gates and the frontend has no delegated l
   for (const [path, methods] of legacy) {
     const source = await readFile(new URL(path, root), "utf8");
     for (const method of methods) {
-      assert.match(source, new RegExp(`export async function ${method}\\(request: Request\\) \\{\\s+if \\(request\\.method\\.length >= 0\\) return retiredPlatformRoute\\(`, "u"));
+      assert.match(source, new RegExp(
+        `export async function ${method}(?:\\(\\) \\{ return retiredPlatformRoute\\(|\\(request: Request\\) \\{\\s+if \\(request\\.method\\.length >= 0\\) return retiredPlatformRoute\\()`,
+        "u",
+      ));
+    }
+    if (/export async function POST\(\) \{ return retiredPlatformRoute\(/u.test(source)) {
+      assert.doesNotMatch(source, /getDb\(|requireAccess\(|requireRole\(|\.insert\(|\.update\(/u);
     }
   }
   const frontend = await Promise.all([

@@ -1,5 +1,3 @@
 import { retiredPlatformRoute } from "../../lib/retired-writer";
 
-export async function GET() {
-  return retiredPlatformRoute("/api/v1/audit-logs");
-}
+export async function GET() { return retiredPlatformRoute("/api/v1/audit-logs"); }

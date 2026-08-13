@@ -4,6 +4,8 @@ import path from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 
+import { retiredPlatformRoute } from "../../web/app/lib/retired-writer.ts";
+
 const root = new URL("../../../", import.meta.url);
 const rootPath = fileURLToPath(root);
 
@@ -73,6 +75,15 @@ test("all 18 legacy business GETs are 410-only without independent DB or authori
     const body = getBody(source);
     assert.ok(body.includes(`retiredPlatformRoute("${successor}")`), path);
     assert.doesNotMatch(body, /getDb\(|requireAccess\(|requireRole\(|\.select\(|\.from\(|\.where\(|\.map\(|\.filter\(/u, path);
+    const response = retiredPlatformRoute(successor);
+    assert.equal(response.status, 410, path);
+    assert.equal(response.headers.get("cache-control"), "no-store", path);
+    assert.equal(response.headers.get("link"), `<${successor}>; rel="successor-version"`, path);
+    assert.deepEqual(await response.json(), {
+      code: "WRITER_MOVED",
+      message: "This platform route has moved to the v1 API writer.",
+      migrationPath: successor,
+    }, path);
   }
 });
 
