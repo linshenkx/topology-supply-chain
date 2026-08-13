@@ -28,8 +28,24 @@ const {
   calculateReservation,
   calculateExpiryStatus,
   calculatePlannedPaymentDate,
-  toMysqlDateTime,
 } = module.exports;
+
+const mysqlDateTimeSource = fs.readFileSync(
+  new URL("../db/mysql-date-time.ts", import.meta.url),
+  "utf8",
+);
+const mysqlDateTimeModule = { exports: {} };
+vm.runInNewContext(ts.transpileModule(mysqlDateTimeSource, {
+  compilerOptions: {
+    module: ts.ModuleKind.CommonJS,
+    target: ts.ScriptTarget.ES2022,
+  },
+}).outputText, {
+  module: mysqlDateTimeModule,
+  exports: mysqlDateTimeModule.exports,
+  require,
+});
+const { toMysqlDateTime } = mysqlDateTimeModule.exports;
 
 test("默认质检标准为95%，低于标准的抽检转全检并隔离", () => {
   const result = evaluateInspection({

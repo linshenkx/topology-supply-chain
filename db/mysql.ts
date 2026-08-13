@@ -1,7 +1,7 @@
 import mysql, { type Pool } from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import * as schema from "./schema.mysql.generated";
-import { toMysqlDateTime } from "../app/lib/business-rules";
+import { toMysqlDateTime } from "./mysql-date-time";
 
 declare global {
   // Reuse the pool during development hot reloads and across route invocations.

@@ -1,15 +1,14 @@
-export function runtimeEnv(name: string) {
-  return process.env[name]?.trim();
-}
+import {
+  isAliyunRuntime,
+  runtimeEnv,
+} from "@topology/shared-config/runtime-env";
+
+export { isAliyunRuntime, runtimeEnv };
 
 export function requireRuntimeEnv(name: string) {
   const value = runtimeEnv(name);
   if (!value) throw new Error(`生产环境缺少${name}配置。`);
   return value;
-}
-
-export function isAliyunRuntime() {
-  return runtimeEnv("DEPLOY_TARGET") === "aliyun";
 }
 
 export async function getPreviewFileBucket() {

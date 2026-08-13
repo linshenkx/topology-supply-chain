@@ -172,7 +172,7 @@ const rowLockSource = fs.readFileSync(
 );
 const rowLockModule = loadCommonJs(rowLockSource, specifier => {
   if (specifier === "drizzle-orm") return require("drizzle-orm");
-  if (specifier === "../app/lib/runtime-env") {
+  if (specifier === "@topology/shared-config/runtime-env") {
     return { isAliyunRuntime: () => aliyunRuntime };
   }
   if (specifier === "./schema") {

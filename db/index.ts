@@ -1,6 +1,6 @@
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "./schema";
-import { isAliyunRuntime } from "../app/lib/runtime-env";
+import { isAliyunRuntime } from "@topology/shared-config/runtime-env";
 
 type PreviewDb = ReturnType<typeof drizzle<typeof schema>>;
 

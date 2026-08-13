@@ -25,6 +25,9 @@ importers:
       '@alicloud/openapi-core':
         specifier: ^1.0.8
         version: 1.0.8
+      '@topology/shared-config':
+        specifier: workspace:*
+        version: link:packages/shared-config
       ali-oss:
         specifier: ^6.23.0
         version: 6.23.0
@@ -151,6 +154,15 @@ importers:
 
   packages/contracts:
     devDependencies:
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
+  packages/shared-config:
+    devDependencies:
+      '@types/node':
+        specifier: 22.19.19
+        version: 22.19.19
       typescript:
         specifier: 5.9.3
         version: 5.9.3

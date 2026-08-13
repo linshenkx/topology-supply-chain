@@ -1,5 +1,5 @@
 import { sql, type SQL } from "drizzle-orm";
-import { isAliyunRuntime } from "../app/lib/runtime-env";
+import { isAliyunRuntime } from "@topology/shared-config/runtime-env";
 import { approvalRequests, factoryPaymentRequests, invoiceExceptions, paymentRecords } from "./schema";
 
 type TransactionCapable<TDb> = TDb & {

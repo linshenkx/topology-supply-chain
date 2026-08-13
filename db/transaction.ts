@@ -1,4 +1,4 @@
-import { isAliyunRuntime } from "../app/lib/runtime-env";
+import { isAliyunRuntime } from "@topology/shared-config/runtime-env";
 
 type TransactionCapable<TDb> = TDb & {
   transaction?: <T>(callback: (tx: TDb) => Promise<T>) => Promise<T>;

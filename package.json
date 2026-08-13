@@ -49,6 +49,7 @@
     "admin:bootstrap": "node scripts/bootstrap-admin.mjs"
   },
   "dependencies": {
+    "@topology/shared-config": "workspace:*",
     "@alicloud/credentials": "2.4.1",
     "@alicloud/dysmsapi20170525": "^4.6.0",
     "@alicloud/openapi-core": "^1.0.8",

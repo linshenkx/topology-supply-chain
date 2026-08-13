@@ -131,7 +131,7 @@ test("MySQL row lock serializes competing payments and exposes the committed led
   );
   const { withLockedPaymentRequest } = loadCommonJs(rowLockSource, specifier => {
     if (specifier === "drizzle-orm") return require("drizzle-orm");
-    if (specifier === "../app/lib/runtime-env") {
+    if (specifier === "@topology/shared-config/runtime-env") {
       return { isAliyunRuntime: () => true };
     }
     if (specifier === "./schema") {
