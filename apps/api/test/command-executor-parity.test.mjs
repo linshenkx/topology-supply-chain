@@ -143,6 +143,39 @@ test("platform, R2, and R3 adapters preserve one executor state machine", async 
   }
 });
 
+test("every R2 and R3 command is wired to its immutable writer resource", async (t) => {
+  for (const command of R2_COMMANDS) {
+    await t.test(`R2 ${command}`, async () => {
+      const probe = harness();
+      const result = await executeR2Command({
+        actorScope: "user:9",
+        command,
+        context: { unitOfWork: probe.unitOfWork, requireWriterFence: probe.fenceCheck },
+        payload: { command }, request: request(),
+        run: async () => ({ command }),
+      });
+      assert.equal(result.body.command.command, command);
+      assert.equal(probe.state.fences[0].resource, r2FenceResource(command));
+    });
+  }
+  for (const [command, resource] of Object.entries(R3_COMMAND_RESOURCES)) {
+    await t.test(`R3 ${command}`, async () => {
+      const probe = harness();
+      const result = await executeR3Command({
+        command,
+        context: {
+          authenticate: async () => ({ localPreview: false, sessionId: 7, userId: 9 }),
+          database: {}, unitOfWork: probe.unitOfWork, requireWriterFence: probe.fenceCheck,
+        },
+        payload: { command }, request: request(),
+        run: async () => ({ command }),
+      });
+      assert.equal(result.body.command.command, command);
+      assert.equal(probe.state.fences[0].resource, resource);
+    });
+  }
+});
+
 test("adapter identity stays byte-aligned with the 35-command release protocol", () => {
   const expected = [
     ...Object.entries(COMMAND_WRITER_RESOURCES),

@@ -91,6 +91,27 @@ test("all 13 delegated command bodies cross the Fastify contract boundary", asyn
   }
 });
 
+test("each R3 delegated route rejects an invalid body at its declared schema boundary", async (t) => {
+  const app = await buildRuntimeApp({
+    logger: false,
+    registrationManifests: [r3Manifest],
+    environment: { NODE_ENV: "test" },
+  });
+  t.after(() => app.close());
+  const routes = [
+    ["POST", "/api/v1/approvals"], ["POST", "/api/v1/inventory"],
+    ["POST", "/api/v1/inventory/transfers"], ["PATCH", "/api/v1/inventory/transfers"],
+    ["POST", "/api/v1/production-orders"], ["PATCH", "/api/v1/production-orders"],
+    ["POST", "/api/v1/quality-inspections"], ["POST", "/api/v1/stocktakes"],
+    ["PATCH", "/api/v1/stocktakes"], ["POST", "/api/v1/shipments"],
+    ["POST", "/api/v1/returns"], ["POST", "/api/v1/finance"], ["POST", "/api/v1/warehouses"],
+  ];
+  for (const [method, url] of routes) {
+    const response = await app.inject({ method, url, headers: { "idempotency-key": randomUUID() }, payload: {} });
+    assert.equal(response.statusCode, 400, `${method} ${url}: ${response.body}`);
+  }
+});
+
 test("legacy writers are fail-fast 410 gates and the frontend has no delegated legacy mutation URL", async () => {
   const legacy = [
     ["apps/web/app/api/approvals/route.ts", ["POST"]],

@@ -102,6 +102,29 @@ test("R2 writes reject origin, CSRF, role-only, and mismatched factory bindings 
   assert.equal(unitOfWorkCalls, 0);
 });
 
+test("each R2 command route rejects missing Origin and CSRF before its domain handler", async (t) => {
+  let unitOfWorkCalls = 0;
+  const app = await buildApp({ logger: false });
+  await manifest.register(registrationContext(app, {
+    unitOfWork: async () => { unitOfWorkCalls += 1; throw new Error("must not run"); },
+  }));
+  await app.ready();
+  t.after(() => app.close());
+
+  for (const mapping of Object.keys(R2_COMMAND_BY_MUTATION)) {
+    const [method, url] = mapping.split(" ");
+    const noOrigin = await app.inject({ method, url, headers: { "idempotency-key": KEY }, payload: {} });
+    assert.equal(noOrigin.statusCode, 403, `${mapping} missing Origin`);
+    assert.equal(noOrigin.json().code, "ORIGIN_REJECTED", mapping);
+    const noCsrf = await app.inject({ method, url, headers: {
+      host: "localhost", origin: "http://localhost", "x-forwarded-proto": "http", "idempotency-key": KEY,
+    }, payload: {} });
+    assert.equal(noCsrf.statusCode, 403, `${mapping} missing CSRF`);
+    assert.equal(noCsrf.json().code, "CSRF_REJECTED", mapping);
+  }
+  assert.equal(unitOfWorkCalls, 0);
+});
+
 test("domain command executor fences, commits once, replays, and rejects digest reuse", async () => {
   let row;
   let runs = 0;
