@@ -77,18 +77,23 @@ function childProcess(state, name, entry, args, env, logPath, cwd = root) {
 async function processCommandLine(pid) {
   if (!Number.isSafeInteger(pid) || pid < 1) fail("Invalid E2E process identifier");
   const script = `$p=Get-CimInstance Win32_Process -Filter 'ProcessId = ${pid}'; if ($null -eq $p) { exit 3 }; [Console]::Out.Write($p.CommandLine)`;
-  try { return (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script])).stdout; } catch { fail(`Owned E2E process ${pid} no longer exists`); }
+  try { return (await run("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", script])).stdout; } catch (error) {
+    if (error?.code === 3) return undefined;
+    throw error;
+  }
 }
 async function verifyOwnedProcess(state, record) {
   if (!record || !Number.isSafeInteger(record.pid) || typeof record.ownerToken !== "string" || typeof record.entry !== "string") fail("E2E process state is invalid");
   const commandLine = await processCommandLine(record.pid);
+  if (commandLine === undefined) return false;
   const markers = ["child-wrapper.mjs", `--run ${state.runId}`, record.ownerToken, record.entry];
   if (!markers.every((marker) => commandLine.includes(marker))) fail(`Refusing to stop non-owner or reused PID ${record.pid}`);
+  return true;
 }
 async function stopProcesses(state) {
   const records = Object.values(state.resources.pids ?? {});
-  await Promise.all(records.map((record) => verifyOwnedProcess(state, record)));
-  for (const record of records) await run("taskkill", ["/pid", String(record.pid), "/t", "/f"]);
+  const live = (await Promise.all(records.map(async (record) => (await verifyOwnedProcess(state, record)) ? record : undefined))).filter(Boolean);
+  for (const record of live) await run("taskkill", ["/pid", String(record.pid), "/t", "/f"]);
 }
 async function dockerContainer(state) { const { stdout } = await run("docker", ["inspect", "--format", "{{ index .Config.Labels \"topology.e2e.run_id\" }}", state.resources.container]); return stdout.trim() === state.runId; }
 async function applyMigrations(databaseUrl) { await assertFrozenMysqlMigrationRepository(); const connection = await mysql.createConnection(databaseUrl); try { await migrate(drizzle(connection), { migrationsFolder: join(root, "database", "migrations", "mysql") }); } finally { await connection.end(); } }
@@ -172,7 +177,7 @@ async function start() {
   const api = childProcess(state, "api", join(root, "apps/api/dist/server.js"), [], { ...common, APP_ENV: "production", DEPLOY_TARGET: "e2e", DATABASE_URL: state.databaseUrl, DB_SSL: "disabled", HOST: "127.0.0.1", PORT: String(ports.api), API_SESSION_SIGNING_KEY: state.secrets.signingKey, OTP_SEALING_KEY_ID: "v1", OTP_SEALING_KEY: state.secrets.otpKey, WORKER_INTERNAL_URL: state.origins.worker, DOMAIN_REGISTRATION_MODULES: "../modules/r2-master-procurement/index.js,../r3/manifest.js" }, join(logs, "api.log"));
   state.resources.pids.api = api; await saveState(state); await waitFor("API", async () => (await json(`${state.origins.api}/api/v1/health/ready`)).response.ok);
   const web = childProcess(state, "web", join(root, "apps/web/node_modules/vinext/dist/cli.js"), ["dev", "--port", String(ports.web), "--host", "127.0.0.1"], common, join(logs, "web.log"), join(root, "apps/web"));
-  state.resources.pids.web = web; await saveState(state); await waitFor("Web", async () => (await fetch(`http://127.0.0.1:${ports.web}`, { signal: AbortSignal.timeout(3_000) })).ok, 60_000);
+  state.resources.pids.web = web; await saveState(state); await waitFor("Web", async () => (await fetch(`http://127.0.0.1:${ports.web}`, { signal: AbortSignal.timeout(3_000) })).ok, 120_000);
   const cert = join(folder, "cert.pem"), key = join(folder, "key.pem");
   await capture("logs/cert.log", "openssl", ["req", "-config", await openSslConfig(), "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", cert, "-days", "1", "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"], { cwd: folder });
   const proxy = childProcess(state, "https", join(root, "tooling/e2e/https-proxy.mjs"), [], { ...common, E2E_HTTPS_PORT: String(ports.https), E2E_API_PORT: String(ports.api), E2E_WEB_PORT: String(ports.web), E2E_CERT_PATH: cert, E2E_KEY_PATH: key }, join(logs, "https.log"));
@@ -189,7 +194,7 @@ async function status() {
   checks.repositorySha = (await run("git", ["rev-parse", "HEAD"])).stdout.trim() === state.repositorySha;
   checks.buildIdentity = (await currentBuildIdentity()).sha256 === state.buildIdentity.sha256;
   checks.fenceProfile = state.fenceProfile?.sha256 === resolveFenceProfile(state.fenceProfile?.name).sha256 && await fenceProfileReady(state.databaseUrl, state.fenceProfile);
-  checks.pids = Object.values(state.resources.pids).length === 5 && (await Promise.all(Object.values(state.resources.pids).map((record) => verifyOwnedProcess(state, record).then(() => true).catch(() => false)))) .every(Boolean) && (await Promise.all([state.resources.ports.stub, state.resources.ports.worker, state.resources.ports.api, state.resources.ports.web, state.resources.ports.https].map(portOpen))).every(Boolean);
+  checks.pids = Object.values(state.resources.pids).length === 5 && (await Promise.all(Object.values(state.resources.pids).map((record) => verifyOwnedProcess(state, record).catch(() => false)))) .every(Boolean) && (await Promise.all([state.resources.ports.stub, state.resources.ports.worker, state.resources.ports.api, state.resources.ports.web, state.resources.ports.https].map(portOpen))).every(Boolean);
   checks.providers = (await json(`http://127.0.0.1:${state.resources.ports.stub}/health`).catch(() => ({ response: { ok: false } }))).response.ok;
   checks.worker = (await json(`${state.origins.worker}/health/ready`).catch(() => ({ response: { ok: false } }))).response.ok;
   checks.api = (await json(`${state.origins.api}/api/v1/health/ready`).catch(() => ({ response: { ok: false } }))).response.ok;

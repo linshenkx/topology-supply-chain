@@ -51,19 +51,25 @@ export async function seedScopeAFixture(connection, { runId, password }) {
   await connection.execute("INSERT INTO bom_components (bom_id,component_sku,item_type,is_core,quantity_per_finished) VALUES (?,?,'component',true,1)", [bomId, componentSku]);
   const warehouseId = await insert(connection,
     "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'finished_goods', ?, 'test-only', 'active')", [`${tag}-WH`, `${tag} Warehouse`, factoryId]);
+  const transferWarehouseId = await insert(connection,
+    "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'finished_goods', ?, 'test-only transfer target', 'active')", [`${tag}-WH-TRANSFER`, `${tag} Transfer Warehouse`, factoryId]);
   const batchId = await insert(connection,
     "INSERT INTO inventory_batches (batch_no,warehouse_id,sku,inbound_date,available_quantity,locked_quantity,defective_quantity,pending_inspection_quantity,ownership,expiry_status) VALUES (?,?,?,'2026-01-01',100,0,0,0,'company','normal')", [`${tag}-BATCH`, warehouseId, sku]);
   const supplierSkuId = await insert(connection,
-    "INSERT INTO supplier_skus (factory_id,supplier_id,sku,is_primary,priority,minimum_order_quantity,packaging_multiple,purchase_unit,effective_from,status,requested_by) VALUES (?,?,?,true,1,1,1,'EA','2026-01-01','approved',?)", [factoryId, supplierId, sku, accounts.supply_chain]);
+    "INSERT INTO supplier_skus (factory_id,supplier_id,sku,is_primary,priority,minimum_order_quantity,packaging_multiple,purchase_unit,effective_from,status,requested_by) VALUES (?,?,?,true,1,1,1,'EA','2026-01-01','active',?)", [factoryId, supplierId, sku, accounts.supply_chain]);
   const pendingSupplierId = await insert(connection,
     "INSERT INTO suppliers (code,name,tier,managed_by_factory_id,legal_name,unified_social_credit_code,address,contact_name,contact_phone,business_scope,verification_status,status) VALUES (?,?,?,?,?,?,?,?,?,?, 'pending','draft')",
     [`${tag}-PENDING-SUP`, `${tag} Pending Supplier`, 1, null, `${tag} Pending Supplier Ltd`, `${tag}-PENDING-CREDIT`, "test-only", "Test Contact", "13800138001", "test"]);
+  await connection.execute(
+    "INSERT INTO core_price_agreements (supplier_id,sku,currency,unit_price_tax_included_minor,unit_price_tax_excluded_minor,tax_rate_bps,effective_from,status,maintained_by) VALUES (?,?, 'CNY',100,90,1000,'2026-01-01','active',?)",
+    [supplierId, sku, accounts.supply_chain],
+  );
   const pendingPayload = { code: `${tag}-PENDING-SUP`, name: `${tag} Pending Supplier`, tier: 1, managedByFactoryId: null, unifiedSocialCreditCode: `${tag}-PENDING-CREDIT`, businessLicenseFileKey: "e2e-fixture-not-executed", address: "test-only", contactName: "Test Contact", contactPhone: "13800138001", businessScope: "test" };
   const approvalId = await insert(connection,
     "INSERT INTO approval_requests (request_no,workflow_type,entity_type,entity_id,summary,payload_json,high_risk,status,requested_by) VALUES (?, 'supplier_onboarding','supplier',?,?,?,false,'pending',?)", [`${tag}-APR`, pendingSupplierId, `${tag} pending supplier onboarding`, JSON.stringify(pendingPayload), accounts.supply_chain]);
   await connection.execute("INSERT INTO resource_versions (resource_type,resource_id,version) VALUES ('approval_request',?,1)", [String(approvalId)]);
   const planId = await insert(connection,
-    "INSERT INTO purchase_plans (plan_no,version,status,created_by) VALUES (?,1,'draft',?)", [`${tag}-PLAN`, accounts.supply_chain]);
+    "INSERT INTO purchase_plans (plan_no,version,status,created_by) VALUES (?,1,'confirmed',?)", [`${tag}-PLAN`, accounts.supply_chain]);
   const planItemId = await insert(connection,
     "INSERT INTO purchase_plan_items (purchase_plan_id,expected_arrival_date,factory_id,warehouse_id,sku,product_name,bom_id,planned_quantity) VALUES (?,'2026-02-01',?,?,?,?,?,10)", [planId, factoryId, warehouseId, sku, `${tag} SKU`, bomId]);
   const purchaseOrderId = await insert(connection,
@@ -71,7 +77,7 @@ export async function seedScopeAFixture(connection, { runId, password }) {
   const orderItemId = await insert(connection,
     "INSERT INTO order_items (purchase_order_id,sku,product_name,item_type,supplier_id,quantity,unit_price_tax_included_minor,amount_tax_included_minor,due_date) VALUES (?,?,?,'finished',?,10,100,1000,'2026-02-01')", [purchaseOrderId, sku, `${tag} Finished SKU`, supplierId]);
   const executionOrderId = await insert(connection,
-    "INSERT INTO execution_orders (execution_no,order_item_id,factory_id,bom_id,planned_quantity,status,due_date,planned_start_date,planned_finish_date) VALUES (?,?,?,?,10,'factory_confirmation','2026-02-01','2026-01-10','2026-01-20')", [`${tag}-EXE`, orderItemId, factoryId, bomId]);
+    "INSERT INTO execution_orders (execution_no,order_item_id,factory_id,bom_id,planned_quantity,status,due_date,planned_start_date,planned_finish_date) VALUES (?,?,?,?,10,'planned','2026-02-01','2026-01-10','2026-01-20')", [`${tag}-EXE`, orderItemId, factoryId, bomId]);
   const qualityRuleId = await insert(connection,
     "INSERT INTO quality_rules (scope,sku,stage,minimum_pass_rate_bps,active,created_by) VALUES ('sku',?,'incoming',9500,true,?)", [sku, accounts.supply_chain]);
   const qualityInspectionId = await insert(connection,
@@ -82,11 +88,20 @@ export async function seedScopeAFixture(connection, { runId, password }) {
     "INSERT INTO delivery_batches (execution_order_id,batch_no,quantity,planned_ship_at,carrier,logistics_no,destination,status) VALUES (?,?,10,'2026-02-01T00:00:00.000Z','test-carrier',?,'test-only','planned')", [executionOrderId, `${tag}-SHIP`, `${tag}-LOG`]);
   const returnId = await insert(connection,
     "INSERT INTO product_returns (return_no,source_delivery_batch_id,warehouse_id,sku,quantity,status) VALUES (?,?,?,?,1,'received')", [`${tag}-RET`, shipmentId, warehouseId, sku]);
+  const shipmentEvidenceFileId = await insert(connection,
+    "INSERT INTO file_objects (object_key,file_name,content_type,size_bytes,category,entity_type,entity_id,owner_user_id,factory_id,scan_status) VALUES (?,?, 'application/pdf',32,'shipment_evidence','delivery_batch',?,?,?,'clean')",
+    [`${tag}/shipment-evidence.pdf`, "shipment-evidence.pdf", String(shipmentId), accounts.supply_chain, factoryId]);
+  const receiptEvidenceFileId = await insert(connection,
+    "INSERT INTO file_objects (object_key,file_name,content_type,size_bytes,category,entity_type,entity_id,owner_user_id,factory_id,scan_status) VALUES (?,?, 'application/pdf',32,'receipt_evidence','delivery_batch',?,?,?,'clean')",
+    [`${tag}/receipt-evidence.pdf`, "receipt-evidence.pdf", String(shipmentId), accounts.admin, factoryId]);
+  const returnEvidenceFileId = await insert(connection,
+    "INSERT INTO file_objects (object_key,file_name,content_type,size_bytes,category,entity_type,entity_id,owner_user_id,factory_id,scan_status) VALUES (?,?, 'application/pdf',32,'quality_evidence','product_return',?,?,?,'clean')",
+    [`${tag}/return-evidence.pdf`, "return-evidence.pdf", String(returnId), accounts.admin, factoryId]);
   const paymentRequestId = await insert(connection,
     "INSERT INTO factory_payment_requests (request_no,factory_id,actual_shipment_date,planned_payment_date,total_amount_minor,status,maintained_by) VALUES (?,?, '2026-02-01','2026-02-28',1000,'waiting_invoice',?)", [`${tag}-PAY`, factoryId, accounts.finance]);
   const invoiceId = await insert(connection,
     "INSERT INTO factory_invoices (factory_id,purchase_order_id,coverage_mode,delivery_batch_id,invoice_no,invoice_type,amount_tax_included_minor,tax_amount_minor,issued_at,status,expected_amount_minor,maintained_by) VALUES (?,?, 'single', ?,?,'vat',1000,0,'2026-02-01','pending',1000,?)", [factoryId, purchaseOrderId, shipmentId, `${tag}-INV`, accounts.finance]);
-  return { accounts, entities: { factoryId, supplierId, pendingSupplierId, sku, componentSku, bomId, warehouseId, batchId, supplierSkuId, approvalId, planId, planItemId, purchaseOrderId, orderItemId, executionOrderId, qualityInspectionId, stocktakeId, shipmentId, returnId, invoiceId, paymentRequestId } };
+  return { accounts, entities: { factoryId, supplierId, pendingSupplierId, sku, componentSku, bomId, warehouseId, transferWarehouseId, batchId, supplierSkuId, approvalId, planId, planItemId, purchaseOrderId, orderItemId, executionOrderId, qualityInspectionId, stocktakeId, shipmentId, returnId, shipmentEvidenceFileId, receiptEvidenceFileId, returnEvidenceFileId, invoiceId, paymentRequestId } };
 }
 
 export const fixtureModulePath = fileURLToPath(new URL("./fixtures.mjs", import.meta.url));

@@ -14,7 +14,10 @@ const key = await readFile(keyPath);
 const server = createHttpsServer({ cert: certificate, key }, (request, response) => {
   if (!loopback.has(request.socket.remoteAddress ?? "")) { response.writeHead(403).end(); return; }
   if (request.url === "/_e2e/health") { response.writeHead(200, { "content-type": "application/json", "cache-control": "no-store" }); response.end(JSON.stringify({ status: "ok" })); return; }
-  const targetPort = request.url?.startsWith("/api/") ? apiPort : webPort;
+  // Only canonical v1 API traffic belongs to the standalone API runtime.
+  // Retired `/api/*` routes remain owned by Web so their exact 410 migration
+  // response is observable through the same HTTPS origin.
+  const targetPort = request.url?.startsWith("/api/v1/") ? apiPort : webPort;
   const upstream = createHttpRequest({ host: "127.0.0.1", port: targetPort, method: request.method, path: request.url, headers: { ...request.headers, "x-forwarded-proto": "https", "x-forwarded-for": "127.0.0.1" } }, (upstreamResponse) => {
     response.writeHead(upstreamResponse.statusCode ?? 502, upstreamResponse.headers);
     upstreamResponse.pipe(response);

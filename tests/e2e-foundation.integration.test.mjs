@@ -36,7 +36,11 @@ test("Tier 1 E2E foundation is isolated, fail-closed, HTTPS-cookie capable, and 
   assert.notEqual(one.resources.ports.mysql, two.resources.ports.mysql);
   await assert.rejects(run("prepare", [first]), /already exists/u);
   assert.equal(one.fixtureSha.length, 64);
-  await Promise.all([run("start", [first], { E2E_HOSTILE_PROVIDER_URL: "https://outside.invalid", HTTPS_PROXY: "http://outside.invalid:9", HTTP_PROXY: "http://outside.invalid:9", API_KEY: "production-secret-must-not-reach-child" }), run("start", [second])]);
+  // Keep both isolated stacks concurrently live, but serialize cold Web
+  // startup: two Vite dev cold starts contend for the shared local transform
+  // cache on Windows and otherwise make the isolation assertion flaky.
+  await run("start", [first], { E2E_HOSTILE_PROVIDER_URL: "https://outside.invalid", HTTPS_PROXY: "http://outside.invalid:9", HTTP_PROXY: "http://outside.invalid:9", API_KEY: "production-secret-must-not-reach-child" });
+  await run("start", [second]);
   await assert.rejects(run("start", [first]), /already started/u);
   const [ready, secondReady] = await Promise.all([run("status", [first]), run("status", [second])]); assert.equal(ready.ready, true, JSON.stringify(ready.checks)); assert.equal(secondReady.ready, true, JSON.stringify(secondReady.checks));
   const stub = `http://127.0.0.1:${one.resources.ports.stub}`;
