@@ -1,14 +1,13 @@
 # Tier 1：现场 E2E 环境与就绪门
 
-Tier 1 是真人/Agent 现场验收，不是仓库开箱即跑功能。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`；不可创建假账号、seed、provider 或更改配置来补齐。
+Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。Stage 11 T1 提供受控的本机 fixture、provider stub 与 HTTPS 底座；它不决定业务状态机、职责分离或 Scope B。
 
 ## 启动顺序（仅受控测试环境）
 
-1. 从 `.env.example` 建立**不入库**的本地环境文件，由环境管理员填入测试值。只记录变量类别，不记录值：会话/OTP sealing（`SESSION_SECRET`、`API_SESSION_SIGNING_KEY`、`OTP_SEALING_*`）、受控 MySQL（`DATABASE_URL`、DB timeout/TLS）、Worker provider webhook 的 URL/API key/health URL、以及需要时 `WORKER_INTERNAL_URL`。
+1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID>`。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。
 2. 冻结安装与构建：`pnpm install --frozen-lockfile`、`pnpm build:contracts`、`pnpm build:api`、`pnpm build:worker`、`pnpm build:web:preview`。构建失败停止，不改源码或依赖。
-3. 启动 Worker（必须先有受控测试 MySQL 和管理员提供的 SMS/email/file-scan stub；仓库没有 stub 启动命令）：`pnpm --filter @topology/worker start`。默认 `HOST=0.0.0.0`、`PORT=3002`；验收只能从 `127.0.0.1:3002/health/live` 和 `/health/ready` 探测，ready 非 `200` 即 BLOCKED。
-4. 启动 API：`pnpm --filter @topology/api start`，默认 `PORT=3001`。非 production 的 Tier 1 必须由管理员显式提供当前 domain 注册模块环境值 `DOMAIN_REGISTRATION_MODULES=../modules/r2-master-procurement/index.js,../r3/manifest.js`；否则 R2/R3 路由并不保证注册。探测 `http://127.0.0.1:3001/api/v1/health/live` 与 `/ready`，ready 非 `200` 即停止。生产模式要求 `WORKER_INTERNAL_URL`，本手册不启动生产模式。
-5. 启动 Web：`pnpm --filter @topology/web start:preview`（或为观察 UI 使用 `pnpm dev`）。默认 Web 端口以启动日志为准，不能硬编码为 3000；只有进程实际监听后才记录 origin。`GET /api/health` 的 OSS 缺失负向检查仅在受控 aliyun-runtime 进行，普通 preview `200` 不替代该证据。
+3. 执行 `pnpm e2e:start -- --run <RUN_ID>`，再执行 `pnpm e2e:status -- --run <RUN_ID>`。运行时仅监听 `127.0.0.1`：stub、Worker、API、Web 和 HTTPS proxy 都采用各自随机端口。HTTPS 使用只在临时运行目录存在的一日自签名证书；浏览器必须在人工检查前显式信任或接受该测试证书。
+4. `status` 必须同时确认 HTTPS、API/Worker ready、fixture SHA、三类 stub health、canonical migration、已记录服务监听项及 Docker label owner。任一失败即 `BLOCKED`，不得进入场景。
 
 每个进程用独立 stdout/stderr 文件和 PID 后台启动；对每个 health 最多轮询 12 次、间隔 5 秒。停止顺序：Web → API → Worker，然后由管理员按 `RUN_ID` 清理测试库资源；禁止杀死不属于本次 PID 的进程。
 
@@ -22,13 +21,17 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 
 ## 账号与 fixture pack 合同
 
-仓库没有统一 E2E seed/fixture pack。环境管理员必须交付已版本化、与当前 SHA 绑定的[fixture manifest 模板](./templates/fixture-manifest.json)，并以[evidence manifest 模板](./templates/evidence-manifest.json)记录每次运行；其 `ready=true` 仅在以下内容全具备时成立：
+`tests/e2e/fixtures/scope-a.fixture.json` 是版本化逻辑 pack；`prepare` 使用现有 MySQL schema/handler 可见的字段生成每运行一份实际 ID manifest。账号密码、OTP、cookie、CSRF、DB URL、stub key 仅存在于仓库外运行状态，永不写入 manifest、日志或 Git。以[evidence manifest 模板](./templates/evidence-manifest.json)记录每次运行；其 `ready=true` 仅在以下内容全具备时成立：
 
 - 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；账号 owner、测试 OTP 路径及过期/轮换时间。
 - 范围：组织、factory、tiered supplier、SKU、有效 BOM、warehouse、库存 batch、可用/锁定/待检数量、supplier-SKU 关系、有效价格与证据文件。
 - 单据：可决策 pending approval（含 version/effect）、采购计划/item、采购订单/item、生产/execution order、质量、库存 reservation/transfer、stocktake、shipment、return、invoice/payment/exception 等每个要执行场景所需 ID 与版本。
 - 支撑：测试上传文件/扫描结果、Outbox/Worker stub contract、数据库名/清理 owner、fixture SHA/生成时间/有效期。
 
-`database/tooling/bootstrap-admin.mjs` 只能在交互式 MySQL 环境中创建**首位**管理员及其审计记录；已有 active admin 时拒绝，且它不创建组织范围、工厂绑定、供应商、SKU、库存、审批、财务对象、OTP provider 或完整 E2E fixture。它不是 seed，不得用于绕过本门。
+`database/tooling/bootstrap-admin.mjs` 不是 E2E seed；生命周期不会调用它。
 
 任一字段、权限关系、可清理证明或 fixture SHA 缺失时，停止相关 A1/R2/R3 场景。真人确认 UI 可见性时也必须引用同一 manifest；Agent 不能以猜测的 ID、状态或业务日期补齐。
+
+## 生命周期与清理
+
+`prepare → start → status → evidence → stop → cleanup` 是唯一稳定顺序。`evidence` 可选 `--out <safe-json-path>`；其内容符合模板且不含秘密。`cleanup` 先停止本 RUN_ID 的 PID，再核对 Docker label 后销毁容器/临时库，并删除证书和运行时日志。它绝不删除未知容器、卷、端口、数据库或文件。`pnpm test:e2e-foundation` 验证两个 RUN_ID 隔离、重复调用、受控失败恢复、Secure cookie/CSRF、OTP RUN_ID 隔离、无出网 provider、fixture hash 与清理归零；该测试不执行业务场景。

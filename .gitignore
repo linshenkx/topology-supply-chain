@@ -13,6 +13,7 @@
 
 # testing
 /coverage
+/e2e-runtime/
 
 # next.js
 **/.next/

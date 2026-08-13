@@ -3,6 +3,7 @@
   "runId": "E2E-YYYYMMDD-HHMMSS-xxxx",
   "repositorySha": "<frozen-commit-sha>",
   "fixtureSha": "<fixture-pack-content-sha>",
+  "fixturePack": "scope-a-tier1",
   "owner": { "name": "<environment-owner>", "contact": "<approved-channel>" },
   "expiresAt": "<ISO-8601>",
   "ready": false,
@@ -13,6 +14,6 @@
     "supplierSkus": [], "priceEvidenceFiles": [], "approvals": [], "purchasePlans": [], "purchaseOrders": [],
     "productionOrders": [], "qualityInspections": [], "stocktakes": [], "shipments": [], "returns": [], "financeObjects": []
   },
-  "providers": { "sms": "stub-ref", "email": "stub-ref", "fileScan": "stub-ref", "workerReady": false },
+  "providers": { "sms": "local-stub", "email": "local-stub", "fileScan": "local-stub", "workerReady": false, "network": "loopback-only" },
   "database": { "loopbackOnly": true, "resourcePrefix": "E2E-...-", "cleanupOwner": "<owner>", "cleanupEvidence": null }
 }
