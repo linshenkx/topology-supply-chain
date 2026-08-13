@@ -12,16 +12,16 @@
 
 ## Deviations
 
-- 任务在依赖批次的 Vinext/Vite/RSC 簇前按合同暂停：正式上游不存在 `image-size >=2.0.3`，无法在不分叉上游或改变框架路线的条件下达到全树 High=0。
+- 用户已裁决恢复任务：`vinext@0.0.50 -> image-size@2.0.2` 的两项开发/预览构建链 High 作为有期限上游例外，其余项目可控 Critical/High 仍须清零，生产 audit 必须为 0。
 
 ## Tradeoffs
 
 - 使用标准 tar 而非新建通用归档包，保持可移植恢复证据并避免把历史 TypeScript 重新纳入工具链。
-- 依赖簇严格串行；Vinext/Vite/RSC 若只能通过框架替换或业务变化消除 High，将停止并请求裁决。
+- 依赖簇严格串行；既有 `image-size` 例外不自动类推到任何新发现，新的无正式安全路径依赖仍须停止并请求裁决。
 
 ## Open Questions
 
-- 需要用户裁决：等待 `image-size`/Vinext 正式修复，或另行授权极窄上游分叉及恶意 ICNS/JXL/HEIF hang 回归；当前授权不允许静默 override、patch-package、Git fork 或换框架。
+- 无。`image-size` 例外禁止 pnpm override、patch-package、私有/Git fork、虚构安全版本、忽略规则或框架替换，并将在项目内记录复核期限与触发条件。
 
 ## Verification Notes
 
@@ -34,4 +34,6 @@
 - ESLint 当前 0 errors / 0 warnings；Hooks 生命周期 3/3，覆盖 14 个 cleanup abort、toast callback identity 不触发重复初始请求、慢 tier 1 不覆盖快 tier 2。
 - deploy/release/rollback 定向门 30/30；标准化 migrator 无 `env_file`，环境精确为 `DATABASE_URL`、`DB_SSL`、`DB_SSL_REJECT_UNAUTHORIZED`。
 - release manifest hash 仍为 `50225ce...c94bc`，相对 accepted T1 的 migration/release manifest 路径 diff 为空；prod audit 0，全树仍 0 Critical / 14 High / 8 Moderate / 3 Low。
-- 两个独立只读质询与主写者 registry 复核一致：`image-size` latest `2.0.2` 且无 `2.0.3`；Vinext 当前 `0.0.50` 与 latest `1.0.0-beta.5` 都精确依赖 `2.0.2`；两项 High 要求 `>=2.0.3`。
+- 两个独立只读质询与主写者 registry 复核一致：`image-size` latest `2.0.2` 且无 `2.0.3`；Vinext 当前 `0.0.50` 与 latest `1.0.0-beta.5` 都精确依赖 `2.0.2`；两项 High 要求 `>=2.0.3`。用户已裁决将其作为唯一上游例外继续 Stage 9 T2。
+- ESLint 依赖簇以四个限定 major 的 override 修复 `brace-expansion` 与 `js-yaml` 六项 High；lint 与 baseline 均为 0 errors / 0 warnings，提交 `72ab929`。
+- Wrangler/Undici 簇使用首个通过 24 小时供应链年龄门的正式顶层组合 `@cloudflare/vite-plugin@1.51.1`、`wrangler@4.120.0`；其精确闭包为 `miniflare@5.20260801.1-alpha -> undici@7.29.0`、`esbuild@0.28.1`。未保留安装器建议的发布年龄例外。Web typecheck、preview 46 routes、system 4/4 通过；全树降至 0 Critical / 4 High / 2 Moderate / 0 Low，生产仍为 0。
