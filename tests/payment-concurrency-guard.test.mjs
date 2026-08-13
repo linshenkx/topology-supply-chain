@@ -250,42 +250,40 @@ test("row-lock helper fails closed outside MySQL or without transaction support"
   );
 });
 
-test("all payable-ledger writers use the shared lock protocol", () => {
-  const finance = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
-  const approvals = fs.readFileSync(new URL("../apps/web/app/api/approvals/route.ts", import.meta.url), "utf8");
-  const payment = finance.slice(finance.indexOf("async function recordPayment"));
-  const refund = finance.slice(finance.indexOf("async function recordRefund"), finance.indexOf("async function requestRecordCorrection"));
-  const replacement = finance.slice(finance.indexOf("async function linkReplacementInvoice"), finance.indexOf("async function recordRefund"));
-  const correction = approvals.slice(approvals.indexOf('approval.workflowType === "financial_record_correction"'));
+test("all payable-ledger writers retain serialized SELECT FOR UPDATE protocol", () => {
+  const finance = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
+  const approvals = fs.readFileSync(new URL("../apps/api/src/r3/approval-handler.ts", import.meta.url), "utf8");
+  const payment = finance.slice(finance.indexOf('if (action === "record_payment")'), finance.indexOf('if (action === "record_refund")'));
+  const refund = finance.slice(finance.indexOf('if (action === "record_refund")'), finance.indexOf('if (action === "request_record_correction")'));
+  const replacement = finance.slice(finance.indexOf('if (action === "link_replacement_invoice")'), finance.indexOf('if (action === "record_payment")'));
+  const correction = approvals.slice(approvals.indexOf('effect(context, "financial_record_correction"'));
 
-  assert.match(payment, /withLockedPaymentRequest\(db, paymentRequestId/);
-  assert.match(refund, /withLockedFinancialRows\(db, \{[\s\S]*paymentRequestIds: \[paymentRequestId\],[\s\S]*invoiceExceptionIds: \[invoiceExceptionId\]/);
-  assert.match(replacement, /withLockedInvoiceException\(db, invoiceExceptionId/);
-  assert.match(correction, /withLockedFinancialRows\(db, \{ paymentRequestIds, invoiceExceptionIds \}/);
-  assert.ok(refund.indexOf("evaluateExceptionRemediation") < refund.indexOf("tx.insert(paymentRecords)"));
-  assert.ok(replacement.indexOf("evaluateExceptionRemediation") < replacement.indexOf("tx.insert(replacementInvoiceLinks)"));
-  assert.ok(correction.indexOf("evaluateRefundCorrection") < correction.indexOf("await claimApproval(tx)"));
-  assert.match(correction, /reversesPaymentRecordId, lockedOriginal\.id/);
-  assert.ok(correction.indexOf("existingCorrection") < correction.indexOf("await claimApproval(tx)"));
-  assert.ok(correction.indexOf("await claimApproval(tx)") < correction.indexOf("tx.insert(paymentRecords)"));
-  assert.ok(correction.indexOf("tx.insert(paymentRecords)") < correction.indexOf("evaluatePayableLedger"));
-  assert.match(correction, /if \(!ledgerState\.withinBounds\)[\s\S]*new AccessError\(409/);
+  assert.match(payment, /factory_payment_requests WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(payment, /payment_records WHERE payment_request_id = \? ORDER BY id ASC FOR UPDATE/);
+  assert.match(refund, /factory_payment_requests WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(refund, /invoice_exceptions e[\s\S]*WHERE e\.id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(refund, /payment_records WHERE payment_request_id = \? ORDER BY id ASC FOR UPDATE/);
+  assert.match(replacement, /WHERE e\.id = \? LIMIT 1 FOR UPDATE/);
+  assert.ok(replacement.indexOf("Replacement coverage exceeds") < replacement.indexOf("INSERT INTO replacement_invoice_links"));
+  assert.match(correction, /payment_records WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(correction, /factory_payment_requests WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.ok(correction.indexOf("already corrected") < correction.indexOf("INSERT INTO payment_records"));
+  assert.ok(correction.indexOf("INSERT INTO payment_records") < correction.indexOf("Correction would violate the payable ledger"));
 });
 
-test("recordPayment locks, refreshes, validates, writes and recomputes in order", () => {
-  const route = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
-  const section = route.slice(route.indexOf("async function recordPayment"));
+test("record payment locks, validates step-up, writes and recomputes in order", () => {
+  const handler = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
+  const section = handler.slice(handler.indexOf('if (action === "record_payment")'), handler.indexOf('if (action === "record_refund")'));
   const ordered = [
-    "if (access.localPreview)",
-    "withLockedPaymentRequest(db, paymentRequestId",
-    "databaseObjectVersion(factoryPaymentRequests.updatedAt)",
-    "evaluatePaymentCapacity",
-    "if (capacity.wouldExceed)",
-    "consumeVerifiedStepUp(tx",
-    "tx.insert(paymentRecords)",
-    "const updatedLedger",
-    "evaluatePayableLedger",
-    "tx.update(factoryPaymentRequests)",
+    "FROM factory_payment_requests WHERE id = ? LIMIT 1 FOR UPDATE",
+    "await stepUp(command",
+    "objectVersion: objectVersion(paymentRequest)",
+    "FROM payment_records WHERE payment_request_id = ? ORDER BY id ASC FOR UPDATE",
+    "const net = payableNet",
+    "if (net + amount",
+    "INSERT INTO payment_records",
+    "const newNet = net + amount",
+    "UPDATE factory_payment_requests",
   ];
   let cursor = -1;
   for (const marker of ordered) {
@@ -293,18 +291,17 @@ test("recordPayment locks, refreshes, validates, writes and recomputes in order"
     assert.ok(next > cursor, `${marker} must follow the preceding guarded step`);
     cursor = next;
   }
-  assert.doesNotMatch(section, /withDbTransaction/);
-  assert.match(section, /\["generated", "submitted_to_finance", "partially_paid"\][\s\S]*includes\(paymentRequest\.status\)/);
+  assert.match(section, /\["generated", "submitted_to_finance", "partially_paid"\][\s\S]*includes\(String\(paymentRequest\.status\)\)/);
 });
 
 test("correction requests and finance UI share the payable classification", () => {
-  const financeRoute = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
+  const financeRoute = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
   const financeUi = fs.readFileSync(new URL("../apps/web/app/components/FinanceWorkspace.tsx", import.meta.url), "utf8");
   const requestSection = financeRoute.slice(
-    financeRoute.indexOf("async function requestRecordCorrection"),
-    financeRoute.indexOf("async function createInvoice"),
+    financeRoute.indexOf('if (action === "request_record_correction")'),
+    financeRoute.indexOf('requireRole(command.access, ["admin", "supply_chain_lead"])'),
   );
-  assert.match(requestSection, /\["payment", "refund"\][\s\S]*includes\(original\.recordType\)/);
+  assert.match(requestSection, /\["payment", "refund"\][\s\S]*includes\(String\(original\.recordType\)\)/);
   assert.match(financeUi, /import \{ isPayableLedgerRecord \}/);
   assert.match(financeUi, /data\.payments\.filter\(isPayableLedgerRecord\)/);
   assert.doesNotMatch(financeUi, /row\.recordType === "payment"/);

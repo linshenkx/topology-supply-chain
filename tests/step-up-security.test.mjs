@@ -109,15 +109,17 @@ test("affected-row normalization supports D1 and MySQL mutation results", async 
 });
 
 test("finance actions no longer trust a client smsVerified boolean", () => {
-  const route = read("apps/web/app/api/finance/route.ts");
-  assert.doesNotMatch(route, /body\.smsVerified/);
+  const handler = read("apps/api/src/r3/finance-handler.ts");
+  const legacy = read("apps/web/app/api/finance/route.ts");
+  assert.doesNotMatch(handler, /body\.smsVerified/);
   for (const scope of [
-    "finance:record_payment:",
-    "finance:request_record_correction:",
-    "finance:release_invoice_risk:",
+    'objectType: "finance:record_payment"',
+    'objectType: "finance:request_record_correction"',
+    'objectType: "finance:release_invoice_risk"',
   ]) {
-    assert.match(route, new RegExp(scope));
+    assert.ok(handler.includes(scope));
   }
+  assert.match(legacy, /retiredPlatformRoute\("\/api\/v1\/finance"\)/);
 
   const clients = [
     read("apps/web/app/components/FinanceWorkspace.tsx"),
@@ -135,6 +137,7 @@ test("approval proofs are bound to the selected approval and consumed server-sid
   const handler = read("apps/api/src/r3/approval-handler.ts");
   const page = read("apps/web/app/page.tsx");
   assert.doesNotMatch(route, /body\.smsVerified/);
+  assert.match(route, /retiredPlatformRoute\("\/api\/v1\/approvals"\)/);
   assert.match(handler, /objectType: "approval"/);
   assert.match(handler, /objectId: String\(id\)/);
   assert.match(handler, /consumeStepUpClaim/);
@@ -143,41 +146,31 @@ test("approval proofs are bound to the selected approval and consumed server-sid
 });
 
 test("approval proof consumption and pending-state CAS share the claim transaction", () => {
-  const route = read("apps/web/app/api/approvals/route.ts");
-  const claimStart = route.indexOf("const claimApproval");
-  const claimEnd = route.indexOf("if (!correctionApproval)", claimStart);
-  const claim = route.slice(claimStart, claimEnd);
-  assert.ok(claimStart >= 0 && claimEnd > claimStart);
-  assert.ok(claim.indexOf("lockApprovalRequestRow") < claim.indexOf("consumeVerifiedStepUp"));
-  assert.ok(claim.indexOf("databaseObjectVersion") < claim.indexOf("consumeVerifiedStepUp"));
-  assert.ok(claim.indexOf("consumeVerifiedStepUp") < claim.indexOf("executeAffected"));
-  assert.match(claim, /eq\(approvalRequests\.status, "pending"\)/);
-  assert.match(claim, /claimed !== 1/);
-  assert.match(claim, /new AccessError\(409/);
-  assert.match(route, /await withDbTransaction\(db, claimApproval\)/);
-
-  const correctionTransaction = route.slice(
-    route.indexOf("await withLockedFinancialRows(db", route.indexOf('approval.workflowType === "financial_record_correction"')),
-  );
-  assert.ok(correctionTransaction.indexOf("await claimApproval(tx)") >= 0);
-  assert.ok(correctionTransaction.indexOf("await claimApproval(tx)") < correctionTransaction.indexOf("await tx.insert(paymentRecords)"));
-  assert.doesNotMatch(route, /await (?:db|tx)\.update\(approvalRequests\)\.set\(approvalUpdate\)/);
+  const handler = read("apps/api/src/r3/approval-handler.ts");
+  const decision = handler.slice(handler.indexOf("export async function decideApproval"), handler.indexOf("function canonical", handler.indexOf("export async function decideApproval")));
+  const rowLock = handler.slice(handler.indexOf("async function approvalRow"), handler.indexOf("export async function decideApproval"));
+  assert.match(rowLock, /FROM approval_requests WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.ok(decision.indexOf("const approval = await approvalRow(command.transaction") < decision.indexOf("await consumeStepUpClaim(command.transaction"));
+  assert.ok(decision.indexOf("await consumeStepUpClaim(command.transaction") < decision.indexOf("const claimed = await command.transaction.execute"));
+  assert.ok(decision.indexOf("const claimed = await command.transaction.execute") < decision.indexOf("const effectResult = await effect.execute"));
+  assert.match(decision, /WHERE id = \? AND status = 'pending'/);
+  assert.match(decision, /claimed\.affectedRows !== 1/);
+  assert.match(decision, /new PlatformError\(409, "VERSION_CONFLICT"/);
+  assert.match(decision, /transaction: command\.transaction/);
 });
 
 test("finance locks and rereads authoritative versions before consuming proofs", () => {
-  const route = read("apps/web/app/api/finance/route.ts");
-  for (const marker of ["withLockedInvoiceException", "lockPaymentRecordRow", "withLockedPaymentRequest"]) {
-    assert.match(route, new RegExp(marker));
-  }
+  const route = read("apps/api/src/r3/finance-handler.ts");
   for (const scope of ["release_invoice_risk", "request_record_correction", "record_payment"]) {
-    const start = route.indexOf(`action: "${scope}"`);
+    const start = route.indexOf(`objectType: "finance:${scope}"`);
     assert.ok(start >= 0);
   }
-  assert.match(route, /objectVersion: exception\.objectVersion/);
-  assert.match(route, /objectVersion: original\.objectVersion/);
-  assert.match(route, /objectVersion: paymentRequest\.objectVersion/);
-  assert.match(route, /eq\(invoiceExceptions\.updatedAt, exception\.updatedAt\)/);
-  assert.match(route, /eq\(factoryPaymentRequests\.updatedAt, paymentRequest\.updatedAt\)/);
+  assert.match(route, /objectVersion: objectVersion\(exception\)/);
+  assert.match(route, /objectVersion: objectVersion\(original\)/);
+  assert.match(route, /objectVersion: objectVersion\(paymentRequest\)/);
+  assert.match(route, /FROM invoice_exceptions WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(route, /FROM payment_records WHERE id = \? LIMIT 1 FOR UPDATE/);
+  assert.match(route, /FROM factory_payment_requests WHERE id = \? LIMIT 1 FOR UPDATE/);
 });
 
 test("stored OTP hashes are salted with their challenge number", () => {

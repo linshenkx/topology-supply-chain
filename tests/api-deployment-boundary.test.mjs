@@ -163,7 +163,8 @@ test("workspace dependency policy excludes vulnerable XLSX and fast-uri releases
   assert.equal(rootPackage.dependencies.xlsx, undefined);
   assert.equal(webPackage.dependencies.xlsx, "file:../../vendor/xlsx-0.20.3.tgz");
   assert.equal(apiPackage.dependencies.xlsx, undefined);
-  assert.match(workspace, /^overrides:\n  fast-uri@3: 3\.1\.5$/m);
+  assert.match(workspace, /^  fast-uri@3: 3\.1\.5$/m);
+  assert.match(workspace, /^  esbuild@0\.18\.20: 0\.25\.0$/m);
   assert.doesNotMatch(lockfile, /xlsx@0\.18\.5|fast-uri@3\.1\.4/u);
   assert.match(lockfile, /xlsx@file:vendor\/xlsx-0\.20\.3\.tgz/u);
   assert.match(lockfile, /fast-uri@3\.1\.5/u);
