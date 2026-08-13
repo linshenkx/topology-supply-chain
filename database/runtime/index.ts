@@ -14,8 +14,7 @@ if (isAliyunRuntime()) {
   // production secrets are intentionally unavailable.
   createProductionDb = getMysqlDb;
 } else {
-  const workersModuleName = "cloudflare:workers";
-  const workers = await import(workersModuleName) as {
+  const workers = await import("cloudflare:workers") as {
     env?: { DB?: Parameters<typeof drizzle>[0] };
   };
   previewBinding = workers.env?.DB;

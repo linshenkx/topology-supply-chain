@@ -4,7 +4,6 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import "./shipping.css";
 import "./audit.css";
 import "./performance.css";
-import * as XLSX from "xlsx";
 import PurchaseWorkspace from "./components/PurchaseWorkspace";
 import ProductionWorkspace from "./components/ProductionWorkspace";
 import InventoryWorkspace from "./components/InventoryWorkspace";
@@ -408,6 +407,7 @@ export default function Home() {
       if (file.size > 20 * 1024 * 1024) throw new Error("单个文件不能超过 20MB");
       if (!/\.(xlsx|xls)$/iu.test(file.name)) throw new Error("仅支持 .xlsx 或 .xls 文件");
       setImportResult("正在预检并安全归档，请勿关闭窗口…");
+      const XLSX = await import("xlsx");
       const workbook = XLSX.read(await file.arrayBuffer(), { type: "array", cellDates: true });
       const sheets = workbook.SheetNames.map(name => ({
         name,

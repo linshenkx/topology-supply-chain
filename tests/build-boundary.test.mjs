@@ -79,3 +79,23 @@ test("Aliyun builds pin the production runtime without requiring secrets", async
   assert.match(dockerfile, /ENV DEPLOY_TARGET=aliyun/);
   assert.match(dockerfile, /RUN pnpm build:aliyun/);
 });
+
+test("project-controlled imports remain statically analyzable and XLSX stays off the initial client path", async () => {
+  const page = await readFile("apps/web/app/page.tsx", "utf8");
+  const runtimeEnv = await readFile("apps/web/app/lib/runtime-env.ts", "utf8");
+  const databaseRuntime = await readFile("database/runtime/index.ts", "utf8");
+
+  assert.doesNotMatch(page, /^import[^\n]+from ["']xlsx["']/mu);
+  const sizeCheck = page.indexOf("file.size > 20 * 1024 * 1024");
+  const extensionCheck = page.indexOf("/\\.(xlsx|xls)$/iu.test(file.name)");
+  const lazyImport = page.indexOf('await import("xlsx")');
+  const parse = page.indexOf("XLSX.read(await file.arrayBuffer()");
+  assert.ok(sizeCheck > 0 && sizeCheck < lazyImport);
+  assert.ok(extensionCheck > sizeCheck && extensionCheck < lazyImport);
+  assert.ok(lazyImport < parse);
+
+  assert.match(runtimeEnv, /await import\(["']cloudflare:workers["']\)/u);
+  assert.match(databaseRuntime, /await import\(["']cloudflare:workers["']\)/u);
+  assert.doesNotMatch(runtimeEnv, /import\((?:moduleName|workersModuleName)\)/u);
+  assert.doesNotMatch(databaseRuntime, /import\((?:moduleName|workersModuleName)\)/u);
+});
