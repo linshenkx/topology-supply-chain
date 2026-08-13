@@ -5,6 +5,7 @@
 - Base: accepted T1 `228de77b97e42e8b571871048c425ebd5712cbc0`.
 - Branch: `codex/stage9-t2-quality-security`; all commits are one linear parent chain.
 - Scope: non-business quality/security debt only. Business rules, public API/response/authorization semantics, schema, migration bytes, writer/command/resource identity, deploy/rollback behavior and Scope A ownership remain frozen.
+- One authorized narrow acceptance revision restores SupplierWorkspace factory-name selection: a non-empty supplier factory list remains authoritative, while an empty supplier list falls back to relation-visible factories in both initial-load and reload paths. Executable empty/non-empty counterexamples pass without adding requests or changing hook lifecycle.
 
 ## Batch results
 

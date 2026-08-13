@@ -13,6 +13,13 @@ type Relation = { id: number; factoryId: number; supplierId: number; sku: string
 
 const today = new Date().toISOString().slice(0, 10);
 
+export function selectSupplierFactories(
+  supplierFactories: Factory[] | undefined,
+  relationFactories: Factory[] | undefined,
+) {
+  return supplierFactories?.length ? supplierFactories : relationFactories;
+}
+
 export default function SupplierWorkspace({ toast }: { toast: Toast }) {
   const [tab, setTab] = useState<"supplier" | "relation">("supplier");
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
@@ -31,7 +38,7 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
     const relationData = relationResponse.ok ? await relationResponse.json() : null;
     if (supplierData) setSuppliers(supplierData.suppliers ?? []);
     if (relationData) { setRelations(relationData.relations ?? []); setSkus(relationData.skus ?? []); }
-    const nextFactories = supplierData?.factories ?? relationData?.factories;
+    const nextFactories = selectSupplierFactories(supplierData?.factories, relationData?.factories);
     if (nextFactories) setFactories(nextFactories);
   };
   useEffect(() => {
@@ -46,7 +53,7 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
         if (signal.aborted) return;
         if (nextSupplier) { setSuppliers(nextSupplier.suppliers ?? []); }
         if (nextRelation) { setRelations(nextRelation.relations ?? []); setSkus(nextRelation.skus ?? []); }
-        const nextFactories = nextSupplier?.factories ?? nextRelation?.factories;
+        const nextFactories = selectSupplierFactories(nextSupplier?.factories, nextRelation?.factories);
         if (nextFactories) setFactories(nextFactories);
       })
       .catch(error => { if (!signal.aborted) throw error; });

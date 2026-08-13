@@ -7,6 +7,10 @@ const {
   buildSupplierPerformanceWeightCommand,
   loadSupplierPerformanceSnapshot,
 } = await tsImport("../apps/web/app/lib/supplier-performance-lifecycle.ts", import.meta.url);
+const { selectSupplierFactories } = await tsImport(
+  "../apps/web/app/components/SupplierWorkspace.tsx",
+  import.meta.url,
+);
 
 const root = new URL("../", import.meta.url);
 
@@ -54,8 +58,19 @@ test("toast callback identity changes do not become initial-request dependencies
     assert.doesNotMatch(source, /useEffect\([\s\S]*?\},\s*\[[^\]]*toast[^\]]*\]\)/u, path);
   }
   const supplier = await readFile(new URL("apps/web/app/components/SupplierWorkspace.tsx", root), "utf8");
-  assert.match(supplier, /const nextFactories = nextSupplier\?\.factories \?\? nextRelation\?\.factories/u);
+  assert.equal(supplier.match(/const nextFactories = selectSupplierFactories\(/gu)?.length, 2);
   assert.doesNotMatch(supplier, /if \(!factories\.length/u);
+});
+
+test("empty supplier factories use named relation factories", () => {
+  const relationFactories = [{ id: 7, code: "F-007", name: "命名工厂", status: "active" }];
+  assert.equal(selectSupplierFactories([], relationFactories), relationFactories);
+});
+
+test("non-empty supplier factories remain authoritative", () => {
+  const supplierFactories = [{ id: 8, code: "F-008", name: "供应商接口工厂", status: "active" }];
+  const relationFactories = [{ id: 7, code: "F-007", name: "关系接口工厂", status: "active" }];
+  assert.equal(selectSupplierFactories(supplierFactories, relationFactories), supplierFactories);
 });
 
 function deferredResponse(payload) {
