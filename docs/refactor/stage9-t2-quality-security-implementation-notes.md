@@ -37,3 +37,5 @@
 - 两个独立只读质询与主写者 registry 复核一致：`image-size` latest `2.0.2` 且无 `2.0.3`；Vinext 当前 `0.0.50` 与 latest `1.0.0-beta.5` 都精确依赖 `2.0.2`；两项 High 要求 `>=2.0.3`。用户已裁决将其作为唯一上游例外继续 Stage 9 T2。
 - ESLint 依赖簇以四个限定 major 的 override 修复 `brace-expansion` 与 `js-yaml` 六项 High；lint 与 baseline 均为 0 errors / 0 warnings，提交 `72ab929`。
 - Wrangler/Undici 簇使用首个通过 24 小时供应链年龄门的正式顶层组合 `@cloudflare/vite-plugin@1.51.1`、`wrangler@4.120.0`；其精确闭包为 `miniflare@5.20260801.1-alpha -> undici@7.29.0`、`esbuild@0.28.1`。未保留安装器建议的发布年龄例外。Web typecheck、preview 46 routes、system 4/4 通过；全树降至 0 Critical / 4 High / 2 Moderate / 0 Low，生产仍为 0。
+- Vinext/Vite/RSC 簇只升级 `vite 8.0.13 -> 8.0.16` 与 React/ReactDOM/RSC 同步 `19.2.6 -> 19.2.8`；Vinext 和 `@vitejs/plugin-rsc` 保持冻结。Web typecheck、preview 46 routes、Next 47/47、system 4/4 通过。
+- `audit:policy` 保留原生 full-tree audit 的非零结果，同时强制生产 audit 全零、Critical=0、High 精确且仅为两条 dev-only `image-size@2.0.2` 例外。例外在 `2026-09-12` 到期，或遇 image-size 正式修复、Vinext 依赖变化、advisory/输入面变化时提前复核。当前全树为 0 Critical / 2 High / 1 Moderate / 0 Low。

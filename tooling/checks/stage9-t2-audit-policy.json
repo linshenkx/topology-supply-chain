@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "reviewedAt": "2026-08-13",
+  "reviewBy": "2026-09-12",
+  "productionRequirement": "pnpm audit --prod must report zero vulnerabilities",
+  "fullTreeRequirement": "Critical must be zero and every High must exactly match this time-bound upstream exception list",
+  "exceptions": [
+    {
+      "githubAdvisoryId": "GHSA-5p2g-fcmc-qvqq",
+      "module": "image-size",
+      "severity": "high",
+      "installedVersion": "2.0.2",
+      "dependencyPath": "apps__web>vinext>image-size",
+      "dependencyChain": "@topology/web (dev) -> vinext@0.0.50 -> image-size@2.0.2",
+      "scope": "Vinext development and preview-build metadata image-dimension analysis; not present in the production dependency audit",
+      "upstreamState": "Advisory requests >=2.0.3, but npm latest is 2.0.2 and no formal patched release exists; vinext@0.0.50 and vinext@1.0.0-beta.5 both pin 2.0.2",
+      "reviewTriggers": [
+        "image-size publishes a formal patched release",
+        "Vinext stops pinning image-size@2.0.2",
+        "the advisory, dependency path, or project input surface changes",
+        "the reviewBy date is reached"
+      ]
+    },
+    {
+      "githubAdvisoryId": "GHSA-w3rx-r6r6-pgpr",
+      "module": "image-size",
+      "severity": "high",
+      "installedVersion": "2.0.2",
+      "dependencyPath": "apps__web>vinext>image-size",
+      "dependencyChain": "@topology/web (dev) -> vinext@0.0.50 -> image-size@2.0.2",
+      "scope": "Vinext development and preview-build metadata image-dimension analysis; not present in the production dependency audit",
+      "upstreamState": "Advisory requests >=2.0.3, but npm latest is 2.0.2 and no formal patched release exists; vinext@0.0.50 and vinext@1.0.0-beta.5 both pin 2.0.2",
+      "reviewTriggers": [
+        "image-size publishes a formal patched release",
+        "Vinext stops pinning image-size@2.0.2",
+        "the advisory, dependency path, or project input surface changes",
+        "the reviewBy date is reached"
+      ]
+    }
+  ]
+}
