@@ -4,6 +4,6 @@
   "contract": "mysql.scope-a.0000-0004",
   "description": "Logical, versioned Scope A fixture contract. Runtime IDs are generated only by tooling/e2e/fixtures.mjs.",
   "accounts": ["admin", "supply_chain", "factory", "approver", "finance", "denied"],
-  "entities": ["factory", "supplier", "sku", "bom", "warehouse", "batch", "supplierSku", "pendingApproval", "purchasePlan", "purchaseOrder", "executionOrder", "qualityInspection", "stocktake", "shipment", "return", "invoice", "paymentRequest"],
+  "entities": ["factory", "supplier", "pendingSupplier", "finishedSku", "componentSku", "bom", "warehouse", "batch", "supplierSku", "pendingApproval", "purchasePlan", "purchaseOrder", "executionOrder", "qualityInspection", "stocktake", "shipment", "return", "invoice", "paymentRequest"],
   "scopeB": ["purchase-receipt", "bom-material-consumption", "quality-inventory-release", "real-provider", "real-payment"]
 }

@@ -21,14 +21,14 @@ pnpm e2e:cleanup
 
 ## Fail-closed ready
 
-`status` 只有在以下全部通过时返回 ready：Docker label owner、fixture SHA、canonical migration 5/5、stub health、Worker ready、API ready、HTTPS、全量进程 PID。任意一项失败都会是 `blocked`，不可开始 T2 场景。
+`status` 只有在以下全部通过时返回 ready：当前 repository SHA、实际 build/entry identity、fixture JSON/seed module SHA、canonical migration 5/5、声明的冻结 fence profile 与数据库实际状态、Docker label owner、stub health、Worker ready、API ready、HTTPS、全量带 RUN_ID owner token 的进程 PID。任意一项失败都会是 `blocked`，不可开始 T2 场景。
 
-测试库只开启现有 `auth.commands`（验证 HTTPS Secure cookie/CSRF）和 `outbox.worker`（验证 stub-ready）。其他 writer fence 仍遵循既有受控 activation 合同；T2 在业务 owner 明确其 resource 集合与 activation evidence 前不得自行开启它们。
+默认 profile `foundation-auth-worker` 只开启现有 `auth.commands`（验证 HTTPS Secure cookie/CSRF）和 `outbox.worker`（验证 stub-ready）。测试专用的冻结 profile allowlist 还提供按 T2 场景精确选择的入口；不接受任意资源名或 blanket enable，`status` 会复核声明 profile 与数据库实际状态。它不替代业务 activation evidence。
 
-`cleanup` 只按 `RUN_ID` 状态文件和 `topology.e2e.run_id` label 删除资源；不会触碰未知容器、库、卷、进程或文件。它同时移除本运行的证书和日志。失败后的日志可先用于诊断，再运行同一精确 cleanup。
+`cleanup` 只按已完整性校验的 `RUN_ID` 状态文件和 `topology.e2e.run_id` label 删除资源；在 taskkill 前严格验证 PID wrapper 的 RUN_ID、随机 owner token 与 entry。不会触碰未知容器、库、卷、进程或文件。它同时移除本运行的证书和日志。失败后的日志可先用于诊断，再运行同一精确 cleanup。
 
 ## T2 可用 fixture refs
 
-每次 `prepare` 写入运行时 fixture manifest，其中有：`accounts.admin`、`supply_chain`、`factory`、`approver`、`finance`、`denied`，以及 `factoryId`、`supplierId`、`sku`、`bomId`、`warehouseId`、`batchId`、`supplierSkuId`、`approvalId`、`planId`、`planItemId`、`purchaseOrderId`、`orderItemId`、`executionOrderId`、`qualityInspectionId`、`stocktakeId`、`shipmentId`、`returnId`、`invoiceId`、`paymentRequestId`。T2 必须从该 manifest 读取，不得猜测 ID 或状态。
+每次 `prepare` 写入运行时 fixture manifest，其中有：`accounts.admin`、`supply_chain`、`factory`、`approver`、`finance`、`denied`，以及 `factoryId`、`supplierId`、`pendingSupplierId`、已区分的 `sku`（finished）/`componentSku`、`bomId`、`warehouseId`、`batchId`、`supplierSkuId`、`approvalId`（`r2.supplier_onboarding`）、`planId`、`planItemId`、`purchaseOrderId`、`orderItemId`、`executionOrderId`、`qualityInspectionId`、`stocktakeId`、`shipmentId`、`returnId`、`invoiceId`、`paymentRequestId`。T2 必须从该 manifest 读取，不得猜测 ID 或状态。
 
-仍需业务裁决的项保持 blocked：审批职责分离、供应商价格/绩效、采购状态、盘点差异冻结、物流异常与退货财务、税务/月结。Scope B（采购收货、实际 BOM 消耗、质检驱动库存、真实 provider/payment）仍不在此底座范围。
+已有 Scope A 自动化 E2E 的既有覆盖不因本底座而被全局标为业务 blocked。本底座只将尚未裁决的业务歧义（审批职责分离、供应商价格/绩效、采购状态、盘点差异冻结、物流异常与退货财务、税务/月结）和 Scope B（采购收货、实际 BOM 消耗、质检驱动库存、真实 provider/payment）列为后续场景阻塞项。

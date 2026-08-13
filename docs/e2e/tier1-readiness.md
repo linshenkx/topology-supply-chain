@@ -4,12 +4,12 @@ Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。
 
 ## 启动顺序（仅受控测试环境）
 
-1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID>`。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。
+1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID> --fence-profile foundation-auth-worker`。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。fence profile 仅接受测试代码中的冻结精确 resource 集合，绝不存在全量启用入口。
 2. 冻结安装与构建：`pnpm install --frozen-lockfile`、`pnpm build:contracts`、`pnpm build:api`、`pnpm build:worker`、`pnpm build:web:preview`。构建失败停止，不改源码或依赖。
 3. 执行 `pnpm e2e:start -- --run <RUN_ID>`，再执行 `pnpm e2e:status -- --run <RUN_ID>`。运行时仅监听 `127.0.0.1`：stub、Worker、API、Web 和 HTTPS proxy 都采用各自随机端口。HTTPS 使用只在临时运行目录存在的一日自签名证书；浏览器必须在人工检查前显式信任或接受该测试证书。
-4. `status` 必须同时确认 HTTPS、API/Worker ready、fixture SHA、三类 stub health、canonical migration、已记录服务监听项及 Docker label owner。任一失败即 `BLOCKED`，不得进入场景。
+4. `status` 必须同时确认当前 repository SHA、实际 build/entry identity、fixture JSON 与 seed module SHA、声明 profile 与数据库 writer-fence 状态、HTTPS、API/Worker ready、三类 stub health、canonical migration、已记录服务监听项/进程 owner 及 Docker label owner。任一失败即 `BLOCKED`，不得进入场景。
 
-每个进程用独立 stdout/stderr 文件和 PID 后台启动；对每个 health 最多轮询 12 次、间隔 5 秒。停止顺序：Web → API → Worker，然后由管理员按 `RUN_ID` 清理测试库资源；禁止杀死不属于本次 PID 的进程。
+每个进程用独立 stdout/stderr 文件和带随机 owner token 的 wrapper PID 后台启动；停止/清理会先校验 wrapper 命令行的 `RUN_ID`、token 与 entry，状态文件被篡改、PID 重用或非 owner PID 会 fail-closed，绝不执行 `taskkill`。所有子进程使用显式安全环境 allowlist，清除宿主 provider URL/key、代理与生产凭据；仅注入 `127.0.0.1` stub URL。
 
 ## 认证、cookie 与 CSRF
 
@@ -34,4 +34,4 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 
 ## 生命周期与清理
 
-`prepare → start → status → evidence → stop → cleanup` 是唯一稳定顺序。`evidence` 可选 `--out <safe-json-path>`；其内容符合模板且不含秘密。`cleanup` 先停止本 RUN_ID 的 PID，再核对 Docker label 后销毁容器/临时库，并删除证书和运行时日志。它绝不删除未知容器、卷、端口、数据库或文件。`pnpm test:e2e-foundation` 验证两个 RUN_ID 隔离、重复调用、受控失败恢复、Secure cookie/CSRF、OTP RUN_ID 隔离、无出网 provider、fixture hash 与清理归零；该测试不执行业务场景。
+`prepare → start → status → evidence → stop → cleanup` 是唯一稳定顺序。`evidence` 可选 `--out <safe-json-path>`；其内容符合模板且不含秘密。`cleanup` 先完成 PID owner 校验与停止，再核对 Docker label 后销毁容器/临时库，并删除证书和运行时日志。它绝不删除未知容器、卷、端口、数据库或文件。stub 的 `/control`、`/events` 同时要求 control token 与 RUN_ID；`/events` 只含不可逆的非秘密结构元数据，绝不含 payload hash 或 OTP oracle。`pnpm test:e2e-foundation` 验证双 RUN_ID 并发启动/状态、重复调用、部分启动失败恢复、Secure cookie/CSRF、OTP/control/events 隔离、hostile env 不出网、fixture/build/fence identity 与端口/PID/容器/临时目录清理归零；该测试不执行业务场景。

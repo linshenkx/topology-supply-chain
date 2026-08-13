@@ -1,5 +1,5 @@
 import { createServer } from "node:http";
-import { createHash, timingSafeEqual } from "node:crypto";
+import { timingSafeEqual } from "node:crypto";
 
 const port = Number(process.env.E2E_STUB_PORT);
 const runId = process.env.E2E_RUN_ID;
@@ -22,16 +22,16 @@ function providerFrom(pathname) {
   const match = /^\/(email|sms|scan)\/(health|deliver)$/.exec(pathname);
   return match ? { provider: match[1], operation: match[2] } : undefined;
 }
-function redact(payload) {
-  const parsed = JSON.parse(payload || "{}");
-  return { bodySha256: createHash("sha256").update(payload || "{}").digest("hex"), keys: Object.keys(parsed).sort().filter((key) => !["code", "sealedCode", "password", "token"].includes(key)) };
-}
+function runAuthorized(request, url, token) { return authorized(request.headers["x-e2e-control-token"], token) && url.searchParams.get("runId") === runId; }
 
 const server = createServer(async (request, response) => {
   if (!loopback.has(request.socket.remoteAddress ?? "")) return send(response, 403, { error: "loopback_required" });
   const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
-  if (url.pathname === "/health") return send(response, 200, { status: "ok", runId });
-  if (url.pathname === "/events") return send(response, 200, { runId, events: state.events });
+  if (url.pathname === "/health") return send(response, 200, { status: "ok", runId, environmentIsolated: process.env.E2E_HOSTILE_PROVIDER_URL === undefined && process.env.HTTPS_PROXY === undefined && process.env.HTTP_PROXY === undefined });
+  if (url.pathname === "/events") {
+    if (!runAuthorized(request, url, controlToken)) return send(response, 403, { error: "forbidden" });
+    return send(response, 200, { runId, events: state.events });
+  }
   if (url.pathname === "/otp" && request.method === "GET") {
     if (!authorized(request.headers["x-e2e-otp-token"], otpToken) || url.searchParams.get("runId") !== runId) return send(response, 403, { error: "forbidden" });
     if (!state.otp) return send(response, 404, { error: "otp_unavailable" });
@@ -40,12 +40,12 @@ const server = createServer(async (request, response) => {
     return send(response, 200, { code, runId });
   }
   if (url.pathname === "/control" && request.method === "POST") {
-    if (!authorized(request.headers["x-e2e-control-token"], controlToken)) return send(response, 403, { error: "forbidden" });
+    if (!runAuthorized(request, url, controlToken)) return send(response, 403, { error: "forbidden" });
     let raw = ""; for await (const chunk of request) raw += chunk;
     const body = JSON.parse(raw || "{}");
     if (!["email", "sms", "scan"].includes(body.provider) || !["ok", "fail_once", "fail"].includes(body.mode)) return send(response, 400, { error: "invalid_control" });
     state.modes[body.provider] = body.mode;
-    return send(response, 200, { status: "ok" });
+    return send(response, 200, { status: "ok", runId });
   }
   const target = providerFrom(url.pathname);
   if (!target || request.method !== (target.operation === "health" ? "GET" : "POST")) return send(response, 404, { error: "not_found" });
@@ -59,7 +59,9 @@ const server = createServer(async (request, response) => {
   }
   const payload = JSON.parse(raw || "{}");
   if (target.provider === "sms" && typeof payload.code === "string" && /^\d{6}$/.test(payload.code)) state.otp = payload.code;
-  state.events.push({ provider: target.provider, at: new Date().toISOString(), ...redact(raw), runId });
+  // Events are intentionally structural only: no payload digest, keys, OTP or
+  // any other value that could become an offline guessing oracle.
+  state.events.push({ provider: target.provider, operation: "deliver", outcome: "accepted", at: new Date().toISOString(), runId });
   return send(response, 200, target.provider === "scan" ? { status: "clean" } : { status: "ok" });
 });
 server.listen(port, "127.0.0.1");
