@@ -20,6 +20,12 @@ const eslintConfig = defineConfig([
     "next-env.d.ts",
   ]),
   {
+    settings: {
+      next: { rootDir: "apps/web/" },
+      react: { version: "19.2" },
+    },
+  },
+  {
     files: ["tests/**/*.{js,mjs,cjs,ts}", "tooling/**/*.{js,mjs,cjs,ts}", "database/tooling/**/*.{js,mjs,cjs,ts}"],
     rules: {
       "@next/next/no-assign-module-variable": "off",

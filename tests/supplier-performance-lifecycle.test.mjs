@@ -40,6 +40,24 @@ test("all 14 initial request effects abort during cleanup without async wrappers
   assert.equal(effects, 14);
 });
 
+test("toast callback identity changes do not become initial-request dependencies", async () => {
+  const toastEffects = [
+    "apps/web/app/components/AuditWorkspace.tsx",
+    "apps/web/app/components/StocktakeWorkspace.tsx",
+    "apps/web/app/components/SupplierPerformanceWorkspace.tsx",
+    "apps/web/app/components/SupplierPriceWorkspace.tsx",
+    "apps/web/app/page.tsx",
+  ];
+  for (const path of toastEffects) {
+    const source = await readFile(new URL(path, root), "utf8");
+    assert.match(source, /useEffectEvent/u, path);
+    assert.doesNotMatch(source, /useEffect\([\s\S]*?\},\s*\[[^\]]*toast[^\]]*\]\)/u, path);
+  }
+  const supplier = await readFile(new URL("apps/web/app/components/SupplierWorkspace.tsx", root), "utf8");
+  assert.match(supplier, /const nextFactories = nextSupplier\?\.factories \?\? nextRelation\?\.factories/u);
+  assert.doesNotMatch(supplier, /if \(!factories\.length/u);
+});
+
 function deferredResponse(payload) {
   let resolve;
   const response = new Promise(next => { resolve = next; });

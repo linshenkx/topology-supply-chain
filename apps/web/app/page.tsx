@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import "./shipping.css";
 import "./audit.css";
 import "./performance.css";
@@ -146,11 +146,12 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
       setLoading(false);
     }
   };
+  const initialRequestFailed = useEffectEvent((error: unknown) => toast(error instanceof Error ? error.message : "用户列表加载失败"));
   useEffect(() => {
     const controller = new AbortController();
     void apiJson("/api/v1/users", { signal: controller.signal })
       .then(data => { if (!controller.signal.aborted) setUsers(data.users ?? []); })
-      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "用户列表加载失败"); })
+      .catch(error => { if (!controller.signal.aborted) initialRequestFailed(error); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
@@ -233,11 +234,12 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
     catch (error) { toast(error instanceof Error ? error.message : "审批列表加载失败"); }
     finally { setLoading(false); }
   };
+  const initialRequestFailed = useEffectEvent((error: unknown) => toast(error instanceof Error ? error.message : "审批列表加载失败"));
   useEffect(() => {
     const controller = new AbortController();
     void apiJson("/api/v1/approvals", { signal: controller.signal })
       .then(data => { if (!controller.signal.aborted) setItems(data.approvals ?? []); })
-      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "审批列表加载失败"); })
+      .catch(error => { if (!controller.signal.aborted) initialRequestFailed(error); })
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);

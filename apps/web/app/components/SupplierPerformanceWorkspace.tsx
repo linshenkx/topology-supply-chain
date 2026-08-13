@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { writeSupplierPerformance } from "../lib/r2-mutation-client";
 import {
   buildSupplierPerformanceWeightCommand,
@@ -32,6 +32,8 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
   const requestSequence = useRef(0);
   const selectionRef = useRef<SupplierPerformanceSelection>({ quarter, tier });
+  const initialRequestFailed = useEffectEvent((error: unknown) => toast(error instanceof Error ? error.message : "绩效数据加载失败"));
+  const initialRequestRejected = useEffectEvent((message: string) => toast(message));
 
   const load = async (
     requestedQuarter = selectionRef.current.quarter,
@@ -56,12 +58,12 @@ export default function SupplierPerformanceWorkspace({ toast }: { toast: Toast }
       .then(result => {
         const current = selectionRef.current;
         if (controller.signal.aborted || sequence !== requestSequence.current || current.quarter !== quarter || current.tier !== tier || result.kind === "stale") return;
-        if (result.kind === "error") return toast(result.message);
+        if (result.kind === "error") return initialRequestRejected(result.message);
         setData(result.snapshot.payload);
         setLoadedSelection(selection);
         if (result.snapshot.weights) setWeights(result.snapshot.weights);
       })
-      .catch(error => { if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "绩效数据加载失败"); });
+      .catch(error => { if (!controller.signal.aborted) initialRequestFailed(error); });
     return () => controller.abort();
   }, [quarter, tier]);
   const currentSelection = { quarter, tier };

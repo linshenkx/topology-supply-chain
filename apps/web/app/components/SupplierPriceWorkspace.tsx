@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { uploadPlatformFile } from "../lib/mutation-client";
 import { writeSupplierPrice, writeSupplierPriceWithStepUp } from "../lib/r2-mutation-client";
 
@@ -28,6 +28,7 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
     if (!response.ok) throw new Error(result.error || "价格数据加载失败");
     setData(result);
   };
+  const initialRequestFailed = useEffectEvent((error: unknown) => toast(error instanceof Error ? error.message : "价格数据加载失败"));
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/v1/supplier-prices", { cache: "no-store", signal: controller.signal })
@@ -37,7 +38,7 @@ export default function SupplierPriceWorkspace({ toast }: { toast: Toast }) {
         return next;
       })
       .then(next => { if (!controller.signal.aborted) setData(next); })
-      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+      .catch(error => { if (!controller.signal.aborted) initialRequestFailed(error); });
     return () => controller.abort();
   }, []);
   const upload = async (file?: File) => {

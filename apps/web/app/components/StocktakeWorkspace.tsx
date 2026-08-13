@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { mutateJson } from "../lib/mutation-client";
 
 type Quantity = { availableQuantity: string; lockedQuantity: string; defectiveQuantity: string; pendingInspectionQuantity: string };
@@ -27,6 +27,7 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
     setData(body);
     setSelectedId(current => current && body.stocktakes.some((row: Task) => row.id === current) ? current : body.stocktakes[0]?.id);
   }
+  const initialRequestFailed = useEffectEvent((error: unknown) => toast(error instanceof Error ? error.message : "盘点数据加载失败"));
   useEffect(() => {
     const controller = new AbortController();
     void fetch("/api/v1/stocktakes", { cache: "no-store", signal: controller.signal })
@@ -40,7 +41,7 @@ export default function StocktakeWorkspace({ toast }: { toast: (message: string)
         setData(next);
         setSelectedId(current => current && next.stocktakes.some((row: Task) => row.id === current) ? current : next.stocktakes[0]?.id);
       })
-      .catch(error => { if (!controller.signal.aborted) toast(error.message); });
+      .catch(error => { if (!controller.signal.aborted) initialRequestFailed(error); });
     return () => controller.abort();
   }, []);
   const task = useMemo(() => data.stocktakes.find(row => row.id === selectedId), [data.stocktakes, selectedId]);

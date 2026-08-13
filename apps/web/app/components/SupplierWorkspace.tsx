@@ -27,8 +27,12 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
 
   const load = async () => {
     const [supplierResponse, relationResponse] = await Promise.all([fetch("/api/v1/suppliers"), fetch("/api/v1/supplier-skus")]);
-    if (supplierResponse.ok) { const data = await supplierResponse.json(); setSuppliers(data.suppliers ?? []); setFactories(data.factories ?? []); }
-    if (relationResponse.ok) { const data = await relationResponse.json(); setRelations(data.relations ?? []); setSkus(data.skus ?? []); if (!factories.length && data.factories) setFactories(data.factories); }
+    const supplierData = supplierResponse.ok ? await supplierResponse.json() : null;
+    const relationData = relationResponse.ok ? await relationResponse.json() : null;
+    if (supplierData) setSuppliers(supplierData.suppliers ?? []);
+    if (relationData) { setRelations(relationData.relations ?? []); setSkus(relationData.skus ?? []); }
+    const nextFactories = supplierData?.factories ?? relationData?.factories;
+    if (nextFactories) setFactories(nextFactories);
   };
   useEffect(() => {
     const controller = new AbortController();
@@ -40,16 +44,20 @@ export default function SupplierWorkspace({ toast }: { toast: Toast }) {
       }))
       .then(({ relation: nextRelation, supplier: nextSupplier }) => {
         if (signal.aborted) return;
-        if (nextSupplier) { setSuppliers(nextSupplier.suppliers ?? []); setFactories(nextSupplier.factories ?? []); }
-        if (nextRelation) { setRelations(nextRelation.relations ?? []); setSkus(nextRelation.skus ?? []); if (!factories.length && nextRelation.factories) setFactories(nextRelation.factories); }
+        if (nextSupplier) { setSuppliers(nextSupplier.suppliers ?? []); }
+        if (nextRelation) { setRelations(nextRelation.relations ?? []); setSkus(nextRelation.skus ?? []); }
+        const nextFactories = nextSupplier?.factories ?? nextRelation?.factories;
+        if (nextFactories) setFactories(nextFactories);
       })
       .catch(error => { if (!signal.aborted) throw error; });
     return () => controller.abort();
   }, []);
-  const factoryName = (id: number | null) => factories.find(item => item.id === id)?.name ?? (id ? `工厂 #${id}` : "—");
-  const supplierName = (id: number) => suppliers.find(item => item.id === id)?.name ?? `供应商 #${id}`;
+  const factoryNames = useMemo(() => new Map(factories.map(item => [item.id, item.name])), [factories]);
+  const supplierNames = useMemo(() => new Map(suppliers.map(item => [item.id, item.name])), [suppliers]);
+  const factoryName = (id: number | null) => factoryNames.get(id ?? -1) ?? (id ? `工厂 #${id}` : "—");
+  const supplierName = (id: number) => supplierNames.get(id) ?? `供应商 #${id}`;
   const visibleSuppliers = useMemo(() => suppliers.filter(item => `${item.code}${item.name}${item.contactName}${item.contactPhone}`.toLowerCase().includes(search.toLowerCase())), [suppliers, search]);
-  const visibleRelations = useMemo(() => relations.filter(item => `${item.sku}${supplierName(item.supplierId)}${factoryName(item.factoryId)}`.toLowerCase().includes(search.toLowerCase())), [relations, suppliers, factories, search]);
+  const visibleRelations = useMemo(() => relations.filter(item => `${item.sku}${supplierNames.get(item.supplierId) ?? `供应商 #${item.supplierId}`}${factoryNames.get(item.factoryId) ?? `工厂 #${item.factoryId}`}`.toLowerCase().includes(search.toLowerCase())), [relations, supplierNames, factoryNames, search]);
   const candidates = suppliers.filter(item => item.status === "active" && (!relation.factoryId || item.tier === 1 || item.managedByFactoryId === Number(relation.factoryId)));
 
   const submit = async () => {
