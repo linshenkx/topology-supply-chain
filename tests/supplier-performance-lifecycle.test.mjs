@@ -6,24 +6,24 @@ import { tsImport } from "tsx/esm/api";
 const {
   buildSupplierPerformanceWeightCommand,
   loadSupplierPerformanceSnapshot,
-} = await tsImport("../app/lib/supplier-performance-lifecycle.ts", import.meta.url);
+} = await tsImport("../apps/web/app/lib/supplier-performance-lifecycle.ts", import.meta.url);
 
 const root = new URL("../", import.meta.url);
 
 const initialEffectFiles = new Map([
-  ["app/components/AuditWorkspace.tsx", 1],
-  ["app/components/FinanceExceptionWorkspace.tsx", 1],
-  ["app/components/FinanceWorkspace.tsx", 1],
-  ["app/components/InventoryWorkspace.tsx", 1],
-  ["app/components/ProductionWorkspace.tsx", 1],
-  ["app/components/PurchaseWorkspace.tsx", 1],
-  ["app/components/ShippingWorkspace.tsx", 1],
-  ["app/components/StocktakeWorkspace.tsx", 1],
-  ["app/components/SupplierPerformanceWorkspace.tsx", 1],
-  ["app/components/SupplierPriceWorkspace.tsx", 1],
-  ["app/components/SupplierWorkspace.tsx", 1],
-  ["app/components/WarehouseWorkspace.tsx", 1],
-  ["app/page.tsx", 2],
+  ["apps/web/app/components/AuditWorkspace.tsx", 1],
+  ["apps/web/app/components/FinanceExceptionWorkspace.tsx", 1],
+  ["apps/web/app/components/FinanceWorkspace.tsx", 1],
+  ["apps/web/app/components/InventoryWorkspace.tsx", 1],
+  ["apps/web/app/components/ProductionWorkspace.tsx", 1],
+  ["apps/web/app/components/PurchaseWorkspace.tsx", 1],
+  ["apps/web/app/components/ShippingWorkspace.tsx", 1],
+  ["apps/web/app/components/StocktakeWorkspace.tsx", 1],
+  ["apps/web/app/components/SupplierPerformanceWorkspace.tsx", 1],
+  ["apps/web/app/components/SupplierPriceWorkspace.tsx", 1],
+  ["apps/web/app/components/SupplierWorkspace.tsx", 1],
+  ["apps/web/app/components/WarehouseWorkspace.tsx", 1],
+  ["apps/web/app/page.tsx", 2],
 ]);
 
 test("all 14 initial request effects abort during cleanup without async wrappers", async () => {

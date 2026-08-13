@@ -1,0 +1,47 @@
+FROM node:22-alpine AS builder
+
+WORKDIR /app
+
+RUN corepack enable \
+    && corepack prepare pnpm@11.9.0 --activate
+
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+
+RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional --prod=false \
+    --filter @topology/api \
+    --filter @topology/contracts
+
+COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
+COPY apps/api/src ./apps/api/src
+COPY packages/contracts/tsconfig.json ./packages/contracts/tsconfig.json
+COPY packages/contracts/src ./packages/contracts/src
+
+RUN pnpm --filter @topology/api build
+RUN pnpm --filter @topology/api deploy --prod --no-optional /prod/apps/api
+
+FROM node:22-alpine AS runner
+
+WORKDIR /app
+
+ENV NODE_ENV=production
+ENV APP_ENV=production
+ENV DEPLOY_TARGET=aliyun
+ENV HOST=0.0.0.0
+ENV PORT=3001
+ENV HOME=/tmp
+
+RUN addgroup --system --gid 1001 nodejs \
+    && adduser --system --uid 1001 --ingroup nodejs api
+
+COPY --from=builder --chown=api:nodejs /prod/apps/api ./apps/api
+
+USER api
+
+EXPOSE 3001
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
+  CMD wget -qO- http://127.0.0.1:3001/api/v1/health/live >/dev/null || exit 1
+
+CMD ["node", "apps/api/dist/server.js"]

@@ -10,9 +10,9 @@ async function source(path) {
 
 test("finance and approval reads and R3 mutations use v1", async () => {
   const [page, finance, exceptions] = await Promise.all([
-    source("app/page.tsx"),
-    source("app/components/FinanceWorkspace.tsx"),
-    source("app/components/FinanceExceptionWorkspace.tsx"),
+    source("apps/web/app/page.tsx"),
+    source("apps/web/app/components/FinanceWorkspace.tsx"),
+    source("apps/web/app/components/FinanceExceptionWorkspace.tsx"),
   ]);
 
   assert.match(page, /apiJson\("\/api\/v1\/approvals"\)/u);
@@ -26,10 +26,10 @@ test("finance and approval reads and R3 mutations use v1", async () => {
 
 test("inventory and logistics reads and R3 mutations use v1", async () => {
   const [inventory, stocktakes, warehouses, shipping] = await Promise.all([
-    source("app/components/InventoryWorkspace.tsx"),
-    source("app/components/StocktakeWorkspace.tsx"),
-    source("app/components/WarehouseWorkspace.tsx"),
-    source("app/components/ShippingWorkspace.tsx"),
+    source("apps/web/app/components/InventoryWorkspace.tsx"),
+    source("apps/web/app/components/StocktakeWorkspace.tsx"),
+    source("apps/web/app/components/WarehouseWorkspace.tsx"),
+    source("apps/web/app/components/ShippingWorkspace.tsx"),
   ]);
 
   assert.match(inventory, /fetch\("\/api\/v1\/inventory"/u);
@@ -49,12 +49,12 @@ test("inventory and logistics reads and R3 mutations use v1", async () => {
 
 test("production and R2 supplier mutations use their typed v1 adapters", async () => {
   const [production, suppliers, prices, performance, performanceLifecycle, r2Client] = await Promise.all([
-    source("app/components/ProductionWorkspace.tsx"),
-    source("app/components/SupplierWorkspace.tsx"),
-    source("app/components/SupplierPriceWorkspace.tsx"),
-    source("app/components/SupplierPerformanceWorkspace.tsx"),
-    source("app/lib/supplier-performance-lifecycle.ts"),
-    source("app/lib/r2-mutation-client.ts"),
+    source("apps/web/app/components/ProductionWorkspace.tsx"),
+    source("apps/web/app/components/SupplierWorkspace.tsx"),
+    source("apps/web/app/components/SupplierPriceWorkspace.tsx"),
+    source("apps/web/app/components/SupplierPerformanceWorkspace.tsx"),
+    source("apps/web/app/lib/supplier-performance-lifecycle.ts"),
+    source("apps/web/app/lib/r2-mutation-client.ts"),
   ]);
 
   assert.match(production, /fetch\("\/api\/v1\/production-orders"/u);
@@ -76,9 +76,9 @@ test("production and R2 supplier mutations use their typed v1 adapters", async (
 
 test("session, purchase reads, and purchase mutations use v1", async () => {
   const [page, purchase, r2Client] = await Promise.all([
-    source("app/page.tsx"),
-    source("app/components/PurchaseWorkspace.tsx"),
-    source("app/lib/r2-mutation-client.ts"),
+    source("apps/web/app/page.tsx"),
+    source("apps/web/app/components/PurchaseWorkspace.tsx"),
+    source("apps/web/app/lib/r2-mutation-client.ts"),
   ]);
 
   assert.match(page, /fetch\("\/api\/v1\/session"\)/u);
@@ -99,11 +99,11 @@ test("session, purchase reads, and purchase mutations use v1", async () => {
 
 test("platform user mutations and file uploads use the typed v1 mutation seam", async () => {
   const [page, audit, finance, shipping, client] = await Promise.all([
-    source("app/page.tsx"),
-    source("app/components/AuditWorkspace.tsx"),
-    source("app/components/FinanceWorkspace.tsx"),
-    source("app/components/ShippingWorkspace.tsx"),
-    source("app/lib/mutation-client.ts"),
+    source("apps/web/app/page.tsx"),
+    source("apps/web/app/components/AuditWorkspace.tsx"),
+    source("apps/web/app/components/FinanceWorkspace.tsx"),
+    source("apps/web/app/components/ShippingWorkspace.tsx"),
+    source("apps/web/app/lib/mutation-client.ts"),
   ]);
 
   assert.match(page, /apiJson\("\/api\/v1\/users"\)/u);
@@ -126,6 +126,6 @@ test("platform user mutations and file uploads use the typed v1 mutation seam", 
   assert.match(finance, /entityType", "purchase_order"/u);
   assert.match(shipping, /"delivery_batch"/u);
   assert.match(shipping, /"product_return"/u);
-  const supplierPrice = await source("app/components/SupplierPriceWorkspace.tsx");
+  const supplierPrice = await source("apps/web/app/components/SupplierPriceWorkspace.tsx");
   assert.match(supplierPrice, /entityType", "supplier_sku"/u);
 });

@@ -5,7 +5,7 @@ import ts from "typescript";
 import vm from "node:vm";
 
 const policySource = fs.readFileSync(
-  new URL("../app/lib/step-up-policy.ts", import.meta.url),
+  new URL("../apps/web/app/lib/step-up-policy.ts", import.meta.url),
   "utf8",
 );
 const transpiled = ts.transpileModule(policySource, {
@@ -27,7 +27,7 @@ const {
 } = policyModule.exports;
 
 const mutationSource = fs.readFileSync(
-  new URL("../db/insert-one.ts", import.meta.url),
+  new URL("../database/runtime/insert-one.ts", import.meta.url),
   "utf8",
 );
 const mutationTranspiled = ts.transpileModule(mutationSource, {
@@ -77,7 +77,7 @@ test("local preview accepts only the documented fixed challenge and code", () =>
 });
 
 test("server consumption is user, purpose, scope, verification and expiry bound", () => {
-  const source = read("app/lib/step-up.ts");
+  const source = read("apps/web/app/lib/step-up.ts");
   for (const predicate of [
     /eq\(authChallenges\.challengeNo, challengeNo\)/,
     /eq\(authChallenges\.userId, input\.userId\)/,
@@ -109,7 +109,7 @@ test("affected-row normalization supports D1 and MySQL mutation results", async 
 });
 
 test("finance actions no longer trust a client smsVerified boolean", () => {
-  const route = read("app/api/finance/route.ts");
+  const route = read("apps/web/app/api/finance/route.ts");
   assert.doesNotMatch(route, /body\.smsVerified/);
   for (const scope of [
     "finance:record_payment:",
@@ -120,8 +120,8 @@ test("finance actions no longer trust a client smsVerified boolean", () => {
   }
 
   const clients = [
-    read("app/components/FinanceWorkspace.tsx"),
-    read("app/components/FinanceExceptionWorkspace.tsx"),
+    read("apps/web/app/components/FinanceWorkspace.tsx"),
+    read("apps/web/app/components/FinanceExceptionWorkspace.tsx"),
   ].join("\n");
   assert.doesNotMatch(clients, /smsVerified\s*:\s*true/);
   assert.doesNotMatch(clients, /Date\.parse/u);
@@ -131,9 +131,9 @@ test("finance actions no longer trust a client smsVerified boolean", () => {
 });
 
 test("approval proofs are bound to the selected approval and consumed server-side", () => {
-  const route = read("app/api/approvals/route.ts");
+  const route = read("apps/web/app/api/approvals/route.ts");
   const handler = read("apps/api/src/r3/approval-handler.ts");
-  const page = read("app/page.tsx");
+  const page = read("apps/web/app/page.tsx");
   assert.doesNotMatch(route, /body\.smsVerified/);
   assert.match(handler, /objectType: "approval"/);
   assert.match(handler, /objectId: String\(id\)/);
@@ -143,7 +143,7 @@ test("approval proofs are bound to the selected approval and consumed server-sid
 });
 
 test("approval proof consumption and pending-state CAS share the claim transaction", () => {
-  const route = read("app/api/approvals/route.ts");
+  const route = read("apps/web/app/api/approvals/route.ts");
   const claimStart = route.indexOf("const claimApproval");
   const claimEnd = route.indexOf("if (!correctionApproval)", claimStart);
   const claim = route.slice(claimStart, claimEnd);
@@ -165,7 +165,7 @@ test("approval proof consumption and pending-state CAS share the claim transacti
 });
 
 test("finance locks and rereads authoritative versions before consuming proofs", () => {
-  const route = read("app/api/finance/route.ts");
+  const route = read("apps/web/app/api/finance/route.ts");
   for (const marker of ["withLockedInvoiceException", "lockPaymentRecordRow", "withLockedPaymentRequest"]) {
     assert.match(route, new RegExp(marker));
   }

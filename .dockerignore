@@ -3,9 +3,13 @@
 .next
 .vinext
 .wrangler
+**/.next
+**/.vinext
+**/.wrangler
 .pnpm-store
 .tmp
 dist
+**/dist
 node_modules
 outputs
 work

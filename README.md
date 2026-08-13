@@ -2,13 +2,13 @@
 
 广州拓扑睡眠科技有限公司的供应链协同系统。本仓库是一个多运行时 monorepo：Web、Fastify API 与后台 Worker 分别构建和运行，但共享 Git、pnpm lockfile、契约、MySQL migration history 与发布清单。
 
-本文是当前工程入口。2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS.md](./PROJECT_STATUS.md)，该文件是历史快照，不代表当前实时生产状态。Scope A 的最近一次已记录验收见 [Stage 6 验收](./docs/refactor/stage6-scope-a-acceptance.md)。
+本文是当前工程入口。2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，该文件不代表当前实时生产状态。Scope A 的最近一次已记录验收见 [Stage 6 验收](./docs/refactor/stage6-scope-a-acceptance.md)。
 
 ## 运行拓扑与支持矩阵
 
 | 运行单元 | 源码/端口 | 生产责任 |
 | --- | --- | --- |
-| Web | 根 `app/`，`:3000` | 页面、同域 bridge、`/api/health` 与兼容入口 |
+| Web | `apps/web/app/`，`:3000` | 页面、同域 bridge、`/api/health` 与兼容入口 |
 | API | `apps/api`，`:3001` | `/api/v1/*`、鉴权/权限、同步读写事务 |
 | Worker | `apps/worker`，`:3002` | outbox/job、provider 副作用、独立 ready/fence |
 | Contracts | `packages/contracts` | API Schema、DTO 与持久化 command/resource identity 事实源 |
@@ -18,7 +18,7 @@
 | 阿里云 ECS + RDS MySQL + OSS | 生产主运行链 | Nginx → Web/API，Worker 独立运行；Compose/manifest 协同发布 |
 | D1 + Vinext + Sites + Cloudflare adapter | 开发预览与兼容 | 保留本地预览、构建与 bridge；不得作为生产 MySQL/OSS 语义的替代 |
 
-根 `app/` 暂不搬到 `apps/web/`。目录非对称不改变三个运行时已经分离的事实；Web package 搬迁是后置、可选且需要独立兼容证明的机械任务。
+Web 已由 `apps/web` 独立 package 拥有；根 package 只负责编排 Web、API、Worker、contracts、database tooling 与仓库门禁。
 
 ## 工程边界
 
@@ -35,7 +35,7 @@
 pnpm install --frozen-lockfile
 ```
 
-本地配置从 `.env.example` 开始，生产配置责任见 `deploy/aliyun/.env.production.template`。真实密码、AccessKey、令牌、生产数据和 `.env.local` 不得提交。
+本地配置从 `.env.example` 开始，生产配置责任见 `infrastructure/aliyun/.env.production.template`。真实密码、AccessKey、令牌、生产数据和 `.env.local` 不得提交。
 
 ## 常用命令
 
@@ -69,26 +69,26 @@ MySQL 门禁使用以下环境变量：
 
 ## 部署入口
 
-阿里云生产路径的事实源位于 [deploy/aliyun/README.md](./deploy/aliyun/README.md)：
+阿里云生产路径的事实源位于 [infrastructure/aliyun/README.md](./infrastructure/aliyun/README.md)：
 
-- `deploy/aliyun/docker-compose.yml`：Web/API/Worker 与一次性 migrator；
-- `deploy/aliyun/nginx-scm.conf`：公网只暴露 Nginx，`/api/v1/*` 归 API；
-- `deploy/aliyun/deploy.sh` / `rollback.sh`：manifest、migration 与 generation 兼容门禁；
-- `scripts/activate-writers.sh`：独立、显式 writer activation；普通 deploy 不隐式激活 writer。
+- `infrastructure/aliyun/docker-compose.yml`：Web/API/Worker 与一次性 migrator；
+- `infrastructure/aliyun/nginx-scm.conf`：公网只暴露 Nginx，`/api/v1/*` 归 API；
+- `infrastructure/aliyun/deploy.sh` / `rollback.sh`：manifest、migration 与 generation 兼容门禁；
+- `tooling/release/activate-writers.sh`：独立、显式 writer activation；普通 deploy 不隐式激活 writer。
 
 本地 workflow 已编码 frozen install、工程门禁与真实 MySQL suite。未 push 前只能说明 workflow 和本地验证就绪，不能声称 GitHub Actions 已绿色。
 
 ## 目录所有权
 
 ```text
-app/                    根 Web package、bridge 与兼容边界
+apps/web/               独立 Web package、bridge 与兼容边界
 apps/api/               canonical Fastify API
 apps/worker/            canonical 后台 Worker
-platform/cloudflare/    D1/Vinext/Sites 开发预览与兼容 adapter
+apps/web/platform/      D1/Vinext/Sites 开发预览与兼容 adapter
 packages/contracts/     跨边界协议与稳定 identity
-db/ + drizzle*/         D1 source / MySQL generated schema 与双 migration lineage
-deploy/aliyun/          阿里云 Compose、Nginx、部署与回滚
-scripts/                migration、release、fence 与仓库验证入口
+database/               运行时 schema、MySQL/D1 migration 与数据库工具
+infrastructure/aliyun/  阿里云 Compose、Nginx、部署与回滚
+tooling/                build、checks、release 与 archive 工具入口
 tests/                  Web/legacy/跨运行时/部署合同测试
 archive/                历史与用途未完全确认资产；不参与 runtime/build/deploy
 ```

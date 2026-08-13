@@ -4,7 +4,7 @@ import test from "node:test";
 import ts from "typescript";
 import vm from "node:vm";
 
-const sourceUrl = new URL("../app/lib/inventory-transfer-guard.ts", import.meta.url);
+const sourceUrl = new URL("../apps/web/app/lib/inventory-transfer-guard.ts", import.meta.url);
 const source = fs.readFileSync(sourceUrl, "utf8");
 const transpiled = ts.transpileModule(source, {
   compilerOptions: {
@@ -64,7 +64,7 @@ test("批次库存不足时保留未扣减数量", () => {
 
 test("路由在副作用前完成状态CAS，并对每批库存使用余额条件", () => {
   const route = fs.readFileSync(
-    new URL("../app/api/inventory/transfers/route.ts", import.meta.url),
+    new URL("../apps/web/app/api/inventory/transfers/route.ts", import.meta.url),
     "utf8",
   );
   const shipTransaction = route.indexOf("const transition = INVENTORY_TRANSFER_TRANSITIONS.ship");

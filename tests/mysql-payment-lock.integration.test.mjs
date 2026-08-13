@@ -126,7 +126,7 @@ test("MySQL row lock serializes competing payments and exposes the committed led
   assert.ok(parentRequest?.id);
 
   const rowLockSource = fs.readFileSync(
-    new URL("../db/row-lock.ts", import.meta.url),
+    new URL("../database/runtime/row-lock.ts", import.meta.url),
     "utf8",
   );
   const { withLockedPaymentRequest } = loadCommonJs(rowLockSource, specifier => {

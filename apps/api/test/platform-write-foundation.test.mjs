@@ -296,23 +296,23 @@ test("OpenAPI freezes all ten externally callable platform mutations", async (t)
 test("all twelve legacy handlers are explicit non-writing retirements", async () => {
   const root = new URL("../../..", import.meta.url);
   const routes = [
-    "app/api/auth/login/route.ts",
-    "app/api/auth/verify/route.ts",
-    "app/api/auth/logout/route.ts",
-    "app/api/auth/step-up/request/route.ts",
-    "app/api/auth/step-up/verify/route.ts",
-    "app/api/users/route.ts",
-    "app/api/files/route.ts",
-    "app/api/notifications/route.ts",
-    "app/api/jobs/reminders/route.ts",
-    "app/api/jobs/email/route.ts",
+    "apps/web/app/api/auth/login/route.ts",
+    "apps/web/app/api/auth/verify/route.ts",
+    "apps/web/app/api/auth/logout/route.ts",
+    "apps/web/app/api/auth/step-up/request/route.ts",
+    "apps/web/app/api/auth/step-up/verify/route.ts",
+    "apps/web/app/api/users/route.ts",
+    "apps/web/app/api/files/route.ts",
+    "apps/web/app/api/notifications/route.ts",
+    "apps/web/app/api/jobs/reminders/route.ts",
+    "apps/web/app/api/jobs/email/route.ts",
   ];
   for (const route of routes) {
     const content = await readFile(new URL(route, root), "utf8");
     assert.match(content, /retiredPlatformRoute/u);
     assert.doesNotMatch(content, /getDb|drizzle|oss|sendVerificationSms|fetch\(/iu);
   }
-  const users = await readFile(new URL("app/api/users/route.ts", root), "utf8");
+  const users = await readFile(new URL("apps/web/app/api/users/route.ts", root), "utf8");
   assert.match(users, /POST/u);
   assert.match(users, /DELETE/u);
   assert.match(users, /PATCH/u);

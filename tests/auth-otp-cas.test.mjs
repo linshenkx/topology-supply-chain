@@ -4,7 +4,7 @@ import test from "node:test";
 import ts from "typescript";
 import vm from "node:vm";
 
-const upsertSource = fs.readFileSync(new URL("../db/upsert.ts", import.meta.url), "utf8");
+const upsertSource = fs.readFileSync(new URL("../database/runtime/upsert.ts", import.meta.url), "utf8");
 const transpiled = ts.transpileModule(upsertSource, {
   compilerOptions: {
     module: ts.ModuleKind.CommonJS,

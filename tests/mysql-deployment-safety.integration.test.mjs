@@ -9,8 +9,8 @@ import mysql from "mysql2/promise";
 import { drizzle } from "drizzle-orm/mysql2";
 import { migrate } from "drizzle-orm/mysql2/migrator";
 
-import { releaseManifestJson } from "../scripts/release-manifest.mjs";
-import { FROZEN_MYSQL_MIGRATIONS } from "../scripts/mysql-migration-manifest.mjs";
+import { releaseManifestJson } from "../tooling/release/release-manifest.mjs";
+import { FROZEN_MYSQL_MIGRATIONS } from "../database/tooling/mysql-migration-manifest.mjs";
 
 const adminUrl = process.env.MYSQL_ADMIN_TEST_URL?.trim();
 const repositoryRoot = new URL("..", import.meta.url);
@@ -62,7 +62,7 @@ async function stopChild(child) {
 }
 
 async function applyMigration(connection, name) {
-  const sql = await readFile(new URL(`../drizzle-mysql/${name}`, import.meta.url), "utf8");
+  const sql = await readFile(new URL(`../database/migrations/mysql/${name}`, import.meta.url), "utf8");
   for (const statement of sql.split("--> statement-breakpoint").map((value) => value.trim()).filter(Boolean)) {
     await connection.query(statement);
   }
@@ -103,14 +103,14 @@ test("fresh-baseline and legacy rollback scripts fail closed on real MySQL state
   });
   for (const name of [fresh, dirty, rollback, version]) await admin.query(`CREATE DATABASE \`${name}\``);
 
-  const freshResult = run("scripts/check-mysql-migration-history.mjs", databaseUrl(fresh));
+  const freshResult = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(fresh));
   assert.equal(freshResult.status, 0, freshResult.stderr);
   assert.match(freshResult.stdout, /business schema are empty/u);
 
   const dirtyDb = await mysql.createConnection(databaseUrl(dirty));
   await dirtyDb.query("CREATE TABLE existing_business_row (id INT PRIMARY KEY)");
   await dirtyDb.end();
-  const dirtyResult = run("scripts/check-mysql-migration-history.mjs", databaseUrl(dirty));
+  const dirtyResult = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(dirty));
   assert.notEqual(dirtyResult.status, 0);
   assert.match(dirtyResult.stderr, /refusing fresh baseline/u);
 
@@ -121,13 +121,13 @@ test("fresh-baseline and legacy rollback scripts fail closed on real MySQL state
   await rollbackDb.query("CREATE TABLE command_idempotency (id BIGINT PRIMARY KEY AUTO_INCREMENT, command_name VARCHAR(100), status VARCHAR(20))");
   await rollbackDb.query("INSERT INTO writer_fences VALUES ('auth.commands', 'fastify-v1', 1, 2)");
   const manifestEnv = { TARGET_RELEASE_MANIFEST_JSON: await releaseManifestJson() };
-  let result = run("scripts/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
+  let result = run("tooling/release/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
   assert.equal(result.status, 0, result.stderr);
   await rollbackDb.query("INSERT INTO command_idempotency (command_name,status) VALUES ('files.upload','completed')");
-  result = run("scripts/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
+  result = run("tooling/release/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
   assert.equal(result.status, 0, result.stderr);
   await rollbackDb.query("INSERT INTO command_idempotency (command_name,status) VALUES ('legacy.finance.write','completed')");
-  result = run("scripts/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
+  result = run("tooling/release/check-legacy-rollback-safety.mjs", databaseUrl(rollback), manifestEnv);
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /does not recognize generation-2 write facts.*forward-fix/u);
   await rollbackDb.end();
@@ -210,7 +210,7 @@ test("explicit writer activation is transactional, partial, fail-closed, and ide
     return rows.map(({ resource }) => resource);
   }
   async function activate(resources, hash, extra = {}) {
-    return run("scripts/set-writer-fences.mjs", databaseUrl(name), {
+    return run("tooling/release/set-writer-fences.mjs", databaseUrl(name), {
       RELEASE_TAG: releaseTag,
       WRITER_ACTIVATION_EVIDENCE_SHA256: hash,
       WRITER_ACTIVATION_RESOURCES: resources,
@@ -218,7 +218,7 @@ test("explicit writer activation is transactional, partial, fail-closed, and ide
     }, evidencePath);
   }
 
-  let result = run("scripts/set-writer-fences.mjs", databaseUrl(name), {
+  let result = run("tooling/release/set-writer-fences.mjs", databaseUrl(name), {
     RELEASE_TAG: releaseTag,
     WRITER_ACTIVATION_EVIDENCE_SHA256: "0".repeat(64),
     WRITER_ACTIVATION_RESOURCES: "",
@@ -273,7 +273,7 @@ test("fresh install is ready while disabled, consumes only after activation, and
   const url = databaseUrl(name);
   const connection = await mysql.createConnection(url);
   t.after(async () => connection.end());
-  const migrationsFolder = new URL("../drizzle-mysql", import.meta.url).pathname
+  const migrationsFolder = new URL("../database/migrations/mysql", import.meta.url).pathname
     .replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
   await migrate(drizzle(connection), { migrationsFolder });
 
@@ -347,9 +347,9 @@ test("fresh install is ready while disabled, consumes only after activation, and
   const [beforeRepeatDeploy] = await connection.query(
     "SELECT resource, owner, enabled, generation FROM writer_fences ORDER BY resource",
   );
-  let result = run("scripts/check-mysql-migration-history.mjs", url);
+  let result = run("tooling/release/check-mysql-migration-history.mjs", url);
   assert.equal(result.status, 0, result.stderr);
-  result = run("scripts/check-write-drain.mjs", url);
+  result = run("tooling/release/check-write-drain.mjs", url);
   assert.equal(result.status, 0, result.stderr);
   await migrate(drizzle(connection), { migrationsFolder });
   const [afterRepeatDeploy] = await connection.query(
@@ -466,18 +466,18 @@ test("canonical MySQL history upgrades, repeats, and rejects divergent lineages"
     await applyMigration(prefix, canonicalMigrations[index][0]);
     await insertHistory(prefix, index);
   }
-  let result = run("scripts/check-mysql-migration-history.mjs", databaseUrl(names.prefix));
+  let result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(names.prefix));
   assert.equal(result.status, 0, result.stderr);
   assert.match(result.stdout, /2\/5 canonical entries applied/u);
   const db = drizzle(prefix);
-  const migrationsFolder = new URL("../drizzle-mysql", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
+  const migrationsFolder = new URL("../database/migrations/mysql", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
   await migrate(db, { migrationsFolder });
   const [afterUpgrade] = await prefix.query("SELECT hash, created_at AS createdAt FROM __drizzle_migrations ORDER BY created_at");
   assert.deepEqual(afterUpgrade.map((row) => [row.hash, Number(row.createdAt)]), canonicalMigrations.map(([, hash, createdAt]) => [hash, createdAt]));
   await migrate(db, { migrationsFolder });
   const [[afterRepeat]] = await prefix.query("SELECT COUNT(*) AS count FROM __drizzle_migrations");
   assert.equal(Number(afterRepeat.count), canonicalMigrations.length);
-  result = run("scripts/check-mysql-migration-history.mjs", databaseUrl(names.prefix));
+  result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(names.prefix));
   assert.equal(result.status, 0, result.stderr);
   await prefix.end();
 
@@ -491,7 +491,7 @@ test("canonical MySQL history upgrades, repeats, and rejects divergent lineages"
     await createDrizzleHistory(connection);
     await insertHistory(connection, 0, overrides);
     await connection.end();
-    result = run("scripts/check-mysql-migration-history.mjs", databaseUrl(name));
+    result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(name));
     assert.notEqual(result.status, 0);
     assert.match(result.stderr, errorPattern);
   }
@@ -501,7 +501,7 @@ test("canonical MySQL history upgrades, repeats, and rejects divergent lineages"
   await insertHistory(idGap, 0);
   await idGap.query("UPDATE __drizzle_migrations SET id=2 WHERE id=1");
   await idGap.end();
-  result = run("scripts/check-mysql-migration-history.mjs", databaseUrl(names.idGap));
+  result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(names.idGap));
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /expected id=1/u);
 
@@ -513,7 +513,7 @@ test("canonical MySQL history upgrades, repeats, and rejects divergent lineages"
     ["e".repeat(64), canonicalMigrations.at(-1)[2] + 1],
   );
   await extra.end();
-  result = run("scripts/check-mysql-migration-history.mjs", databaseUrl(names.extra));
+  result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(names.extra));
   assert.notEqual(result.status, 0);
   assert.match(result.stderr, /unknown future history/u);
 });

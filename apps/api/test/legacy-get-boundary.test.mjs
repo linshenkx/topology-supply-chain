@@ -8,24 +8,24 @@ const root = new URL("../../../", import.meta.url);
 const rootPath = fileURLToPath(root);
 
 const legacyBusinessGets = new Map([
-  ["app/api/approvals/route.ts", "/api/v1/approvals"],
-  ["app/api/audit-logs/route.ts", "/api/v1/audit-logs"],
-  ["app/api/finance/route.ts", "/api/v1/finance"],
-  ["app/api/imports/diff/route.ts", "/api/v1/imports/diff"],
-  ["app/api/inventory/route.ts", "/api/v1/inventory"],
-  ["app/api/master-data/route.ts", "/api/v1/master-data"],
-  ["app/api/production-orders/route.ts", "/api/v1/production-orders"],
-  ["app/api/purchase-orders/route.ts", "/api/v1/purchase-orders"],
-  ["app/api/purchase-plans/route.ts", "/api/v1/purchase-plans"],
-  ["app/api/quality-inspections/route.ts", "/api/v1/quality-inspections"],
-  ["app/api/returns/route.ts", "/api/v1/returns"],
-  ["app/api/shipments/route.ts", "/api/v1/shipments"],
-  ["app/api/stocktakes/route.ts", "/api/v1/stocktakes"],
-  ["app/api/supplier-performance/route.ts", "/api/v1/supplier-performance"],
-  ["app/api/supplier-prices/route.ts", "/api/v1/supplier-prices"],
-  ["app/api/supplier-skus/route.ts", "/api/v1/supplier-skus"],
-  ["app/api/suppliers/route.ts", "/api/v1/suppliers"],
-  ["app/api/warehouses/route.ts", "/api/v1/warehouses"],
+  ["apps/web/app/api/approvals/route.ts", "/api/v1/approvals"],
+  ["apps/web/app/api/audit-logs/route.ts", "/api/v1/audit-logs"],
+  ["apps/web/app/api/finance/route.ts", "/api/v1/finance"],
+  ["apps/web/app/api/imports/diff/route.ts", "/api/v1/imports/diff"],
+  ["apps/web/app/api/inventory/route.ts", "/api/v1/inventory"],
+  ["apps/web/app/api/master-data/route.ts", "/api/v1/master-data"],
+  ["apps/web/app/api/production-orders/route.ts", "/api/v1/production-orders"],
+  ["apps/web/app/api/purchase-orders/route.ts", "/api/v1/purchase-orders"],
+  ["apps/web/app/api/purchase-plans/route.ts", "/api/v1/purchase-plans"],
+  ["apps/web/app/api/quality-inspections/route.ts", "/api/v1/quality-inspections"],
+  ["apps/web/app/api/returns/route.ts", "/api/v1/returns"],
+  ["apps/web/app/api/shipments/route.ts", "/api/v1/shipments"],
+  ["apps/web/app/api/stocktakes/route.ts", "/api/v1/stocktakes"],
+  ["apps/web/app/api/supplier-performance/route.ts", "/api/v1/supplier-performance"],
+  ["apps/web/app/api/supplier-prices/route.ts", "/api/v1/supplier-prices"],
+  ["apps/web/app/api/supplier-skus/route.ts", "/api/v1/supplier-skus"],
+  ["apps/web/app/api/suppliers/route.ts", "/api/v1/suppliers"],
+  ["apps/web/app/api/warehouses/route.ts", "/api/v1/warehouses"],
 ]);
 
 function getBody(source) {
@@ -41,7 +41,7 @@ function getBody(source) {
   assert.fail("unterminated GET body");
 }
 
-async function enumerateGetRoutes(directory = new URL("app/api/", root)) {
+async function enumerateGetRoutes(directory = new URL("apps/web/app/api/", root)) {
   const routes = [];
   for (const entry of await readdir(directory, { withFileTypes: true })) {
     const url = new URL(`${entry.name}${entry.isDirectory() ? "/" : ""}`, directory);
@@ -59,11 +59,11 @@ async function enumerateGetRoutes(directory = new URL("app/api/", root)) {
 test("all 18 legacy business GETs are 410-only without independent DB or authorization logic", async () => {
   const allGets = await enumerateGetRoutes();
   const enumeratedLegacyBusinessGets = allGets.filter((path) =>
-    !path.startsWith("app/api/v1/") &&
+    !path.startsWith("apps/web/app/api/v1/") &&
     ![
-      "app/api/files/route.ts", "app/api/health/route.ts",
-      "app/api/notifications/route.ts", "app/api/session/route.ts",
-      "app/api/users/route.ts",
+      "apps/web/app/api/files/route.ts", "apps/web/app/api/health/route.ts",
+      "apps/web/app/api/notifications/route.ts", "apps/web/app/api/session/route.ts",
+      "apps/web/app/api/users/route.ts",
     ].includes(path),
   );
   assert.equal(legacyBusinessGets.size, 18);
@@ -78,9 +78,9 @@ test("all 18 legacy business GETs are 410-only without independent DB or authori
 
 test("health, session, and the development v1 bridge remain outside the legacy business GET count", async () => {
   const [health, session, bridge] = await Promise.all([
-    readFile(new URL("app/api/health/route.ts", root), "utf8"),
-    readFile(new URL("app/api/session/route.ts", root), "utf8"),
-    readFile(new URL("app/api/v1/[...path]/route.ts", root), "utf8"),
+    readFile(new URL("apps/web/app/api/health/route.ts", root), "utf8"),
+    readFile(new URL("apps/web/app/api/session/route.ts", root), "utf8"),
+    readFile(new URL("apps/web/app/api/v1/[...path]/route.ts", root), "utf8"),
   ]);
   assert.match(health, /export async function GET/u);
   assert.match(session, /export async function GET/u);

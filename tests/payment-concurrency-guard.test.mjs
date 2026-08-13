@@ -30,7 +30,7 @@ function loadCommonJs(source, requireModule = require, globals = {}) {
 }
 
 const guardSource = fs.readFileSync(
-  new URL("../app/lib/payment-guard.ts", import.meta.url),
+  new URL("../apps/web/app/lib/payment-guard.ts", import.meta.url),
   "utf8",
 );
 const {
@@ -167,7 +167,7 @@ const sharedInvoiceExceptions = sqliteTable("invoice_exceptions", {
   id: integer("id").notNull(),
 });
 const rowLockSource = fs.readFileSync(
-  new URL("../db/row-lock.ts", import.meta.url),
+  new URL("../database/runtime/row-lock.ts", import.meta.url),
   "utf8",
 );
 const rowLockModule = loadCommonJs(rowLockSource, specifier => {
@@ -251,8 +251,8 @@ test("row-lock helper fails closed outside MySQL or without transaction support"
 });
 
 test("all payable-ledger writers use the shared lock protocol", () => {
-  const finance = fs.readFileSync(new URL("../app/api/finance/route.ts", import.meta.url), "utf8");
-  const approvals = fs.readFileSync(new URL("../app/api/approvals/route.ts", import.meta.url), "utf8");
+  const finance = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
+  const approvals = fs.readFileSync(new URL("../apps/web/app/api/approvals/route.ts", import.meta.url), "utf8");
   const payment = finance.slice(finance.indexOf("async function recordPayment"));
   const refund = finance.slice(finance.indexOf("async function recordRefund"), finance.indexOf("async function requestRecordCorrection"));
   const replacement = finance.slice(finance.indexOf("async function linkReplacementInvoice"), finance.indexOf("async function recordRefund"));
@@ -273,7 +273,7 @@ test("all payable-ledger writers use the shared lock protocol", () => {
 });
 
 test("recordPayment locks, refreshes, validates, writes and recomputes in order", () => {
-  const route = fs.readFileSync(new URL("../app/api/finance/route.ts", import.meta.url), "utf8");
+  const route = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
   const section = route.slice(route.indexOf("async function recordPayment"));
   const ordered = [
     "if (access.localPreview)",
@@ -298,8 +298,8 @@ test("recordPayment locks, refreshes, validates, writes and recomputes in order"
 });
 
 test("correction requests and finance UI share the payable classification", () => {
-  const financeRoute = fs.readFileSync(new URL("../app/api/finance/route.ts", import.meta.url), "utf8");
-  const financeUi = fs.readFileSync(new URL("../app/components/FinanceWorkspace.tsx", import.meta.url), "utf8");
+  const financeRoute = fs.readFileSync(new URL("../apps/web/app/api/finance/route.ts", import.meta.url), "utf8");
+  const financeUi = fs.readFileSync(new URL("../apps/web/app/components/FinanceWorkspace.tsx", import.meta.url), "utf8");
   const requestSection = financeRoute.slice(
     financeRoute.indexOf("async function requestRecordCorrection"),
     financeRoute.indexOf("async function createInvoice"),

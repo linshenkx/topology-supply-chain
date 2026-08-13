@@ -5,9 +5,9 @@ import { tmpdir } from "node:os";
 import path from "node:path";
 import test from "node:test";
 
-import { buildArchivedRestorePlan } from "../scripts/archive-restore-contract.mjs";
-import { executeArchivedRestorePlan } from "../scripts/execute-archive-restore-plan.mjs";
-import { assertTapHasNoSkips, tapHasSkips } from "../scripts/tap-skip.mjs";
+import { buildArchivedRestorePlan } from "../tooling/archive/archive-restore-contract.mjs";
+import { executeArchivedRestorePlan } from "../tooling/archive/execute-archive-restore-plan.mjs";
+import { assertTapHasNoSkips, tapHasSkips } from "../tooling/checks/tap-skip.mjs";
 
 async function archiveFixture(t) {
   const root = await mkdtemp(path.join(tmpdir(), "archive-restore-contract-"));
@@ -44,7 +44,7 @@ test("archived restore dry-run is read-only and returns an exclusive recovery pl
   const plan = await buildArchivedRestorePlan(manifest, root);
 
   assert.equal(plan.writePerformed, false);
-  assert.equal(plan.executor, "node scripts/execute-archive-restore-plan.mjs <plan.json>");
+  assert.equal(plan.executor, "node tooling/archive/execute-archive-restore-plan.mjs <plan.json>");
   assert.equal(plan.preconditions.archivedSourcesVerified, 1);
   assert.deepEqual(plan.createDirectories, ["outputs"]);
   assert.deepEqual(plan.operations[0], {
@@ -105,9 +105,11 @@ test("TAP zero-skip runners share fail-closed detection for standard directives 
   }
   assert.equal(tapHasSkips("ok 1 - active test\n# skipped 0\n"), false);
   assert.doesNotThrow(() => assertTapHasNoSkips("ok 1 - active test\n# skipped 0\n", "fixture suite"));
-  for (const runner of ["run-test-suite.mjs", "run-web-system-test.mjs"]) {
-    const source = await readFile(new URL(`../scripts/${runner}`, import.meta.url), "utf8");
-    assert.match(source, /import \{ assertTapHasNoSkips \} from "\.\/tap-skip\.mjs"/u);
+  const suiteRunner = await readFile(new URL("../tooling/checks/run-test-suite.mjs", import.meta.url), "utf8");
+  const webRunner = await readFile(new URL("../tooling/checks/run-web-system-test.mjs", import.meta.url), "utf8");
+  assert.match(suiteRunner, /import \{ assertTapHasNoSkips \} from "\.\/tap-skip\.mjs"/u);
+  assert.match(webRunner, /import \{ assertTapHasNoSkips \} from "\.\/tap-skip\.mjs"/u);
+  for (const source of [suiteRunner, webRunner]) {
     assert.match(source, /assertTapHasNoSkips\(result\.stdout \?\? ""/u);
   }
 });

@@ -34,7 +34,7 @@ P0 按门禁作用域关闭，避免“阶段 2 前全部清零、但阶段 6 �
 
 ### SEC-001 外部身份头可伪造
 
-- 证据：`app/lib/authz.ts:38-57` 在无 Session 时信任 `oai-authenticated-user-email`；`deploy/aliyun/nginx-scm.conf:38-48` 未清除该头。
+- 证据：`app/lib/authz.ts:38-57` 在无 Session 时信任 `oai-authenticated-user-email`；`infrastructure/aliyun/nginx-scm.conf:38-48` 未清除该头。
 - 完成标准：生产路径彻底禁用 fallback；Nginx 清空身份断言头；从真实入口发送伪造头仍返回 401；本地预览必须由显式环境开关且只绑定回环。
 
 ### SEC-002 财务 Step-up 可由客户端布尔值绕过
@@ -59,7 +59,7 @@ P0 按门禁作用域关闭，避免“阶段 2 前全部清零、但阶段 6 �
 
 ### MIG-001 生产 Schema 与迁移历史不可信
 
-- 证据：`PROJECT_STATUS.md:250-259` 记录业务表、迁移记录和 DMS 人工修正曾不一致；现有回滚脚本只回应用。
+- 证据：`docs/history/PROJECT_STATUS.md:250-259` 记录业务表、迁移记录和 DMS 人工修正曾不一致；现有回滚脚本只回应用。
 - 完成标准：生产 Schema 快照、迁移历史、人工变更三方对齐；空库和生产副本可重复升级；旧/新应用均兼容 Expand 阶段；完成备份恢复和应用回切演练。
 
 ### MIG-002 新旧后端缺少服务端写入围栏

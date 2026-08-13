@@ -1,15 +1,15 @@
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import test from "node:test";
-import { createAliyunBuildEnv } from "../scripts/build-aliyun.mjs";
+import { createAliyunBuildEnv } from "../tooling/build/build-aliyun.mjs";
 
 test("archive, outputs, and generated state are excluded from source and image scans", async () => {
-  const tsconfig = JSON.parse(await readFile("tsconfig.json", "utf8"));
-  const eslintConfig = await readFile("eslint.config.mjs", "utf8");
+  const tsconfig = JSON.parse(await readFile("apps/web/tsconfig.json", "utf8"));
+  const eslintConfig = await readFile("apps/web/eslint.config.mjs", "utf8");
   const dockerignore = await readFile(".dockerignore", "utf8");
 
   assert.ok(tsconfig.exclude?.includes("outputs"));
-  assert.ok(tsconfig.exclude?.includes("archive"));
+  assert.ok(tsconfig.exclude?.includes("../../archive"));
   assert.match(eslintConfig, /["']outputs\/\*\*["']/);
   assert.match(eslintConfig, /["']archive\/\*\*["']/);
   for (const pattern of ["archive", "outputs", ".tmp", ".pnpm-store", "topology-scm-*.tar.gz", "*.tsbuildinfo"]) {
@@ -19,8 +19,8 @@ test("archive, outputs, and generated state are excluded from source and image s
 
 test("Sites build tooling has a visible Cloudflare owner outside ignored build output", async () => {
   const gitignore = await readFile(".gitignore", "utf8");
-  const viteConfig = await readFile("vite.config.ts", "utf8");
-  const plugin = await readFile("platform/cloudflare/sites-vite-plugin.ts", "utf8");
+  const viteConfig = await readFile("apps/web/vite.config.ts", "utf8");
+  const plugin = await readFile("apps/web/platform/cloudflare/sites-vite-plugin.ts", "utf8");
 
   assert.match(gitignore, /^\/build\/$/mu);
   assert.match(viteConfig, /\.\/platform\/cloudflare\/sites-vite-plugin/u);
@@ -29,8 +29,8 @@ test("Sites build tooling has a visible Cloudflare owner outside ignored build o
 });
 
 test("Cloudflare Web adapter cannot be confused with the canonical background Worker", async () => {
-  const viteConfig = await readFile("vite.config.ts", "utf8");
-  const adapter = await readFile("platform/cloudflare/web-adapter.ts", "utf8");
+  const viteConfig = await readFile("apps/web/vite.config.ts", "utf8");
+  const adapter = await readFile("apps/web/platform/cloudflare/web-adapter.ts", "utf8");
 
   assert.match(viteConfig, /main: "\.\/platform\/cloudflare\/web-adapter\.ts"/u);
   assert.match(adapter, /Cloudflare Worker entry point for the vinext-starter template/u);
@@ -38,7 +38,7 @@ test("Cloudflare Web adapter cannot be confused with the canonical background Wo
 });
 
 test("Worker runtime closure does not copy builder workspace or vendor inputs", async () => {
-  const workerDockerfile = await readFile("Dockerfile.worker", "utf8");
+  const workerDockerfile = await readFile("infrastructure/docker/worker.Dockerfile", "utf8");
   const runner = workerDockerfile.split("FROM node:22-alpine AS runner")[1];
   assert.ok(runner);
   assert.doesNotMatch(runner, /COPY[^\n]*(?:vendor|node_modules|packages)/u);
@@ -46,8 +46,8 @@ test("Worker runtime closure does not copy builder workspace or vendor inputs", 
 });
 
 test("Aliyun builds pin the production runtime without requiring secrets", async () => {
-  const packageJson = JSON.parse(await readFile("package.json", "utf8"));
-  const dockerfile = await readFile("Dockerfile.aliyun", "utf8");
+  const packageJson = JSON.parse(await readFile("apps/web/package.json", "utf8"));
+  const dockerfile = await readFile("infrastructure/docker/web.Dockerfile", "utf8");
   const env = createAliyunBuildEnv({
     APP_ENV: "preview",
     DEPLOY_TARGET: "cloudflare",
@@ -72,8 +72,8 @@ test("Aliyun builds pin the production runtime without requiring secrets", async
     },
   );
   assert.equal(
-    packageJson.scripts["build:aliyun"],
-    "node scripts/build-aliyun.mjs",
+    packageJson.scripts["build:production"],
+    "node ../../tooling/build/build-aliyun.mjs",
   );
   assert.match(dockerfile, /ENV APP_ENV=production/);
   assert.match(dockerfile, /ENV DEPLOY_TARGET=aliyun/);

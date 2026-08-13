@@ -4,7 +4,7 @@ import test from "node:test";
 import { R2_COMMANDS } from "@topology/contracts/r2-writes";
 import { R3_COMMAND_RESOURCES } from "@topology/contracts/r3-fulfillment-writes";
 
-import { RELEASE_MANIFEST } from "../../../scripts/release-manifest.mjs";
+import { RELEASE_MANIFEST } from "../../../tooling/release/release-manifest.mjs";
 import { executeR2Command, r2FenceResource } from "../dist/modules/r2-master-procurement/command.js";
 import { canonicalRequestDigest, COMMAND_WRITER_RESOURCES, executeCommand } from "../dist/platform/commands.js";
 import { executeR3Command } from "../dist/r3/command.js";

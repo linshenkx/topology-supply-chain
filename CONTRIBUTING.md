@@ -16,7 +16,7 @@ pnpm install --frozen-lockfile
 
 - 阿里云/MySQL/OSS 是生产主运行链。
 - D1/Vinext/Sites/Cloudflare adapter 只保留开发预览与兼容能力；修改生产路径时仍要验证它们未被误删或破坏。
-- 根 `app/` 当前就是 Web package；不要在普通功能或规范化提交中搬到 `apps/web/`。
+- `apps/web` 是独立 Web package；普通业务功能不得把 Web runtime 依赖或配置搬回根 package。
 - 工程任务不得顺带实现 Purchase Receipt、BOM 实际库存预留/领料/消耗、质检放行/隔离等 Scope B。
 
 ## 提交前门禁

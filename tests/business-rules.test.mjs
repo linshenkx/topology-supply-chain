@@ -8,7 +8,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 
 const source = fs.readFileSync(
-  new URL("../app/lib/business-rules.ts", import.meta.url),
+  new URL("../apps/web/app/lib/business-rules.ts", import.meta.url),
   "utf8",
 );
 const transpiled = ts.transpileModule(source, {
@@ -31,7 +31,7 @@ const {
 } = module.exports;
 
 const mysqlDateTimeSource = fs.readFileSync(
-  new URL("../db/mysql-date-time.ts", import.meta.url),
+  new URL("../database/runtime/mysql-date-time.ts", import.meta.url),
   "utf8",
 );
 const mysqlDateTimeModule = { exports: {} };

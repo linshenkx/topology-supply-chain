@@ -1,0 +1,44 @@
+{
+  "name": "@topology/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node ../../tooling/build/run-vinext.mjs dev",
+    "build:preview": "node ../../tooling/build/run-vinext.mjs build",
+    "build:production": "node ../../tooling/build/build-aliyun.mjs",
+    "start:preview": "node ../../tooling/build/run-vinext.mjs start",
+    "start:production": "next start",
+    "typecheck": "tsc --noEmit --incremental false"
+  },
+  "dependencies": {
+    "@alicloud/credentials": "2.4.1",
+    "@alicloud/dysmsapi20170525": "^4.6.0",
+    "@alicloud/openapi-core": "^1.0.8",
+    "@topology/shared-config": "workspace:*",
+    "ali-oss": "^6.23.0",
+    "drizzle-orm": "0.45.2",
+    "mysql2": "^3.23.2",
+    "next": "16.2.11",
+    "react": "19.2.6",
+    "react-dom": "19.2.6",
+    "xlsx": "file:../../vendor/xlsx-0.20.3.tgz"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "1.37.1",
+    "@tailwindcss/postcss": "4.2.1",
+    "@types/ali-oss": "^6.23.3",
+    "@types/node": "22.19.19",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "19.2.3",
+    "@vitejs/plugin-react": "6.0.2",
+    "@vitejs/plugin-rsc": "0.5.26",
+    "eslint-config-next": "16.2.11",
+    "react-server-dom-webpack": "19.2.6",
+    "tailwindcss": "4.2.1",
+    "typescript": "5.9.3",
+    "vinext": "0.0.50",
+    "vite": "8.0.13",
+    "wrangler": "4.92.0"
+  }
+}

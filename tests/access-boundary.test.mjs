@@ -4,7 +4,7 @@ import test from "node:test";
 import ts from "typescript";
 import vm from "node:vm";
 
-const sourceUrl = new URL("../app/lib/access-boundary.ts", import.meta.url);
+const sourceUrl = new URL("../apps/web/app/lib/access-boundary.ts", import.meta.url);
 const source = fs.readFileSync(sourceUrl, "utf8");
 const transpiled = ts.transpileModule(source, {
   compilerOptions: {
@@ -59,7 +59,7 @@ test("non-loopback and malformed URLs never receive preview access", () => {
 });
 
 test("the application authorization path no longer reads proxy identity headers", () => {
-  const authz = fs.readFileSync(new URL("../app/lib/authz.ts", import.meta.url), "utf8");
+  const authz = fs.readFileSync(new URL("../apps/web/app/lib/authz.ts", import.meta.url), "utf8");
   assert.doesNotMatch(authz, /oai-authenticated-user-email/i);
 });
 
@@ -87,7 +87,7 @@ function nginxProxyLocations(nginx) {
 }
 
 test("Nginx clears every supported identity header in every proxy location", () => {
-  const nginx = fs.readFileSync(new URL("../deploy/aliyun/nginx-scm.conf", import.meta.url), "utf8");
+  const nginx = fs.readFileSync(new URL("../infrastructure/aliyun/nginx-scm.conf", import.meta.url), "utf8");
   const proxyLocations = nginxProxyLocations(nginx);
 
   assert.ok(proxyLocations.length > 0, "at least one proxy location must exist");

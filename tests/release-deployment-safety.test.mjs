@@ -8,14 +8,14 @@ import {
   assertReleaseManifest,
   parseReleaseManifest,
   releaseManifestJson,
-} from "../scripts/release-manifest.mjs";
-import { checkReleaseCompatibility } from "../scripts/check-release-compatibility.mjs";
+} from "../tooling/release/release-manifest.mjs";
+import { checkReleaseCompatibility } from "../tooling/release/check-release-compatibility.mjs";
 
 const root = new URL("..", import.meta.url);
-const deploy = readFileSync(new URL("../deploy/aliyun/deploy.sh", import.meta.url), "utf8");
-const rollback = readFileSync(new URL("../deploy/aliyun/rollback.sh", import.meta.url), "utf8");
-const activation = readFileSync(new URL("../scripts/activate-writers.sh", import.meta.url), "utf8");
-const rollbackSafety = readFileSync(new URL("../scripts/check-legacy-rollback-safety.mjs", import.meta.url), "utf8");
+const deploy = readFileSync(new URL("../infrastructure/aliyun/deploy.sh", import.meta.url), "utf8");
+const rollback = readFileSync(new URL("../infrastructure/aliyun/rollback.sh", import.meta.url), "utf8");
+const activation = readFileSync(new URL("../tooling/release/activate-writers.sh", import.meta.url), "utf8");
+const rollbackSafety = readFileSync(new URL("../tooling/release/check-legacy-rollback-safety.mjs", import.meta.url), "utf8");
 const platformCommands = readFileSync(new URL("../apps/api/src/platform/commands.ts", import.meta.url), "utf8");
 const r2Contracts = readFileSync(new URL("../packages/contracts/src/r2-writes.ts", import.meta.url), "utf8");
 const r3Contracts = readFileSync(new URL("../packages/contracts/src/r3-fulfillment-writes.ts", import.meta.url), "utf8");
@@ -34,7 +34,7 @@ function deleteResourceForCommand(value, commandName) {
 }
 
 function runCompatibility(current, target) {
-  return spawnSync(process.execPath, ["scripts/check-release-compatibility.mjs"], {
+  return spawnSync(process.execPath, ["tooling/release/check-release-compatibility.mjs"], {
     cwd: root,
     encoding: "utf8",
     env: {
@@ -94,9 +94,9 @@ test("release manifest identities match the frozen platform, R2, R3, and Worker 
 test("ordinary deploy has zero writer activation path", () => {
   assert.doesNotMatch(deploy, /set-writer-fences|activate-writers|WRITER_ACTIVATION/u);
   assert.match(deploy, /docker compose build app api worker migrator/u);
-  assert.match(deploy, /node scripts\/release-manifest\.mjs print/u);
-  assert.match(deploy, /node scripts\/check-mysql-migration-history\.mjs/u);
-  assert.match(deploy, /node scripts\/check-write-drain\.mjs/u);
+  assert.match(deploy, /node tooling\/release\/release-manifest\.mjs print/u);
+  assert.match(deploy, /node tooling\/release\/check-mysql-migration-history\.mjs/u);
+  assert.match(deploy, /node tooling\/release\/check-write-drain\.mjs/u);
   assert.match(deploy, /docker compose --profile migration run --rm migrator\s*$/mu);
   assert.match(deploy, /docker compose up -d app api worker/u);
 });
@@ -152,7 +152,7 @@ for (const [name, mutate, pattern] of [
 }
 
 test("missing rollback manifest is rejected", async () => {
-  const result = spawnSync(process.execPath, ["scripts/check-release-compatibility.mjs"], {
+  const result = spawnSync(process.execPath, ["tooling/release/check-release-compatibility.mjs"], {
     cwd: root,
     encoding: "utf8",
     env: { ...process.env, CURRENT_RELEASE_MANIFEST_JSON: await releaseManifestJson(), TARGET_RELEASE_MANIFEST_JSON: "" },

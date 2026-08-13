@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 const repositoryRoot = new URL("../../..", import.meta.url);
-const clientUrl = new URL("../../../app/lib/mutation-client.ts", import.meta.url);
+const clientUrl = new URL("../../../apps/web/app/lib/mutation-client.ts", import.meta.url);
 
 test("pending file scans survive timeout and refresh without another upload", () => {
   const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", `

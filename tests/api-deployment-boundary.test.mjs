@@ -5,10 +5,10 @@ import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
-const dockerfile = readFileSync(new URL("../Dockerfile.api", import.meta.url), "utf8");
-const workerDockerfile = readFileSync(new URL("../Dockerfile.worker", import.meta.url), "utf8");
+const dockerfile = readFileSync(new URL("../infrastructure/docker/api.Dockerfile", import.meta.url), "utf8");
+const workerDockerfile = readFileSync(new URL("../infrastructure/docker/worker.Dockerfile", import.meta.url), "utf8");
 const aliyunDockerfile = readFileSync(
-  new URL("../Dockerfile.aliyun", import.meta.url),
+  new URL("../infrastructure/docker/web.Dockerfile", import.meta.url),
   "utf8",
 );
 const rootPackage = JSON.parse(
@@ -16,6 +16,9 @@ const rootPackage = JSON.parse(
 );
 const apiPackage = JSON.parse(
   readFileSync(new URL("../apps/api/package.json", import.meta.url), "utf8"),
+);
+const webPackage = JSON.parse(
+  readFileSync(new URL("../apps/web/package.json", import.meta.url), "utf8"),
 );
 const lockfile = readFileSync(new URL("../pnpm-lock.yaml", import.meta.url), "utf8");
 const workspace = readFileSync(
@@ -26,44 +29,44 @@ const sheetJsTarball = readFileSync(
   new URL("../vendor/xlsx-0.20.3.tgz", import.meta.url),
 );
 const compose = readFileSync(
-  new URL("../deploy/aliyun/docker-compose.yml", import.meta.url),
+  new URL("../infrastructure/aliyun/docker-compose.yml", import.meta.url),
   "utf8",
 );
-const composePath = fileURLToPath(new URL("../deploy/aliyun/docker-compose.yml", import.meta.url));
+const composePath = fileURLToPath(new URL("../infrastructure/aliyun/docker-compose.yml", import.meta.url));
 const nginx = readFileSync(
-  new URL("../deploy/aliyun/nginx-scm.conf", import.meta.url),
+  new URL("../infrastructure/aliyun/nginx-scm.conf", import.meta.url),
   "utf8",
 );
 const deployScript = readFileSync(
-  new URL("../deploy/aliyun/deploy.sh", import.meta.url),
+  new URL("../infrastructure/aliyun/deploy.sh", import.meta.url),
   "utf8",
 );
 const rollbackScript = readFileSync(
-  new URL("../deploy/aliyun/rollback.sh", import.meta.url),
+  new URL("../infrastructure/aliyun/rollback.sh", import.meta.url),
   "utf8",
 );
 const fenceScript = readFileSync(
-  new URL("../scripts/set-writer-fences.mjs", import.meta.url),
+  new URL("../tooling/release/set-writer-fences.mjs", import.meta.url),
   "utf8",
 );
 const releaseManifestScript = readFileSync(
-  new URL("../scripts/release-manifest.mjs", import.meta.url),
+  new URL("../tooling/release/release-manifest.mjs", import.meta.url),
   "utf8",
 );
 const activationScript = readFileSync(
-  new URL("../scripts/activate-writers.sh", import.meta.url),
+  new URL("../tooling/release/activate-writers.sh", import.meta.url),
   "utf8",
 );
 const domainMigration = readFileSync(
-  new URL("../drizzle-mysql/0004_scope_a_domain_writes.sql", import.meta.url),
+  new URL("../database/migrations/mysql/0004_scope_a_domain_writes.sql", import.meta.url),
   "utf8",
 );
 const migrationJournal = readFileSync(
-  new URL("../drizzle-mysql/meta/_journal.json", import.meta.url),
+  new URL("../database/migrations/mysql/meta/_journal.json", import.meta.url),
   "utf8",
 );
 const deploymentReadme = readFileSync(
-  new URL("../deploy/aliyun/README.md", import.meta.url),
+  new URL("../infrastructure/aliyun/README.md", import.meta.url),
   "utf8",
 );
 
@@ -157,7 +160,8 @@ test("API image deploys only the API production closure", () => {
 });
 
 test("workspace dependency policy excludes vulnerable XLSX and fast-uri releases", () => {
-  assert.equal(rootPackage.dependencies.xlsx, "file:vendor/xlsx-0.20.3.tgz");
+  assert.equal(rootPackage.dependencies.xlsx, undefined);
+  assert.equal(webPackage.dependencies.xlsx, "file:../../vendor/xlsx-0.20.3.tgz");
   assert.equal(apiPackage.dependencies.xlsx, undefined);
   assert.match(workspace, /^overrides:\n  fast-uri@3: 3\.1\.5$/m);
   assert.doesNotMatch(lockfile, /xlsx@0\.18\.5|fast-uri@3\.1\.4/u);
@@ -169,9 +173,10 @@ test("workspace dependency policy excludes vulnerable XLSX and fast-uri releases
   );
 });
 
-test("legacy production image stages the vendored SheetJS tarball before install", () => {
-  const vendorCopy = aliyunDockerfile.indexOf(
-    "COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz",
+test("Web production image stages the vendored SheetJS tarball before install", () => {
+  const vendorCopy = Math.max(
+    aliyunDockerfile.indexOf("COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz"),
+    aliyunDockerfile.indexOf("COPY . ."),
   );
   const install = aliyunDockerfile.indexOf(
     "RUN pnpm install --frozen-lockfile --ignore-scripts",
@@ -188,14 +193,14 @@ test("compose publishes Web, API, and Worker on separate loopback-only ports", (
 
   assert.match(app, /image: topology-scm:\$\{APP_IMAGE_TAG:-latest\}/);
   assert.match(app, /- "127\.0\.0\.1:3000:3000"/);
-  assert.match(api, /dockerfile: Dockerfile\.api/);
+  assert.match(api, /dockerfile: infrastructure\/docker\/api\.Dockerfile/);
   assert.match(api, /image: topology-scm-api:\$\{API_IMAGE_TAG:-latest\}/);
   assert.match(api, /target: runner/);
   assert.match(api, /HOST: 0\.0\.0\.0/);
   assert.match(api, /PORT: "3001"/);
   assert.match(api, /- "127\.0\.0\.1:3001:3001"/);
   assert.match(api, /\/api\/v1\/health\/ready/);
-  assert.match(worker, /dockerfile: Dockerfile\.worker/);
+  assert.match(worker, /dockerfile: infrastructure\/docker\/worker\.Dockerfile/);
   assert.match(worker, /image: topology-scm-worker:\$\{WORKER_IMAGE_TAG:-latest\}/);
   assert.match(worker, /- "127\.0\.0\.1:3002:3002"/);
   assert.match(worker, /\/health\/ready/);
@@ -413,11 +418,11 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
   const build = commandIndex(deployScript, "docker compose build app api worker migrator");
   const envCheck = commandIndex(
     deployScript,
-    "docker compose --profile migration run --rm migrator node scripts/check-production-env.mjs",
+    "docker compose --profile migration run --rm migrator node tooling/checks/check-production-env.mjs",
   );
-  const history = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/check-mysql-migration-history.mjs");
+  const history = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node tooling/release/check-mysql-migration-history.mjs");
   const stop = commandIndex(deployScript, "docker compose stop app api worker");
-  const drain = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node scripts/check-write-drain.mjs");
+  const drain = commandIndex(deployScript, "docker compose --profile migration run --rm migrator node tooling/release/check-write-drain.mjs");
   const migration = commandIndex(deployScript, "docker compose --profile migration run --rm migrator");
   const start = commandIndex(deployScript, "docker compose up -d app api worker");
   const webHealth = commandIndex(

@@ -436,7 +436,7 @@ test("missing database and malformed child closure fail through the sanitized bo
 
 test("frontend uses the v1 master-data mutation adapter and reports read failures", async () => {
   const source = await readFile(
-    new URL("../../../app/components/MasterDataWorkspace.tsx", import.meta.url),
+    new URL("../../../apps/web/app/components/MasterDataWorkspace.tsx", import.meta.url),
     "utf8",
   );
   const requestSource = source.slice(
@@ -462,7 +462,7 @@ test("frontend uses the v1 master-data mutation adapter and reports read failure
 
 test("Next development bridge is GET-only and refuses production", () => {
   const routeUrl = new URL(
-    "../../../app/api/v1/master-data/route.ts",
+    "../../../apps/web/app/api/v1/master-data/route.ts",
     import.meta.url,
   );
   const evaluation = `
@@ -510,7 +510,7 @@ test("Next development bridge is GET-only and refuses production", () => {
 
 test("Next development bridge forwards only one valid session cookie to its fixed target", () => {
   const routeUrl = new URL(
-    "../../../app/api/v1/master-data/route.ts",
+    "../../../apps/web/app/api/v1/master-data/route.ts",
     import.meta.url,
   );
   const evaluation = `

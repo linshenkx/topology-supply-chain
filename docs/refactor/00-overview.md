@@ -63,7 +63,7 @@ flowchart LR
 
 ### 4.1 已有基础
 
-- Node.js 22、TypeScript、Next.js、React、Drizzle、MySQL/OSS 适配和 Docker/Nginx 部署骨架已经存在（`package.json`、`deploy/aliyun/`）。
+- Node.js 22、TypeScript、Next.js、React、Drizzle、MySQL/OSS 适配和 Docker/Nginx 部署骨架已经存在（`package.json`、`infrastructure/aliyun/`）。
 - 主数据、供应商、采购、生产、库存、发货、退货、财务、审批、审计等领域均已有表或 API。
 - 会话 Token 使用高熵随机值且数据库保存哈希，密码采用 PBKDF2，Cookie 已设置 HttpOnly/Secure/SameSite。
 - 部分库存扣减已使用事务和条件更新思路，容器也具备非 root、只读根文件系统等基础加固。
@@ -73,12 +73,12 @@ flowchart LR
 
 | 级别 | 阻断项 | 业务后果 | 直接证据 |
 | --- | --- | --- | --- |
-| P0 | 无会话时信任外部身份请求头，Nginx 未清除 | 可冒充任一已启用用户，绕过密码、短信和会话 | `app/lib/authz.ts:38-57`；`deploy/aliyun/nginx-scm.conf:38-48` |
+| P0 | 无会话时信任外部身份请求头，Nginx 未清除 | 可冒充任一已启用用户，绕过密码、短信和会话 | `app/lib/authz.ts:38-57`；`infrastructure/aliyun/nginx-scm.conf:38-48` |
 | P0 | 财务高风险操作信任客户端 `smsVerified: true` | 可绕过 Step-up 登记付款、申请更正、解除风险 | `app/api/finance/route.ts:98-100,294-316,498-500` |
 | P0 | 审批中心跨约 27 张表直接执行副作用，权限与事务不完整 | 越权审批、审批已完成但业务未完成、重复执行 | `app/api/approvals/route.ts` |
 | P0 | 调拨、发货、付款缺少完整幂等和并发控制 | 负库存、重复扣库/请款、超额付款 | `app/api/inventory/transfers/route.ts:60-96`；`app/api/shipments/route.ts:221-370`；`app/api/finance/route.ts:508-531` |
 | P0 | MySQL 实例被强转为 D1 类型，生产方言未获编译期验证 | 预览通过、生产写入失败；迁移结果不可预测 | `db/index.ts:24-28`；`app/api/auth/verify/route.ts:21-28` |
-| P0 | 生产 Schema 与迁移历史曾经不一致 | 应用回滚后可能不兼容数据库，无法可靠重建 | `PROJECT_STATUS.md:250-259`；`README.md:114` |
+| P0 | 生产 Schema 与迁移历史曾经不一致 | 应用回滚后可能不兼容数据库，无法可靠重建 | `docs/history/PROJECT_STATUS.md:250-259`；`README.md:114` |
 | P0 | 依赖审计存在可触达高危项，Excel 在请求进程直接解析 | 恶意文件或依赖漏洞影响主服务 | `package.json`；`app/api/imports/preview/route.ts:23-26` |
 
 ### 4.3 业务断链

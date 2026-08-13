@@ -9,14 +9,14 @@ import {
   assertFrozenMysqlMigrationRepository,
   assertMysqlMigrationDeclarations,
   FROZEN_MYSQL_MIGRATIONS,
-} from "../scripts/mysql-migration-manifest.mjs";
-import { releaseManifestJson } from "../scripts/release-manifest.mjs";
+} from "../database/tooling/mysql-migration-manifest.mjs";
+import { releaseManifestJson } from "../tooling/release/release-manifest.mjs";
 
-const repositoryMigrations = new URL("../drizzle-mysql/", import.meta.url);
+const repositoryMigrations = new URL("../database/migrations/mysql/", import.meta.url);
 
 async function fixture(t) {
   const root = await mkdtemp(join(tmpdir(), "mysql-migration-manifest-"));
-  const directory = join(root, "drizzle-mysql");
+  const directory = join(root, "database/migrations/mysql");
   await cp(repositoryMigrations, directory, { recursive: true });
   t.after(() => rm(root, { force: true, recursive: true }));
   return { directory, url: pathToFileURL(`${directory}/`) };
@@ -42,8 +42,8 @@ test("one frozen manifest validates SQL, snapshots, and the full journal before 
     assert.match(migration.snapshotHash, /^[a-f\d]{64}$/u);
     assert.ok(Number.isSafeInteger(migration.createdAt));
   }
-  const preflight = await readFile(new URL("../scripts/check-mysql-migration-history.mjs", import.meta.url), "utf8");
-  const release = await readFile(new URL("../scripts/release-manifest.mjs", import.meta.url), "utf8");
+  const preflight = await readFile(new URL("../tooling/release/check-mysql-migration-history.mjs", import.meta.url), "utf8");
+  const release = await readFile(new URL("../tooling/release/release-manifest.mjs", import.meta.url), "utf8");
   assert.match(preflight, /await assertFrozenMysqlMigrationRepository\(\);[\s\S]*mysql\.createConnection/u);
   assert.match(release, /async function releaseManifestJson\(migrationDirectory\)[\s\S]*await assertFrozenMysqlMigrationRepository\(migrationDirectory\)/u);
   assert.doesNotMatch(preflight, /const canonicalHistory/u);

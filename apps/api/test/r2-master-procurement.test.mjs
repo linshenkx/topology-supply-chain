@@ -237,10 +237,10 @@ test("import evidence is bound to the authenticated upload owner", async () => {
 test("legacy writers are 410-only and frontend mutations use the v1 adapter/bridge", async () => {
   const root = new URL("../../..", import.meta.url);
   const routes = [
-    "app/api/imports/preview/route.ts", "app/api/imports/stage/route.ts", "app/api/imports/commit/route.ts",
-    "app/api/master-data/route.ts", "app/api/suppliers/route.ts", "app/api/supplier-skus/route.ts",
-    "app/api/supplier-prices/route.ts", "app/api/supplier-performance/route.ts",
-    "app/api/purchase-plans/route.ts", "app/api/purchase-orders/route.ts",
+    "apps/web/app/api/imports/preview/route.ts", "apps/web/app/api/imports/stage/route.ts", "apps/web/app/api/imports/commit/route.ts",
+    "apps/web/app/api/master-data/route.ts", "apps/web/app/api/suppliers/route.ts", "apps/web/app/api/supplier-skus/route.ts",
+    "apps/web/app/api/supplier-prices/route.ts", "apps/web/app/api/supplier-performance/route.ts",
+    "apps/web/app/api/purchase-plans/route.ts", "apps/web/app/api/purchase-orders/route.ts",
   ];
   for (const route of routes) {
     const source = await readFile(new URL(route, root), "utf8");
@@ -249,19 +249,19 @@ test("legacy writers are 410-only and frontend mutations use the v1 adapter/brid
     assert.doesNotMatch(writePart, /getDb\(|\.insert\(|\.update\(/u, route);
   }
   const components = [
-    "app/components/MasterDataWorkspace.tsx", "app/components/SupplierWorkspace.tsx",
-    "app/components/SupplierPriceWorkspace.tsx", "app/components/SupplierPerformanceWorkspace.tsx",
-    "app/components/PurchaseWorkspace.tsx",
+    "apps/web/app/components/MasterDataWorkspace.tsx", "apps/web/app/components/SupplierWorkspace.tsx",
+    "apps/web/app/components/SupplierPriceWorkspace.tsx", "apps/web/app/components/SupplierPerformanceWorkspace.tsx",
+    "apps/web/app/components/PurchaseWorkspace.tsx",
   ];
   for (const component of components) {
     const source = await readFile(new URL(component, root), "utf8");
     assert.doesNotMatch(source, /fetch\([`"]\/api\/(?:master-data|suppliers|supplier-skus|supplier-prices|supplier-performance|purchase-plans|purchase-orders)/u, component);
   }
-  const bridge = await readFile(new URL("app/api/v1/[...path]/route.ts", root), "utf8");
+  const bridge = await readFile(new URL("apps/web/app/api/v1/[...path]/route.ts", root), "utf8");
   for (const path of new Set(Object.keys(R2_COMMAND_BY_MUTATION).map((entry) => entry.slice(entry.indexOf(" ") + 1)))) {
     assert.match(bridge, new RegExp(path.replaceAll("/", "\\/"), "u"), path);
   }
-  const fenceSql = await readFile(new URL("drizzle-mysql/0004_scope_a_domain_writes.sql", root), "utf8");
+  const fenceSql = await readFile(new URL("database/migrations/mysql/0004_scope_a_domain_writes.sql", root), "utf8");
   assert.equal((fenceSql.match(/\('r2\./gu) ?? []).length, 12);
   assert.match(fenceSql, /0004_scope_a_domain_writes|r3_business_keys/u);
   const imports = await readFile(new URL("apps/api/src/modules/r2-master-procurement/imports.ts", root), "utf8");

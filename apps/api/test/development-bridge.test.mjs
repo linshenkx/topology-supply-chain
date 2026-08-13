@@ -3,7 +3,7 @@ import { spawnSync } from "node:child_process";
 import test from "node:test";
 
 const routeUrl = new URL(
-  "../../../app/api/v1/[...path]/route.ts",
+  "../../../apps/web/app/api/v1/[...path]/route.ts",
   import.meta.url,
 );
 const repositoryRoot = new URL("../../..", import.meta.url);

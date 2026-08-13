@@ -93,16 +93,16 @@ test("all 13 delegated command bodies cross the Fastify contract boundary", asyn
 
 test("legacy writers are fail-fast 410 gates and the frontend has no delegated legacy mutation URL", async () => {
   const legacy = [
-    ["app/api/approvals/route.ts", ["POST"]],
-    ["app/api/inventory/route.ts", ["POST"]],
-    ["app/api/inventory/transfers/route.ts", ["POST", "PATCH"]],
-    ["app/api/production-orders/route.ts", ["POST", "PATCH"]],
-    ["app/api/quality-inspections/route.ts", ["POST"]],
-    ["app/api/stocktakes/route.ts", ["POST", "PATCH"]],
-    ["app/api/shipments/route.ts", ["POST"]],
-    ["app/api/returns/route.ts", ["POST"]],
-    ["app/api/finance/route.ts", ["POST"]],
-    ["app/api/warehouses/route.ts", ["POST"]],
+    ["apps/web/app/api/approvals/route.ts", ["POST"]],
+    ["apps/web/app/api/inventory/route.ts", ["POST"]],
+    ["apps/web/app/api/inventory/transfers/route.ts", ["POST", "PATCH"]],
+    ["apps/web/app/api/production-orders/route.ts", ["POST", "PATCH"]],
+    ["apps/web/app/api/quality-inspections/route.ts", ["POST"]],
+    ["apps/web/app/api/stocktakes/route.ts", ["POST", "PATCH"]],
+    ["apps/web/app/api/shipments/route.ts", ["POST"]],
+    ["apps/web/app/api/returns/route.ts", ["POST"]],
+    ["apps/web/app/api/finance/route.ts", ["POST"]],
+    ["apps/web/app/api/warehouses/route.ts", ["POST"]],
   ];
   for (const [path, methods] of legacy) {
     const source = await readFile(new URL(path, root), "utf8");
@@ -111,14 +111,14 @@ test("legacy writers are fail-fast 410 gates and the frontend has no delegated l
     }
   }
   const frontend = await Promise.all([
-    "app/page.tsx",
-    "app/components/InventoryWorkspace.tsx",
-    "app/components/ProductionWorkspace.tsx",
-    "app/components/StocktakeWorkspace.tsx",
-    "app/components/ShippingWorkspace.tsx",
-    "app/components/FinanceWorkspace.tsx",
-    "app/components/FinanceExceptionWorkspace.tsx",
-    "app/components/WarehouseWorkspace.tsx",
+    "apps/web/app/page.tsx",
+    "apps/web/app/components/InventoryWorkspace.tsx",
+    "apps/web/app/components/ProductionWorkspace.tsx",
+    "apps/web/app/components/StocktakeWorkspace.tsx",
+    "apps/web/app/components/ShippingWorkspace.tsx",
+    "apps/web/app/components/FinanceWorkspace.tsx",
+    "apps/web/app/components/FinanceExceptionWorkspace.tsx",
+    "apps/web/app/components/WarehouseWorkspace.tsx",
   ].map((path) => readFile(new URL(path, root), "utf8")));
   const joined = frontend.join("\n");
   assert.doesNotMatch(joined, /["'`]\/api\/(?:approvals|inventory|production-orders|quality-inspections|stocktakes|shipments|returns|finance|warehouses)(?:["'`/])/u);
@@ -155,8 +155,8 @@ test("bounded A-J guards are represented in contracts, locks, ACLs and UI", asyn
     "apps/api/src/r3/approval-handler.ts", "apps/api/src/r3/finance-handler.ts",
     "apps/api/src/r3/production-handlers.ts", "apps/api/src/r3/logistics-handlers.ts",
     "apps/api/src/r3/inventory-handlers.ts", "apps/api/src/r3/support.ts", "apps/api/src/r3/command.ts",
-    "packages/contracts/src/r3-fulfillment-writes.ts", "app/lib/mutation-client.ts", "app/page.tsx",
-    "app/components/ShippingWorkspace.tsx", "drizzle-mysql/0004_scope_a_domain_writes.sql",
+    "packages/contracts/src/r3-fulfillment-writes.ts", "apps/web/app/lib/mutation-client.ts", "apps/web/app/page.tsx",
+    "apps/web/app/components/ShippingWorkspace.tsx", "database/migrations/mysql/0004_scope_a_domain_writes.sql",
   ].map((path) => readFile(new URL(path, root), "utf8")));
   assert.match(approval, /r1\.user_role_change/u);
   assert.match(approval, /`r2\.\$\{workflow\}`/u);
