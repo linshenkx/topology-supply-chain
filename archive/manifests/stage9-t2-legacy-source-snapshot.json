@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "acceptedSourceSha": "228de77b97e42e8b571871048c425ebd5712cbc0",
+  "snapshot": {
+    "path": "archive/source-snapshots/stage9-t2-legacy-routes-228de77b.tar",
+    "format": "git-archive-tar",
+    "sha256": "df2605b0471e3d8f1be7146c3404dbe65a972d958159112c009844b6771a94a9",
+    "bytes": 184320
+  },
+  "sensitiveScan": {
+    "status": "clean",
+    "findings": []
+  },
+  "closure": ["runtime", "build", "lint", "docker", "release"],
+  "entries": [
+    { "path": "apps/web/app/api/approvals/route.ts", "successor": "/api/v1/approvals", "methods": ["GET", "POST"], "sha256": "51fd530031e3e09eacc92bf60bbef64c7c2878ae63672d07be78d3c72d3bfd5f", "bytes": 33004 },
+    { "path": "apps/web/app/api/audit-logs/route.ts", "successor": "/api/v1/audit-logs", "methods": ["GET"], "sha256": "4e6c53b7dba795b20748a1d383200b60bc89ca30795bfce63e83a6691131a3d1", "bytes": 151 },
+    { "path": "apps/web/app/api/finance/route.ts", "successor": "/api/v1/finance", "methods": ["GET", "POST"], "sha256": "7349c4f30a3133b15775d6bf802a4305163eaacf1211f9bcd2478c9dabf35667", "bytes": 32680 },
+    { "path": "apps/web/app/api/imports/diff/route.ts", "successor": "/api/v1/imports/diff", "methods": ["GET"], "sha256": "8d6fcf991ecf59254d099fd2c392a2ac47d92480ed211babc736a1eb92212064", "bytes": 156 },
+    { "path": "apps/web/app/api/inventory/route.ts", "successor": "/api/v1/inventory", "methods": ["GET", "POST"], "sha256": "4c288f01a91801dee9a08907d86848e58acdc9fd4a17ec913aed9fdf4426e2a7", "bytes": 5005 },
+    { "path": "apps/web/app/api/master-data/route.ts", "successor": "/api/v1/master-data", "methods": ["GET", "POST"], "sha256": "1cfc42281b0369a42c8dce38007c342ae2e90f2abac76cf1f8761506c9a7bbe5", "bytes": 819 },
+    { "path": "apps/web/app/api/production-orders/route.ts", "successor": "/api/v1/production-orders", "methods": ["GET", "POST", "PATCH"], "sha256": "87c4b6c426cdeb8d0342c716cc3678a7a1aca9daa1634a68c940e165df7b73cf", "bytes": 12111 },
+    { "path": "apps/web/app/api/purchase-orders/route.ts", "successor": "/api/v1/purchase-orders", "methods": ["GET", "POST", "PATCH"], "sha256": "a1d427469531706f1373821996736224b4a75157d42cd3e4c4fe902e40a28186", "bytes": 626 },
+    { "path": "apps/web/app/api/purchase-plans/route.ts", "successor": "/api/v1/purchase-plans", "methods": ["GET", "POST", "PATCH"], "sha256": "1a952d0b2f3936d38bd0a3d2e0b6dbb49ba5baac0ae2b4ebd9633837c2c59907", "bytes": 612 },
+    { "path": "apps/web/app/api/quality-inspections/route.ts", "successor": "/api/v1/quality-inspections", "methods": ["GET", "POST"], "sha256": "cf60c7311960965fd27e01390b461123b24fc77b6e22fe8e467b6cea385d4197", "bytes": 7034 },
+    { "path": "apps/web/app/api/returns/route.ts", "successor": "/api/v1/returns", "methods": ["GET", "POST"], "sha256": "0927d8406d66cb7335f9529a30563adb22d0b91830411b588aeb528f38103c7d", "bytes": 11889 },
+    { "path": "apps/web/app/api/shipments/route.ts", "successor": "/api/v1/shipments", "methods": ["GET", "POST"], "sha256": "18c7f71e18cf8545c22830f0b92614d0f35e66a7b7f308a6f42c61bb3d8edc51", "bytes": 21038 },
+    { "path": "apps/web/app/api/stocktakes/route.ts", "successor": "/api/v1/stocktakes", "methods": ["GET", "POST", "PATCH"], "sha256": "463a40959af0defef622f21a91470c51695d43830ad94fe1b32e4652e5bcf956", "bytes": 11469 },
+    { "path": "apps/web/app/api/supplier-performance/route.ts", "successor": "/api/v1/supplier-performance", "methods": ["GET", "POST"], "sha256": "2d91228c83a6b82568fdea820d830b61921fcee9734e6987bf11ddcc078e066f", "bytes": 2432 },
+    { "path": "apps/web/app/api/supplier-prices/route.ts", "successor": "/api/v1/supplier-prices", "methods": ["GET", "POST"], "sha256": "56235319d101a4b4da60a1627f9975a1734175afcfc7598319b9d16e3023eff8", "bytes": 597 },
+    { "path": "apps/web/app/api/supplier-skus/route.ts", "successor": "/api/v1/supplier-skus", "methods": ["GET", "POST"], "sha256": "72a36b69ee0d3a7796ec27c309867ee055e3ba14d3f92664e05d988543ac490b", "bytes": 484 },
+    { "path": "apps/web/app/api/suppliers/route.ts", "successor": "/api/v1/suppliers", "methods": ["GET", "POST"], "sha256": "2a4a40b05f315dc2400792c9dc0ce39cc8d36a09889d20899903a7a65af39493", "bytes": 455 },
+    { "path": "apps/web/app/api/warehouses/route.ts", "successor": "/api/v1/warehouses", "methods": ["GET", "POST"], "sha256": "22a2b20f6ad7eb9fbf75418acaac7c45c93f089bf6482c6d54c53ae0cea8ab25", "bytes": 6911 }
+  ]
+}

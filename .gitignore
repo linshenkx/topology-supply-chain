@@ -54,6 +54,8 @@ next-env.d.ts
 !/archive/README.md
 !/archive/manifests/
 !/archive/manifests/**
+!/archive/source-snapshots/
+!/archive/source-snapshots/stage9-t2-legacy-routes-228de77b.tar
 *.tar.gz
 *.zip
 *.tsbuildinfo

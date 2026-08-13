@@ -38,6 +38,7 @@
     "lint:baseline": "node tooling/checks/check-eslint-baseline.mjs",
     "architecture:check": "node tooling/checks/check-runtime-import-graph.mjs",
     "docker:check-context": "node tooling/checks/check-docker-context.mjs",
+    "archive:verify-legacy-source": "node tooling/archive/verify-legacy-source-snapshot.mjs",
     "deploy:check-env-contract": "node tooling/checks/check-environment-contract.mjs",
     "verify:local": "pnpm typecheck && pnpm lint:baseline && pnpm architecture:check && pnpm docker:check-context && pnpm deploy:check-env-contract && pnpm test:non-mysql && pnpm build:web:production",
     "verify:mysql": "pnpm typecheck && pnpm test:mysql",
