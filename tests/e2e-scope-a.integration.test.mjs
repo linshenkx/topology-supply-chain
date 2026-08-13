@@ -90,7 +90,16 @@ test("Stage 11 T2 R3 production and quality stay inside the current Scope A boun
   });
 });
 
-test.skip("Stage 11 T2 R3 shipment and return is blocked by the recorded local 500 ship counterexample", () => {});
+test("Stage 11 T2 R3 shipment/return counterexample fails closed without side effects", { timeout: 720_000 }, async (t) => {
+  await withScenario(t, "r3logistics", "t2-r3-logistics", async ({ runtime, db }) => {
+    const fixture = runtime.fixture.entities; const session = await signIn(runtime);
+    const [[before]] = await db.query("SELECT (SELECT COUNT(*) FROM shipment_evidence WHERE delivery_batch_id=?) AS evidence, (SELECT COUNT(*) FROM inventory_movements WHERE delivery_batch_id=?) AS movements, (SELECT status FROM delivery_batches WHERE id=?) AS status", [fixture.shipmentId, fixture.shipmentId, fixture.shipmentId]);
+    const shipped = await command(session, "/api/v1/shipments", { action: "ship", deliveryBatchId: fixture.shipmentId, shippedAt: "2026-02-01T00:00:00.000Z", carrier: "e2e-local", logisticsNo: `E2E-${runtime.runId}-LOG`, evidenceFileId: fixture.shipmentEvidenceFileId }, { key: `${runtime.runId}-r3-ship-counterexample-0001` });
+    assert.equal(shipped.status, 500, JSON.stringify(safeHttp("shipment-ship", shipped))); assert.equal(shipped.body.code, "INTERNAL_SERVER_ERROR");
+    const [[after]] = await db.query("SELECT (SELECT COUNT(*) FROM shipment_evidence WHERE delivery_batch_id=?) AS evidence, (SELECT COUNT(*) FROM inventory_movements WHERE delivery_batch_id=?) AS movements, (SELECT status FROM delivery_batches WHERE id=?) AS status", [fixture.shipmentId, fixture.shipmentId, fixture.shipmentId]);
+    assert.deepEqual([Number(after.evidence), Number(after.movements), after.status], [Number(before.evidence), Number(before.movements), before.status]);
+  });
+});
 
 test("Stage 11 T2 R3 finance direct write and payment negative path remain fail-closed", { timeout: 720_000 }, async (t) => {
   await withScenario(t, "r3finance", "t2-r3-finance", async ({ runtime, db }) => {

@@ -27,7 +27,7 @@
 
 | 项目 | 状态和依据 |
 | --- | --- |
-| R3 shipment / return | **BLOCKED after execution.** 使用 fixture 的 local-only clean evidence file、planned delivery batch、可用库存，`POST /api/v1/shipments { action: "ship" }` 返回 `500 INTERNAL_SERVER_ERROR`，在 receive/return 前停止。未修改 production handler；本报告将其保留为反例，测试显示为具名 skip。 |
+| R3 shipment / return | **BLOCKED after execution.** 使用 fixture 的 local-only clean evidence file、planned delivery batch、可用库存，`POST /api/v1/shipments { action: "ship" }` 返回 `500 INTERNAL_SERVER_ERROR`，在 receive/return 前停止。生产 handler 写 `shipment_evidence.uploaded_at`，但冻结 canonical migration 的表只有 `created_at`；事务回滚，经 MySQL 断言 shipment evidence、inventory movement、batch status 均无变化。未修改 production handler；反例作为自动化 fail-closed 测试执行。 |
 | Approval/step-up 逐 effect 矩阵、职责分离 | 未覆盖；场景目录已标为业务裁决缺口，不猜测角色组合。 |
 | R2 imports、supplier prices/performance、plan/order factory transition | 未覆盖；需要独立 fixture/已裁决状态而非猜测。 |
 | Scope B | purchase receipt、BOM material consumption、quality inventory release、real provider/payment 均未进入。 |
@@ -41,11 +41,11 @@
 
 | 命令 | 实际结果 |
 | --- | --- |
-| `pnpm test:e2e-scope-a` | **7 pass / 0 fail / 1 explicit blocked skip**；每个通过场景实际运行在 loopback MySQL/API/Worker/Web HTTPS/stub。 |
+| `pnpm test:e2e-scope-a` | 初次完整运行 **7 pass / 0 fail / 1 explicit blocked skip**；物流反例随后升级为可重复的无副作用断言，最终回归记录该反例而非静默 skip。每个场景实际运行在 loopback MySQL/API/Worker/Web HTTPS/stub。 |
 | `pnpm test:e2e-foundation` | **1 pass / 0 fail**；双 RUN_ID 同时存活、hostile env 隔离、OTP/control 隔离、PID tamper refusal、partial-start recovery 和 cleanup 均通过。 |
 | `pnpm lint` | PASS |
 | `pnpm typecheck` | PASS |
 | `pnpm test:non-mysql` | **387 pass / 0 fail / 0 skip**，Web system **4 pass / 0 fail**。 |
 | `git diff --check` | PASS（最终提交前复核） |
 
-`shipment/return` 的唯一 skip 不是静默跳过：它是已执行的 local production-contract counterexample，已在上表列明，并阻断“所有 Scope A 场景 0 fail”的完成宣称。
+`shipment/return` 不是静默跳过：它是已执行、可重复的 local production-contract counterexample，已在上表列明，并阻断“所有 Scope A 场景 0 fail”的完成宣称。
