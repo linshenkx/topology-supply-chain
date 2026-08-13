@@ -37,6 +37,7 @@
     "lint": "eslint . --config apps/web/eslint.config.mjs",
     "lint:baseline": "node tooling/checks/check-eslint-baseline.mjs",
     "audit:policy": "node tooling/checks/check-audit-policy.mjs",
+    "db:verify-generation": "node tooling/checks/check-drizzle-generation.mjs",
     "architecture:check": "node tooling/checks/check-runtime-import-graph.mjs",
     "docker:check-context": "node tooling/checks/check-docker-context.mjs",
     "archive:verify-legacy-source": "node tooling/archive/verify-legacy-source-snapshot.mjs",
