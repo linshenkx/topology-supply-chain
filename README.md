@@ -2,7 +2,7 @@
 
 广州拓扑睡眠科技有限公司的供应链协同系统。本仓库是一个多运行时 monorepo：Web、Fastify API 与后台 Worker 分别构建和运行，但共享 Git、pnpm lockfile、契约、MySQL migration history 与发布清单。
 
-本文是当前工程入口。2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，该文件不代表当前实时生产状态。Scope A 的最近一次已记录验收见 [Stage 6 验收](./docs/refactor/stage6-scope-a-acceptance.md)。
+本文是当前工程入口。文档按当前规范/能力、阶段验收、实施记录、逐提交审查和历史快照分类，统一从 [docs 文档索引](./docs/README.md) 路由。Scope A 最近一次已记录验收是 [Stage 9 物理分离最终验收](./docs/refactor/stage9-physical-separation-final-acceptance.md)（GO）；2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，不代表当前实时生产状态。
 
 ## 运行拓扑与支持矩阵
 
@@ -59,7 +59,7 @@ pnpm verify:mysql
 pnpm verify
 ```
 
-`pnpm lint` 如实报告当前源码债务并可能非零退出；`pnpm lint:baseline` 是 T1 的无新增债务门禁，允许后续专门批次减少问题，但不允许新增文件/规则计数。
+`pnpm lint` 运行完整 ESLint 检查；Stage 9 验收记录为 0 errors / 0 warnings。`pnpm lint:baseline` 是无新增债务回归门禁，后续专门批次可以减少问题，但不得新增文件/规则计数。
 
 MySQL 门禁使用以下环境变量：
 
