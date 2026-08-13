@@ -39,7 +39,7 @@
 - 冻结 identity 子集 SHA-256：commands `4befa44353557a7565427d3b5c49106024bc5c05badb318db969c2a1e21b59e0`，resources `6e62093cccb772b6d9913040b3cbcfc24a063ecdc51a7e5d50702cf357a0b542`，migrations `c54e55a41aa786d28662b04aaa4c3814d2e0a830ef8c14239d3ced1973e25e15`。
 - MySQL migration SQL SHA-256：0000 `7d881b148166d64865a3062ff36898888eeef9c5f87fb650f9533c27fb576f7c`；0001 `425efc9f6fd7baa04a80bd6bc03a39716201af5916ae9a62c103e098f52e1577`；0002 `8d2878f9b5e2068343db0d12437b2d92a479cbcb23e0dc668d1395ba703a2a64`；0003 `f7fb8dcf1ff6185cebd866a39836b0c5ef7b56a7e96ccc8fe438aa572b96df41`；0004 `974aefb885e265e082f4f1a6006b2cd77472cf63183ca1746d0fc83885bf9ecd`。MySQL journal hash 为 `63a4e0bd06c2291ed720e582058d3b983bb2356d8fd9b130132333564c80985f`。
 - legacy compatibility 基线为 18 条受合同测试约束的 `410 + WRITER_MOVED + successor Link`；archive tracked manifest 为 `archived` 343/343，实体只存在于 owner checkout。
-- 结果拓扑：Web package、91 个 `app/**` 文件、5 个 public 资产、Next/Vite/Vinext/Sites 配置和 Cloudflare adapter 归 `apps/web`；database、infrastructure、tooling、docs/history 分别归入对应 owner，tracked 根一级条目由 40 降为 20。
+- 结果拓扑：Web package、91 个 `app/**` 文件、5 个 public 资产、Next/Vite/Vinext/Sites 配置和 Cloudflare adapter 归 `apps/web`；database、infrastructure、tooling、docs/history 分别归入对应 owner，tracked 根一级条目由 40 降为 21。
 - 根 package 的 Next/React/Vinext/Vite/Tailwind/Cloudflare/Web types 与 Web runtime 依赖为 0；`pnpm architecture:check` 扫描 179 个生产文件、229 条内部运行时边，`cycles=0`、`database->apps/web=0`。
 - Web/API/Worker/Contracts/shared-config typecheck、Next production 与 Vinext preview 均通过；Vinext Sites 产物中的 hosting 配置和 11 个 D1 migration 文件与源字节相同。
 - `pnpm lint:baseline` 保持 0 errors / 102 warnings；non-MySQL 为 355/355、skip=0，Web system 4/4、skip=0；真实 MySQL 8 为 21/21、skip=0。
