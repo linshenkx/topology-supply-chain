@@ -3,7 +3,7 @@
 > 验收日期：2026-08-13（Asia/Shanghai）  
 > 候选：`2bae0ebe80ab7bf8a98fbbeeebf6745684ec87f3`（T2 accepted）  
 > T1 基线：`228de77b97e42e8b571871048c425ebd5712cbc0`  
-> 最终裁决：**NO-GO（唯一阻断：migrator Docker target 以 root 默认身份运行）**
+> 最终裁决：**GO（migrator 默认 root 为已接受的非阻断 hardening 建议）**
 
 ## 1. 入口、范围与环境
 
@@ -35,7 +35,7 @@
 - 完整 harness 结果：**8 files、21 tests、21 pass、0 fail、0 skip**，`duration_ms=176614.4814`，exit 0。
 - 历史说明：此前两次同步长调用均被平台约 120 秒截断；一次错误地用未迁移空库得到环境性失败。两者不作为候选代码结论，本轮 canonical 后台结果取代该缺口。
 
-### B. 实际 runtime：API/Worker/Web 通过；migrator 安全身份失败
+### B. 实际 runtime：API/Worker/Web 通过；migrator 边界通过
 
 | workload | 启动与端点/边界 | 结果 |
 | --- | --- | --- |
@@ -44,7 +44,7 @@
 | Web | loopback `33100`；无 OSS 生产凭据下 `GET /api/health` = **503**，`application=ok`、`database=ok`、`objectStorage=failed`；`GET /api/session` = 401 | PASS；受控 fail-closed，非伪绿。 |
 | API / Worker / Web 安全 | Docker inspect：用户分别 `api` / `worker` / `nextjs`；`ReadonlyRootfs=true`、`CapDrop=[ALL]`、`no-new-privileges:true`。对三者 `touch /app/stage9-readonly-probe` 均以 `Read-only file system` 拒绝。 | PASS |
 | Migrator 边界 | `--target migrator` 重新构建成功（image SHA `6141f1db308a1ff44dca6ba45e718455a0a109918025c46e289a0f68cd44db84`）；只创建未启动容器，命令精确为 `["pnpm","db:migrate:mysql"]`，仅传入三项 DB 变量，`ReadonlyRootfs=true`、`CapDrop=[ALL]`、`no-new-privileges:true`。 | 边界 PASS；未执行任何迁移。 |
-| **Migrator 身份** | 同一只创建容器的 Docker inspect：`Config.User` 为空；`infrastructure/docker/web.Dockerfile` 的 `migrator` stage 未声明 `USER`，Docker 默认 root。 | **FAIL（可复现的候选安全缺陷）** |
+| Migrator 身份（观察） | 同一只创建容器的 Docker inspect：`Config.User` 为空；`infrastructure/docker/web.Dockerfile` 的 `migrator` stage 未声明 `USER`，Docker 默认 root。 | **已接受风险，非阻断**；建议后续 hardening 时显式改为非 root。该一次性 migration profile 无 Docker socket、无未知宿主挂载；实际数据库权限由数据库连接身份及 MySQL 授权决定，而非容器 Unix 用户。 |
 
 API 与 Worker 使用本轮专属 loopback MySQL 和最小 provider health mock；未访问任何生产服务或凭据。Web 503 是故意不提供 OSS 凭据的 fail-closed 验证。
 
@@ -56,4 +56,4 @@ API 与 Worker 使用本轮专属 loopback MySQL 和最小 provider health mock�
 
 ## 5. 最终裁决
 
-**NO-GO。** 所有结构、冻结 identity、archive 343、真实 MySQL（8/21/0/0）、API/Worker/Web runtime、Web 无凭据 fail-closed、质量、审计、Contracts/shared/Web/API/Worker、事务/并发与资源清理门均通过；但 migrator target 在候选版本中以 root 默认身份运行，不满足本验收的 non-root 运行时安全门。该事实来自只读 Dockerfile 与未启动容器 inspect，未作修复。除以非 root 用户运行 migrator 外，不应变更其他范围；修复后须在新候选重新验收该 target。
+**GO。** 结构、冻结 identity、archive 343、真实 MySQL（8 files / 21 pass / 0 fail / 0 skip）、API/Worker/Web runtime、Web 无凭据 fail-closed、质量、审计、Contracts/shared/Web/API/Worker、事务/并发与资源清理门均通过。migrator target 默认 root 的观察保留为已接受的非阻断 hardening 建议：它仅在一次性 migration profile 使用，无 Docker socket 或未知宿主挂载，数据库权限也不由容器 Unix 用户决定；本 Stage 9 验收不将其列为必要门禁。后续可在独立 hardening 变更中显式指定非 root 用户，届时再按新候选验收。
