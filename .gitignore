@@ -45,6 +45,7 @@ next-env.d.ts
 **/.wrangler/
 /outputs/
 /work/
+/delivery/
 
 # local caches and generated packages
 /.pnpm-store/
