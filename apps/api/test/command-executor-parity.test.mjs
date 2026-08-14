@@ -176,17 +176,17 @@ test("every supply and operations command is wired to its immutable writer resou
   }
 });
 
-test("adapter identity stays byte-aligned with the 35-command release protocol", () => {
+test("adapter identity stays byte-aligned with the 36-command release protocol", () => {
   const expected = [
     ...Object.entries(COMMAND_WRITER_RESOURCES),
     ...SUPPLY_COMMANDS.map((command) => [command, supplyFenceResource(command)]),
     ...Object.entries(OPERATIONS_COMMAND_RESOURCES),
   ].map(([command, resource]) => ({ command, generation: 2, owner: "fastify-v1", resource }))
     .sort((left, right) => left.command.localeCompare(right.command));
-  assert.equal(expected.length, 35);
+  assert.equal(expected.length, 36);
   assert.deepEqual([...RELEASE_MANIFEST.writer.commands]
     .sort((left, right) => left.command.localeCompare(right.command)), expected);
-  assert.equal(RELEASE_MANIFEST.writer.resources.length, 29);
+  assert.equal(RELEASE_MANIFEST.writer.resources.length, 30);
 });
 
 test("documented header compatibility differences remain explicit at adapters", async () => {

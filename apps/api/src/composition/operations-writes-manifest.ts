@@ -5,6 +5,7 @@ import {
   inventoryReservationSchema,
   productionOrderCreateSchema,
   productionOrderTransitionSchema,
+  purchaseReceiptSchema,
   qualityInspectionSubmitSchema,
   operationsCommandHeadersSchema,
   operationsCommandResponseSchema,
@@ -39,6 +40,7 @@ import {
   transitionProductionOrder,
 } from "../modules/production-orders/writes.js";
 import { submitQualityInspection } from "../modules/quality-inspections/writes.js";
+import { receivePurchase } from "../modules/purchase-receipts/writes.js";
 
 type BodyRequest = FastifyRequest<{ Body: Record<string, unknown> }>;
 type Handler = (
@@ -100,6 +102,8 @@ async function register(context: DomainRegistrationContext): Promise<void> {
     (request, reply) => route(context, request as BodyRequest, reply, OPERATIONS_COMMANDS.productionOrdersPost, createProductionOrder, 201));
   context.app.patch("/api/v1/production-orders", { schema: schema(productionOrderTransitionSchema) },
     (request, reply) => route(context, request as BodyRequest, reply, OPERATIONS_COMMANDS.productionOrdersPatch, transitionProductionOrder, 200));
+  context.app.post("/api/v1/purchase-receipts", { schema: schema(purchaseReceiptSchema) },
+    (request, reply) => route(context, request as BodyRequest, reply, OPERATIONS_COMMANDS.purchaseReceiptsPost, receivePurchase, 201));
   context.app.post("/api/v1/quality-inspections", { schema: schema(qualityInspectionSubmitSchema) },
     (request, reply) => route(context, request as BodyRequest, reply, OPERATIONS_COMMANDS.qualityInspectionsPost, submitQualityInspection, 201));
   context.app.post("/api/v1/stocktakes", { schema: schema(stocktakeOpenSchema) },

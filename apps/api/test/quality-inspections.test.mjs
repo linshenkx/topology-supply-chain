@@ -10,6 +10,7 @@ function inspectionRow(id, executionOrderId = id) {
   return {
     id,
     executionOrderId,
+    batchId: null,
     stage: "finished_goods",
     inspectionMethod: "sampling",
     batchQuantity: 100,

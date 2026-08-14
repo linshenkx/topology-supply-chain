@@ -10,6 +10,7 @@ export const E2E_FENCE_PROFILES = Object.freeze({
   "t2-supply-purchase-order": Object.freeze(["auth.commands", "outbox.worker", "r2.purchase-orders.create", "r2.purchase-orders.update"]),
   "t2-operations-inventory": Object.freeze(["auth.commands", "outbox.worker", "r3.inventory.commands", "r3.transfers.commands", "r3.stocktakes.commands"]),
   "t2-operations-production-quality": Object.freeze(["auth.commands", "outbox.worker", "r3.production-orders.commands", "r3.quality-inspections.commands"]),
+  "t2-operations-scope-a-closures": Object.freeze(["auth.commands", "outbox.worker", "r3.purchase-receipts.commands", "r3.quality-inspections.commands", "r3.inventory.commands", "r3.production-orders.commands"]),
   "t2-operations-logistics": Object.freeze(["auth.commands", "outbox.worker", "r3.shipments.commands", "r3.returns.commands"]),
   "t2-operations-finance": Object.freeze(["auth.commands", "outbox.worker", "r3.finance.commands"]),
 });

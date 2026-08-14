@@ -56,6 +56,7 @@ const indexedTextColumns = new Set([
   "key_value",
   "source_key",
   "bucket",
+  "receipt_no",
 ]);
 source = source
   .replace(

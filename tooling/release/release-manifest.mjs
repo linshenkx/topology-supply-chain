@@ -35,6 +35,7 @@ const commands = Object.freeze([
   ["purchase-plans.update", "r2.purchase-plans.update"],
   ["purchase-orders.create", "r2.purchase-orders.create"],
   ["purchase-orders.update", "r2.purchase-orders.update"],
+  ["purchase.receive", "r3.purchase-receipts.commands"],
   ["approvals.decide", "r3.approvals.commands"],
   ["inventory.reserve", "r3.inventory.commands"],
   ["inventory.transfer.request", "r3.transfers.commands"],
@@ -72,13 +73,13 @@ export const RELEASE_MANIFEST = Object.freeze({
     releaseSequence: 1,
   }),
   contract: Object.freeze({
-    id: "topology-scm.scope-a.schema-0004.writer-generation-2",
+    id: "topology-scm.scope-a.schema-0005.writer-generation-2",
     releaseFamily: "topology-scm.scope-a",
   }),
   manifestVersion: 1,
   runtimeServices: Object.freeze(["app", "api", "worker"]),
   schema: Object.freeze({
-    contract: "mysql.scope-a.0000-0004",
+    contract: "mysql.scope-a.0000-0005",
     migrations,
   }),
   writer: Object.freeze({

@@ -22,6 +22,97 @@ function deviationBps(actual: number, expected: number): number {
   return expected <= 0 ? (actual === expected ? 0 : 10_000) : Math.round(Math.abs(actual - expected) * 10_000 / expected);
 }
 
+async function consumeReservedInventory(
+  command: OperationsCommandContext,
+  orderId: number,
+  componentSku: string,
+  quantity: number,
+): Promise<void> {
+  if (quantity <= 0) return;
+  const reservations = await command.transaction.query<Row>(
+    `SELECT ir.id, ir.batch_id AS batchId, ir.reserved_quantity AS reservedQuantity,
+            ib.warehouse_id AS warehouseId, ib.locked_quantity AS lockedQuantity, ib.sku
+     FROM inventory_reservations ir
+     JOIN inventory_batches ib ON ib.id = ir.batch_id
+     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active' AND ib.sku = ?
+     ORDER BY ir.priority DESC, ir.id ASC
+     FOR UPDATE`,
+    [orderId, componentSku],
+  );
+  let remaining = quantity;
+  for (const reservation of reservations) {
+    if (remaining === 0) break;
+    const reserved = Number(reservation.reservedQuantity);
+    if (reserved <= 0) continue;
+    const take = Math.min(remaining, reserved);
+    const reservationUpdated = await command.transaction.execute(
+      `UPDATE inventory_reservations
+       SET reserved_quantity = reserved_quantity - ?,
+           status = CASE WHEN reserved_quantity = 0 THEN 'consumed' ELSE 'active' END,
+           updated_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ? AND status = 'active' AND reserved_quantity >= ?`,
+      [take, reservation.id, take],
+    );
+    if (reservationUpdated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Reservation changed concurrently");
+    const batchUpdated = await command.transaction.execute(
+      `UPDATE inventory_batches SET locked_quantity = locked_quantity - ?, updated_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ? AND locked_quantity >= ?`,
+      [take, reservation.batchId, take],
+    );
+    if (batchUpdated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Inventory changed concurrently");
+    await command.transaction.execute(
+      `INSERT INTO inventory_movements (warehouse_id, sku, type, quantity, source_key, occurred_at, created_by)
+       VALUES (?, ?, 'production_consumption', ?, ?, CURRENT_TIMESTAMP(3), ?)`,
+      [reservation.warehouseId, reservation.sku, -take, `production_consumption:${randomUUID()}`, command.access.userId],
+    );
+    remaining -= take;
+  }
+  if (remaining !== 0) throw new PlatformError(409, "CONFLICT", "Insufficient reserved inventory");
+}
+
+async function releaseReservedMaterials(
+  command: OperationsCommandContext,
+  orderId: number,
+): Promise<number> {
+  const reservations = await command.transaction.query<Row>(
+    `SELECT ir.id, ir.batch_id AS batchId, ir.reserved_quantity AS reservedQuantity,
+            ib.warehouse_id AS warehouseId, ib.locked_quantity AS lockedQuantity, ib.sku
+     FROM inventory_reservations ir
+     JOIN inventory_batches ib ON ib.id = ir.batch_id
+     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active'
+     ORDER BY ir.priority DESC, ir.id ASC
+     FOR UPDATE`,
+    [orderId],
+  );
+  let released = 0;
+  for (const reservation of reservations) {
+    const remaining = Number(reservation.reservedQuantity);
+    if (remaining <= 0) continue;
+    const reservationUpdated = await command.transaction.execute(
+      `UPDATE inventory_reservations
+       SET reserved_quantity = 0, status = 'released', updated_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ? AND status = 'active' AND reserved_quantity = ?`,
+      [reservation.id, remaining],
+    );
+    if (reservationUpdated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Reservation changed concurrently");
+    const batchUpdated = await command.transaction.execute(
+      `UPDATE inventory_batches
+       SET locked_quantity = locked_quantity - ?, available_quantity = available_quantity + ?,
+           updated_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ? AND locked_quantity >= ?`,
+      [remaining, remaining, reservation.batchId, remaining],
+    );
+    if (batchUpdated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Inventory changed concurrently");
+    await command.transaction.execute(
+      `INSERT INTO inventory_movements (warehouse_id, sku, type, quantity, source_key, occurred_at, created_by)
+       VALUES (?, ?, 'production_release', ?, ?, CURRENT_TIMESTAMP(3), ?)`,
+      [reservation.warehouseId, reservation.sku, remaining, `production_release:${randomUUID()}`, command.access.userId],
+    );
+    released += remaining;
+  }
+  return released;
+}
+
 export async function createProductionOrder(
   context: DomainRegistrationContext,
   command: OperationsCommandContext,
@@ -134,6 +225,10 @@ async function updateMaterials(command: OperationsCommandContext, orderId: numbe
     if (consumed + loss > issued) throw new PlatformError(409, "CONFLICT", "Material consumption and loss exceed issued quantity");
     const rows = await command.transaction.query<Row>(
       `SELECT p.id, p.theoretical_quantity AS theoreticalQuantity, p.reserved_quantity AS reservedQuantity,
+              p.issued_quantity AS currentIssuedQuantity,
+              p.consumed_quantity AS currentConsumedQuantity,
+              p.loss_quantity AS currentLossQuantity,
+              b.component_sku AS componentSku,
               b.issue_tolerance_bps AS issueToleranceBps,
               b.consumption_tolerance_bps AS consumptionToleranceBps,
               b.loss_tolerance_bps AS lossToleranceBps
@@ -142,6 +237,15 @@ async function updateMaterials(command: OperationsCommandContext, orderId: numbe
     );
     const line = rows[0];
     if (line === undefined) throw new PlatformError(404, "NOT_FOUND", "Production material line not found");
+    const currentIssued = Number(line.currentIssuedQuantity);
+    const currentConsumed = Number(line.currentConsumedQuantity);
+    const currentLoss = Number(line.currentLossQuantity);
+    const deltaIssued = issued - currentIssued;
+    const deltaConsumed = consumed - currentConsumed;
+    const deltaLoss = loss - currentLoss;
+    if (deltaIssued < 0 || deltaConsumed < 0 || deltaLoss < 0) {
+      throw new PlatformError(409, "CONFLICT", "Material quantities cannot be decreased");
+    }
     if (issued > Number(line.reservedQuantity)) throw new PlatformError(409, "CONFLICT", "Issued quantity exceeds the legacy production allocation");
     const theoretical = Number(line.theoreticalQuantity);
     const exceeds = deviationBps(issued, theoretical) > Number(line.issueToleranceBps) ||
@@ -155,6 +259,7 @@ async function updateMaterials(command: OperationsCommandContext, orderId: numbe
       [issued, consumed, loss, exceeds ? "pending_approval" : "within_tolerance", id, orderId],
     );
     if (updated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Material line changed concurrently");
+    await consumeReservedInventory(command, orderId, String(line.componentSku), deltaConsumed + deltaLoss);
   }
   return deviation;
 }
@@ -167,7 +272,7 @@ export async function transitionProductionOrder(
   requireRole(command.access, ["admin", "supply_chain", "factory"]);
   const body = jsonObject(raw);
   const id = integer(body.id, "id");
-  const action = oneOf(body.action, ["start", "materials", "complete"] as const, "action");
+  const action = oneOf(body.action, ["start", "materials", "complete", "release_materials"] as const, "action");
   const rows = await command.transaction.query<Row>(
     `SELECT eo.*, oi.sku FROM execution_orders eo JOIN order_items oi ON oi.id = eo.order_item_id
      WHERE eo.id = ? LIMIT 1 FOR UPDATE`, [id],
@@ -178,6 +283,19 @@ export async function transitionProductionOrder(
     throw new PlatformError(403, "FORBIDDEN", "Forbidden factory binding");
   }
   const version = await lockVersion(command.transaction, "execution_order", id);
+  if (action === "release_materials") {
+    const releasedQuantity = await releaseReservedMaterials(command, id);
+    const nextVersion = await bumpVersion(command.transaction, "execution_order", id, version);
+    await audit(command.transaction, command.access, command.request, {
+      action, module: "production", entityType: "execution_order", entityId: id,
+      businessNo: String(order.execution_no), after: { releasedQuantity, version: nextVersion },
+    });
+    await domainEvent(context, command.transaction, {
+      type: "ProductionReservationReleased", aggregateType: "execution_order", aggregateId: id,
+      deduplicationSuffix: nextVersion,
+    });
+    return { success: true, id, releasedQuantity, version: nextVersion };
+  }
   if (action === "start") {
     const updated = await command.transaction.execute(
       `UPDATE execution_orders SET status = 'in_production', actual_start_at = CURRENT_TIMESTAMP(3), updated_at = CURRENT_TIMESTAMP(3)

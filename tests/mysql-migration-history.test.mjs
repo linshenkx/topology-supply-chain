@@ -29,13 +29,14 @@ async function mutateJson(path, mutate) {
 }
 
 test("one frozen manifest validates SQL, snapshots, and the full journal before callers proceed", async () => {
-  assert.equal((await assertFrozenMysqlMigrationRepository()).length, 5);
+  assert.equal((await assertFrozenMysqlMigrationRepository()).length, 6);
   assert.deepEqual(FROZEN_MYSQL_MIGRATIONS.map(({ name }) => name), [
     "0000_hot_firestar.sql",
     "0001_thankful_slyde.sql",
     "0002_scope_a_write_platform.sql",
     "0003_scope_a_write_hardening.sql",
     "0004_scope_a_domain_writes.sql",
+    "0005_tricky_kabuki.sql",
   ]);
   for (const migration of FROZEN_MYSQL_MIGRATIONS) {
     assert.match(migration.hash, /^[a-f\d]{64}$/u);
@@ -54,9 +55,9 @@ test("one frozen manifest validates SQL, snapshots, and the full journal before 
 test("missing and extra migration or snapshot entries are rejected", async (t) => {
   for (const [name, mutate, pattern] of [
     ["missing SQL", async ({ directory }) => rm(join(directory, FROZEN_MYSQL_MIGRATIONS[4].name)), /migration set differs/u],
-    ["extra SQL", async ({ directory }) => writeFile(join(directory, "0005_unreviewed.sql"), "SELECT 1;", "utf8"), /migration set differs/u],
+    ["extra SQL", async ({ directory }) => writeFile(join(directory, "0006_unreviewed.sql"), "SELECT 1;", "utf8"), /migration set differs/u],
     ["missing snapshot", async ({ directory }) => rm(join(directory, "meta", "0004_snapshot.json")), /snapshot set differs/u],
-    ["extra snapshot", async ({ directory }) => writeFile(join(directory, "meta", "0005_snapshot.json"), "{}", "utf8"), /snapshot set differs/u],
+    ["extra snapshot", async ({ directory }) => writeFile(join(directory, "meta", "0006_snapshot.json"), "{}", "utf8"), /snapshot set differs/u],
   ]) {
     await t.test(name, async (child) => {
       const copy = await fixture(child);

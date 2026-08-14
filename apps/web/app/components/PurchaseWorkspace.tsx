@@ -2,10 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { updatePurchaseOrder, updatePurchasePlan } from "../lib/supply-mutation-client";
+import { mutateJson } from "../lib/mutation-client";
 
 type PlanItem = {
   id: number; expectedArrivalDate: string; factoryId: number; factoryName: string;
-  warehouseName: string; sku: string; productName: string; plannedQuantity: number;
+  warehouseId: number; warehouseName: string; sku: string; productName: string; plannedQuantity: number;
   orderedQuantity: number; overToleranceBps: number; underToleranceBps: number; completionStatus: string;
 };
 type Plan = {
@@ -17,7 +18,7 @@ type PurchaseOrder = {
   id: number; orderNo: string; orderDate?: string | null; status: string; totalTaxIncludedMinor: number;
   updatedAt: string;
   confirmationDueAt?: string | null;
-  items: Array<{ id: number; sku: string; productName: string; quantity: number; dueDate?: string | null; planLinks?: Array<{ allocatedQuantity: number; planItem?: PlanItem }> }>;
+  items: Array<{ id: number; sku: string; productName: string; quantity: number; receivedQuantity: number; dueDate?: string | null; planLinks?: Array<{ allocatedQuantity: number; planItem?: PlanItem }> }>;
 };
 type Session = { user: { roles: string[]; factoryId?: number | null } };
 
@@ -47,6 +48,8 @@ export default function PurchaseWorkspace({ toast, openImport }: {
   const [confirming, setConfirming] = useState<Plan | null>(null);
   const [confirmingOrder, setConfirmingOrder] = useState<PurchaseOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [receiving, setReceiving] = useState<PurchaseOrder["items"][number] & { purchaseOrderId: number } | null>(null);
+  const [expandedOrderId, setExpandedOrderId] = useState<number | null>(null);
   const [form, setForm] = useState({ decision: "confirmed", expectedStartDate: "", expectedFinishDate: "", proposedArrivalDate: "", reason: "" });
   const [orderForm, setOrderForm] = useState({ decision: "confirmed", proposedDueDate: "", reason: "" });
 
@@ -101,6 +104,7 @@ export default function PurchaseWorkspace({ toast, openImport }: {
   const deviations = planRows.filter(row => ["over_plan_pending", "under_plan_pending"].includes(row.item.completionStatus)).length;
   const isFactory = Boolean(session?.user.roles.includes("factory") && session.user.factoryId);
   const canFinalize = Boolean(session?.user.roles.some(role => ["admin", "supply_chain"].includes(role)));
+  const canReceive = Boolean(session?.user.roles.some(role => ["admin", "supply_chain", "factory"].includes(role)));
 
   async function finalizeOrdering(plan: Plan) {
     if (submitting) return;
@@ -140,6 +144,27 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     }
   }
 
+  async function submitReceive() {
+    if (!receiving || submitting) return;
+    setSubmitting(true);
+    try {
+      const warehouseId = receiving.planLinks?.[0]?.planItem?.warehouseId;
+      if (!warehouseId) throw new Error("该采购明细缺少收货仓库，无法整批收货");
+      await mutateJson("/api/v1/purchase-receipts", "POST", {
+        purchaseOrderId: receiving.purchaseOrderId,
+        orderItemId: receiving.id,
+        warehouseId,
+      });
+      toast(`采购明细 ${receiving.sku} 已整批收货，进入待检批次`);
+      setReceiving(null);
+      await load();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "整批收货失败");
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
   return <section className="purchase-page">
     <div className="purchase-heading">
       <div><span className="eyebrow dark">采购计划与采购单</span><h2>真实采购数据执行台</h2><p>按期望到货日期、组装工厂、采购仓库和 SKU 汇总，展示当前有效版本及实际消耗。</p></div>
@@ -168,9 +193,16 @@ export default function PurchaseWorkspace({ toast, openImport }: {
           </div>;
         })}
       </div> : <div className="po-board">
-        {!loading && !visibleOrders.length ? <div className="empty-state">暂无正式采购单，请先通过“导入采购单”创建。</div> : visibleOrders.map(order => <button className="po-card" key={order.id} onClick={() => isFactory && order.status === "factory_confirmation" ? setConfirmingOrder(order) : toast(`采购单 ${order.orderNo} 共 ${order.items.length} 个明细`)}>
-          <span><strong>{order.orderNo}</strong><small>下单日期 {order.orderDate ?? "待补充"}</small></span><span><small>含税金额</small><b>¥ {(order.totalTaxIncludedMinor / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</b></span><span><small>SKU / 数量</small><b>{order.items.length} / {order.items.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}</b></span><span><mark>{ORDER_STATUS[order.status] ?? order.status}</mark><small>{order.confirmationDueAt && order.status === "factory_confirmation" ? `确认截止 ${new Date(order.confirmationDueAt).toLocaleString("zh-CN")}` : order.items[0]?.dueDate ? `最早交货 ${order.items.map(item => item.dueDate).filter(Boolean).sort()[0]}` : "待维护交货日期"}</small></span><i>→</i>
-        </button>)}
+        {!loading && !visibleOrders.length ? <div className="empty-state">暂无正式采购单，请先通过“导入采购单”创建。</div> : visibleOrders.map(order => <div className="po-card-wrap" key={order.id}>
+          <button className="po-card" onClick={() => isFactory && order.status === "factory_confirmation" ? setConfirmingOrder(order) : setExpandedOrderId(expandedOrderId === order.id ? null : order.id)}>
+            <span><strong>{order.orderNo}</strong><small>下单日期 {order.orderDate ?? "待补充"}</small></span><span><small>含税金额</small><b>¥ {(order.totalTaxIncludedMinor / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</b></span><span><small>SKU / 数量</small><b>{order.items.length} / {order.items.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}</b></span><span><mark>{ORDER_STATUS[order.status] ?? order.status}</mark><small>已收货 {order.items.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0).toLocaleString()} 件 · {order.confirmationDueAt && order.status === "factory_confirmation" ? `确认截止 ${new Date(order.confirmationDueAt).toLocaleString("zh-CN")}` : order.items[0]?.dueDate ? `最早交货 ${order.items.map(item => item.dueDate).filter(Boolean).sort()[0]}` : "待维护交货日期"}</small></span><i>→</i>
+          </button>
+          {expandedOrderId === order.id && <div className="po-card-detail">{order.items.map(item => {
+            const warehouseId = item.planLinks?.[0]?.planItem?.warehouseId;
+            const fullyReceived = (item.receivedQuantity || 0) >= item.quantity;
+            return <div className="po-item-row" key={item.id}><span><strong>{item.sku}</strong><small>{item.productName}</small></span><span>{(item.receivedQuantity || 0).toLocaleString()} / {item.quantity.toLocaleString()} 件已收货</span><span>{warehouseId ? `收货仓库 #${warehouseId}` : "未关联收货仓库"}</span>{fullyReceived ? <mark className="plan-status">已收货</mark> : canReceive ? <button className="compact-action" disabled={submitting} onClick={() => setReceiving({ ...item, purchaseOrderId: order.id })}>整批收货</button> : null}</div>;
+          })}</div>}
+        </div>)}
       </div>}
     </article>
     {confirming ? <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="modal-card"><div className="modal-head"><div><span className="eyebrow dark">工厂确认</span><h3>{confirming.planNo} · V{confirming.version}</h3></div><button aria-label="关闭" onClick={() => setConfirming(null)}>×</button></div><div className="form-grid">
@@ -183,5 +215,10 @@ export default function PurchaseWorkspace({ toast, openImport }: {
       <label>确认结果<select value={orderForm.decision} onChange={event => setOrderForm(current => ({ ...current, decision: event.target.value }))}><option value="confirmed">可以按期交货</option><option value="unable">无法按期交货</option></select></label>
       {orderForm.decision === "unable" ? <><label>建议交货日期<input type="date" value={orderForm.proposedDueDate} onChange={event => setOrderForm(current => ({ ...current, proposedDueDate: event.target.value }))}/></label><label className="full-field">无法按期原因<textarea value={orderForm.reason} onChange={event => setOrderForm(current => ({ ...current, reason: event.target.value }))}/></label></> : <div><small>确认后采购单将进入执行状态，系统继续跟踪生产与交付。</small></div>}
     </div><div className="modal-actions"><button className="secondary-action" onClick={() => setConfirmingOrder(null)}>取消</button><button disabled={submitting} onClick={() => void submitOrderResponse()}>{submitting ? "提交中…" : "提交确认"}</button></div></div></div> : null}
+    {receiving ? <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="modal-card"><div className="modal-head"><div><span className="eyebrow dark">整批收货</span><h3>{receiving.sku}</h3></div><button aria-label="关闭" onClick={() => setReceiving(null)}>×</button></div><div className="form-grid">
+      <label>采购明细<input readOnly value={receiving.productName}/></label>
+      <label>待收货数量<input readOnly value={receiving.quantity - (receiving.receivedQuantity || 0)}/></label>
+      <label>收货仓库<input readOnly value={receiving.planLinks?.[0]?.planItem?.warehouseId ?? "未关联"}/></label>
+    </div><div className="modal-actions"><button className="secondary-action" onClick={() => setReceiving(null)}>取消</button><button disabled={submitting} onClick={() => void submitReceive()}>{submitting ? "提交中…" : "确认整批收货"}</button></div></div></div> : null}
   </section>;
 }

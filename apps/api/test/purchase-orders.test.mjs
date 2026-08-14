@@ -28,6 +28,7 @@ function itemRow(id, purchaseOrderId) {
     itemType: "finished",
     supplierId: null,
     quantity: 10,
+    receivedQuantity: 0,
     unitPriceTaxIncludedMinor: 100,
     amountTaxIncludedMinor: 1_000,
     dueDate: "2026-09-01",

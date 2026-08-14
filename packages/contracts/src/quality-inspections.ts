@@ -2,7 +2,8 @@ export const qualityInspectionsSchemaId = "QualityInspections";
 
 export interface QualityInspection {
   id: number;
-  executionOrderId: number;
+  executionOrderId: number | null;
+  batchId: number | null;
   stage: "incoming" | "finished_goods";
   inspectionMethod: "sampling" | "full";
   batchQuantity: number;
@@ -70,6 +71,7 @@ export const qualityInspectionsResponseSchema = {
         required: [
           "id",
           "executionOrderId",
+          "batchId",
           "stage",
           "inspectionMethod",
           "batchQuantity",
@@ -97,7 +99,8 @@ export const qualityInspectionsResponseSchema = {
         ],
         properties: {
           id: positiveInteger,
-          executionOrderId: positiveInteger,
+          executionOrderId: nullablePositiveInteger,
+          batchId: nullablePositiveInteger,
           stage: { type: "string", enum: ["incoming", "finished_goods"] },
           inspectionMethod: { type: "string", enum: ["sampling", "full"] },
           batchQuantity: positiveInteger,

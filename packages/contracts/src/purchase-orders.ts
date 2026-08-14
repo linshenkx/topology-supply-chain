@@ -43,6 +43,7 @@ export interface PurchaseOrderItem {
   itemType: "finished" | "auxiliary" | "component";
   supplierId: number | null;
   quantity: number;
+  receivedQuantity: number;
   unitPriceTaxIncludedMinor: number;
   amountTaxIncludedMinor: number;
   dueDate: string | null;
@@ -167,6 +168,7 @@ const orderItemSchema = {
     "itemType",
     "supplierId",
     "quantity",
+    "receivedQuantity",
     "unitPriceTaxIncludedMinor",
     "amountTaxIncludedMinor",
     "dueDate",
@@ -185,6 +187,7 @@ const orderItemSchema = {
     },
     supplierId: nullablePositiveIntegerSchema,
     quantity: positiveIntegerSchema,
+    receivedQuantity: nonNegativeIntegerSchema,
     unitPriceTaxIncludedMinor: nonNegativeIntegerSchema,
     amountTaxIncludedMinor: nonNegativeIntegerSchema,
     dueDate: nullableStringSchema,

@@ -6,6 +6,7 @@ import "./audit.css";
 import "./performance.css";
 import PurchaseWorkspace from "./components/PurchaseWorkspace";
 import ProductionWorkspace from "./components/ProductionWorkspace";
+import QualityWorkspace from "./components/QualityWorkspace";
 import InventoryWorkspace from "./components/InventoryWorkspace";
 import MasterDataWorkspace from "./components/MasterDataWorkspace";
 import SupplierWorkspace from "./components/SupplierWorkspace";
@@ -43,37 +44,6 @@ const orders: Order[] = [
 ];
 
 const nav = ["工作台", "采购管理", "供应商管理", "执行单", "物料与补料", "生产质检", "发货管理", "库存管理", "工厂协同", "财务结算", "审批中心", "系统管理", "AI助手"];
-
-function QualityPanel({ toast }: { toast: (message: string) => void }) {
-  const [stage, setStage] = useState("全部");
-  const inspections = [
-    { no: "QC260729-018", stage: "来料质检", sku: "TP-CORE-003", supplier: "温州嘉博乳胶制品", batch: 2400, sampled: 120, passed: 114, rate: 95, standard: 95, result: "合格" },
-    { no: "QC260729-017", stage: "成品质检", sku: "TP-PIL-006", supplier: "广东鸿基羽绒制品", batch: 1200, sampled: 80, passed: 72, rate: 90, standard: 95, result: "全检中" },
-    { no: "QC260728-013", stage: "来料质检", sku: "TP-COV-018", supplier: "南通优库纺织", batch: 3500, sampled: 100, passed: 96, rate: 96, standard: 95, result: "合格" },
-    { no: "QC260728-009", stage: "成品质检", sku: "TP-PIL-011", supplier: "南通组装工厂", batch: 1800, sampled: 100, passed: 92, rate: 92, standard: 95, result: "待处理" },
-  ].filter(row => stage === "全部" || row.stage === stage);
-  return <section className="quality-page">
-    <div className="module-banner quality-banner"><div><span className="eyebrow">来料与成品质检</span><h2>低于标准自动隔离，并转入全检</h2><p>抽检数量人工填写；同类不良问题可合并记录，只有检查合格数量可以发出。</p></div><button onClick={() => toast("已创建质检任务草稿")}>＋ 新建质检任务</button></div>
-    <div className="quality-kpis"><article><span>今日待检</span><strong>8</strong><small>来料5 · 成品3</small></article><article><span>本月合格率</span><strong>96.4%</strong><small>较上月 +1.1%</small></article><article><span>全检进行中</span><strong>2</strong><small>1,880件待完成</small></article><article className="alert-card"><span>隔离库存</span><strong>308</strong><small>禁止领用、调拨和发货</small></article></div>
-    <div className="quality-layout">
-      <article className="panel quality-list"><div className="quality-toolbar"><div><h3>质检任务</h3><p>SKU专属标准优先，缺失时采用物料类型默认95%</p></div><div>{["全部","来料质检","成品质检"].map(item => <button key={item} className={stage === item ? "selected" : ""} onClick={() => setStage(item)}>{item}</button>)}</div></div>
-        <div className="quality-table"><div className="quality-row quality-head"><span>质检单 / 阶段</span><span>SKU / 供应商</span><span>批次数量</span><span>抽检结果</span><span>标准</span><span>系统判定</span></div>
-          {inspections.map(row => <button className="quality-row" key={row.no} onClick={() => toast(`已打开质检单 ${row.no}`)}><span><strong>{row.no}</strong><small>{row.stage}</small></span><span><strong>{row.sku}</strong><small>{row.supplier}</small></span><span><b>{row.batch.toLocaleString()}件</b><small>按批次管理</small></span><span><b className={row.rate < row.standard ? "danger" : ""}>{row.rate.toFixed(1)}%</b><small>{row.passed}合格 / {row.sampled}抽检</small></span><span><b>{row.standard.toFixed(1)}%</b><small>SKU标准</small></span><span><mark className={`quality-status ${row.result}`}>{row.result}</mark></span></button>)}
-        </div>
-      </article>
-      <aside className="panel full-inspection"><div className="panel-head"><div><h3>全检进度</h3><p>QC260729-017 · TP-PIL-006</p></div><b>56.7%</b></div>
-        <div className="full-circle"><strong>680<small>/ 1,200</small></strong><span>已完成全检</span></div>
-        <div className="quality-counts"><span><i className="green"/>合格<b>642</b></span><span><i className="red"/>不合格<b>38</b></span><span><i className="amber"/>待检查<b>520</b></span></div>
-        <div className="defect-summary"><strong>主要不良问题</strong><div><span>塌边</span><b>26件</b></div><div><span>污渍</span><b>12件</b></div></div>
-        <button className="quality-primary" onClick={() => toast("已进入全检记录，支持复用同类不良问题")}>继续记录全检</button>
-      </aside>
-    </div>
-    <section className="quality-bottom">
-      <article className="panel"><div className="panel-head"><div><h3>不合格品处理</h3><p>处理数量合计必须等于不合格数量</p></div><button onClick={() => toast("已打开不合格品处理任务")}>查看任务</button></div><div className="disposition-flow">{[["返工","18"],["退货","8"],["报废","7"],["让步接收","5"]].map((item,i)=><div key={item[0]}><i>{i+1}</i><span>{item[0]}<b>{item[1]}件</b></span>{i===3&&<small>需供应链审批</small>}</div>)}</div></article>
-      <article className="panel"><div className="panel-head"><div><h3>默认标准提醒</h3><p>采用物料类型标准时持续提醒供应链补充SKU标准</p></div><b>6项</b></div><div className="standard-reminder"><span><strong>TP-AUX-021</strong><small>辅料 · 来料质检</small></span><b>95.0%</b><button onClick={() => toast("已打开SKU质检标准设置")}>设置专属标准</button></div><div className="standard-reminder"><span><strong>TP-COMP-032</strong><small>配件 · 来料质检</small></span><b>95.0%</b><button onClick={() => toast("已打开SKU质检标准设置")}>设置专属标准</button></div></article>
-    </section>
-  </section>;
-}
 
 function InventoryPanel({ toast }: { toast: (message: string) => void }) {
   return <InventoryWorkspace toast={toast} />;
@@ -468,7 +438,7 @@ export default function Home() {
           <b>{approvalCount} 项待审批</b>
         </section>
 
-        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityPanel toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} roles={sessionRoles} /> : active === "工厂协同" ? <CollaborationPanel toast={toast} /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : active === "AI助手" ? <BackofficePanel module={active} toast={toast} /> : <>
+        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityWorkspace toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} roles={sessionRoles} /> : active === "工厂协同" ? <CollaborationPanel toast={toast} /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : active === "AI助手" ? <BackofficePanel module={active} toast={toast} /> : <>
         <section className="focus">
           <div><span className="eyebrow">三级供应网络 · 今日概况</span><h2>订单正在有序推进，<b>3 项供应风险</b>需要处理</h2><p>组装工厂负责下属供应商交付；供应链部门制定政策、查看备料并监控断供风险。</p></div>
           <div className="focus-number"><strong>87<small>%</small></strong><span>本月准时交付率</span><i>↑ 4.2%</i></div>

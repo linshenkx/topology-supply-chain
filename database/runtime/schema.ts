@@ -121,6 +121,7 @@ export const orderItems = sqliteTable("order_items", {
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }).notNull(),
   supplierId: integer("supplier_id").references(() => suppliers.id),
   quantity: integer("quantity").notNull(),
+  receivedQuantity: integer("received_quantity").notNull().default(0),
   unitPriceTaxIncludedMinor: integer("unit_price_tax_included_minor").notNull().default(0),
   amountTaxIncludedMinor: integer("amount_tax_included_minor").notNull().default(0),
   dueDate: text("due_date"),
@@ -707,6 +708,19 @@ export const inventoryReservations = sqliteTable("inventory_reservations", {
   ...timestamps,
 });
 
+export const purchaseReceipts = sqliteTable("purchase_receipts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  receiptNo: text("receipt_no").notNull().unique(),
+  purchaseOrderId: integer("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  orderItemId: integer("order_item_id").notNull().references(() => orderItems.id),
+  warehouseId: integer("warehouse_id").notNull().references(() => warehouses.id),
+  batchId: integer("batch_id").notNull().references(() => inventoryBatches.id),
+  receivedQuantity: integer("received_quantity").notNull(),
+  receivedAt: text("received_at").notNull(),
+  receivedBy: integer("received_by").notNull().references(() => users.id),
+  ...timestamps,
+}, table => [uniqueIndex("purchase_receipt_order_item_unique").on(table.orderItemId)]);
+
 export const stocktakes = sqliteTable("stocktakes", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   stocktakeNo: text("stocktake_no").notNull().unique(),
@@ -797,7 +811,8 @@ export const qualityRules = sqliteTable("quality_rules", {
 
 export const qualityInspections = sqliteTable("quality_inspections", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  executionOrderId: integer("execution_order_id").notNull().references(() => executionOrders.id),
+  executionOrderId: integer("execution_order_id").references(() => executionOrders.id),
+  batchId: integer("batch_id").references(() => inventoryBatches.id),
   stage: text("stage", { enum: ["incoming", "finished_goods"] }).notNull(),
   inspectionMethod: text("inspection_method", { enum: ["sampling", "full"] }).notNull(),
   batchQuantity: integer("batch_quantity").notNull(),

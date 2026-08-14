@@ -55,14 +55,14 @@ test("release manifest is complete, canonical, and deterministic", async () => {
   assert.equal(assertReleaseManifest(RELEASE_MANIFEST), RELEASE_MANIFEST);
   assert.deepEqual(parseReleaseManifest(await releaseManifestJson()), RELEASE_MANIFEST);
   assert.equal(RELEASE_MANIFEST.manifestVersion, 1);
-  assert.equal(RELEASE_MANIFEST.schema.migrations.length, 5);
+  assert.equal(RELEASE_MANIFEST.schema.migrations.length, 6);
   assert.equal(RELEASE_MANIFEST.writer.generation, 2);
   assert.equal(RELEASE_MANIFEST.writer.legacyWriterCompatible, false);
-  assert.equal(RELEASE_MANIFEST.writer.commands.length, 35);
-  assert.equal(RELEASE_MANIFEST.writer.resources.length, 29);
+  assert.equal(RELEASE_MANIFEST.writer.commands.length, 36);
+  assert.equal(RELEASE_MANIFEST.writer.resources.length, 30);
   assert.deepEqual(RELEASE_MANIFEST.runtimeServices, ["app", "api", "worker"]);
-  assert.equal(new Set(RELEASE_MANIFEST.writer.commands.map(({ command }) => command)).size, 35);
-  assert.equal(new Set(RELEASE_MANIFEST.writer.resources.map(({ resource }) => resource)).size, 29);
+  assert.equal(new Set(RELEASE_MANIFEST.writer.commands.map(({ command }) => command)).size, 36);
+  assert.equal(new Set(RELEASE_MANIFEST.writer.resources.map(({ resource }) => resource)).size, 30);
 });
 
 test("release manifest identities match the frozen platform, supply, operations, and Worker runtime sources", () => {

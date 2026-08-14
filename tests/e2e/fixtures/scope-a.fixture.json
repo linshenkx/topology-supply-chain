@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
   "fixturePack": "scope-a-tier1",
-  "contract": "mysql.scope-a.0000-0004",
+  "contract": "mysql.scope-a.0000-0005",
   "description": "Logical, versioned Scope A fixture contract. Runtime IDs are generated only by tooling/e2e/fixtures.mjs.",
   "accounts": ["admin", "supply_chain", "factory", "approver", "finance", "denied"],
-  "entities": ["factory", "supplier", "pendingSupplier", "finishedSku", "componentSku", "bom", "warehouse", "transferWarehouse", "batch", "supplierSku", "pendingApproval", "purchasePlan", "purchaseOrder", "executionOrder", "qualityInspection", "stocktake", "shipment", "return", "shipmentEvidenceFile", "receiptEvidenceFile", "returnEvidenceFile", "invoice", "paymentRequest"],
-  "scopeB": ["purchase-receipt", "bom-material-consumption", "quality-inventory-release", "real-provider", "real-payment"]
+  "entities": ["factory", "supplier", "pendingSupplier", "finishedSku", "componentSku", "bom", "bomComponent", "warehouse", "transferWarehouse", "batch", "componentBatch", "supplierSku", "pendingApproval", "purchasePlan", "purchaseOrder", "executionOrder", "qualityInspection", "stocktake", "shipment", "return", "shipmentEvidenceFile", "receiptEvidenceFile", "returnEvidenceFile", "invoice", "paymentRequest"],
+  "scopeB": ["real-provider", "real-payment"]
 }

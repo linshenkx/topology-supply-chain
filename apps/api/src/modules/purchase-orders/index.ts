@@ -40,6 +40,7 @@ const ITEM_COLUMNS = `SELECT
   item_type AS itemType,
   supplier_id AS supplierId,
   quantity,
+  received_quantity AS receivedQuantity,
   unit_price_tax_included_minor AS unitPriceTaxIncludedMinor,
   amount_tax_included_minor AS amountTaxIncludedMinor,
   due_date AS dueDate,
@@ -236,6 +237,7 @@ function orderItem(row: DataRow): Omit<PurchaseOrderItem, "planLinks"> {
     ]),
     supplierId: nullablePositiveInteger(row.supplierId),
     quantity: positiveInteger(row.quantity),
+    receivedQuantity: nonNegativeInteger(row.receivedQuantity),
     unitPriceTaxIncludedMinor: nonNegativeInteger(
       row.unitPriceTaxIncludedMinor,
     ),

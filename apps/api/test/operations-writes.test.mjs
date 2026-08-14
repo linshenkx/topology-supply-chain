@@ -12,8 +12,8 @@ import operationsManifest from "../dist/composition/operations-writes-manifest.j
 
 const root = new URL("../../../", import.meta.url);
 
-test("Operations exposes exactly the 13 delegated route-method commands", () => {
-  assert.equal(Object.keys(OPERATIONS_COMMANDS).length, 13);
+test("Operations exposes exactly the 14 delegated route-method commands", () => {
+  assert.equal(Object.keys(OPERATIONS_COMMANDS).length, 14);
   assert.deepEqual(new Set(Object.values(OPERATIONS_COMMANDS)), new Set([
     "approvals.decide",
     "inventory.reserve",
@@ -21,6 +21,7 @@ test("Operations exposes exactly the 13 delegated route-method commands", () => 
     "inventory.transfer.transition",
     "manufacturing.order.create",
     "manufacturing.order.transition",
+    "purchase.receive",
     "quality.inspection.submit",
     "inventory.stocktake.open",
     "inventory.stocktake.transition",
@@ -45,6 +46,7 @@ test("Operations manifest registers all route-method pairs without modifying run
     ["inventory", ["POST"]],
     ["inventory/transfers", ["POST", "PATCH"]],
     ["production-orders", ["POST", "PATCH"]],
+    ["purchase-receipts", ["POST"]],
     ["quality-inspections", ["POST"]],
     ["stocktakes", ["POST", "PATCH"]],
     ["shipments", ["POST"]],
@@ -58,7 +60,7 @@ test("Operations manifest registers all route-method pairs without modifying run
   }
 });
 
-test("all 13 delegated command bodies cross the Fastify contract boundary", async (t) => {
+test("all 14 delegated command bodies cross the Fastify contract boundary", async (t) => {
   const app = await buildRuntimeApp({
     logger: false,
     registrationManifests: [operationsManifest],
@@ -72,6 +74,7 @@ test("all 13 delegated command bodies cross the Fastify contract boundary", asyn
     ["PATCH", "/api/v1/inventory/transfers", { id: 1, action: "ship" }],
     ["POST", "/api/v1/production-orders", { orderItemId: 1, factoryId: 1, bomId: 1, plannedQuantity: 1, plannedStartDate: "2099-01-01", plannedFinishDate: "2099-01-02" }],
     ["PATCH", "/api/v1/production-orders", { id: 1, action: "start" }],
+    ["POST", "/api/v1/purchase-receipts", { purchaseOrderId: 1, orderItemId: 1, warehouseId: 1 }],
     ["POST", "/api/v1/quality-inspections", { executionOrderId: 1, stage: "finished", inspectionMethod: "sampling", batchQuantity: 1, inspectedQuantity: 1, passedQuantity: 1, failedQuantity: 0, inspectorType: "company_qc" }],
     ["POST", "/api/v1/stocktakes", { warehouseId: 1, scope: "full_warehouse", dueDate: "2099-01-01" }],
     ["PATCH", "/api/v1/stocktakes", { id: 1, action: "finish_round" }],
@@ -102,6 +105,7 @@ test("each operations delegated route rejects an invalid body at its declared sc
     ["POST", "/api/v1/approvals"], ["POST", "/api/v1/inventory"],
     ["POST", "/api/v1/inventory/transfers"], ["PATCH", "/api/v1/inventory/transfers"],
     ["POST", "/api/v1/production-orders"], ["PATCH", "/api/v1/production-orders"],
+    ["POST", "/api/v1/purchase-receipts"],
     ["POST", "/api/v1/quality-inspections"], ["POST", "/api/v1/stocktakes"],
     ["PATCH", "/api/v1/stocktakes"], ["POST", "/api/v1/shipments"],
     ["POST", "/api/v1/returns"], ["POST", "/api/v1/finance"], ["POST", "/api/v1/warehouses"],
@@ -161,7 +165,11 @@ test("Operations stays inside Scope A boundaries", async () => {
   ].map((path) => readFile(new URL(path, root), "utf8")));
   const joined = sources.join("\n");
   assert.doesNotMatch(joined, /(?:FROM|INTO|UPDATE|JOIN|TABLE)\s+`?(?:purchase_receipts|payment_instructions|receiver_orgs)`?/iu);
-  assert.doesNotMatch(joined, /inventory_reservations.+production_material/isu);
+  // The Scope A business-closure couples a production order's BOM material
+  // lines with its inventory reservation; every ledger transition must stay
+  // CAS-guarded rather than being a direct projection rewrite.
+  assert.match(joined, /reserved_quantity\s*=\s*reserved_quantity\s*-\s*\?/u);
+  assert.match(joined, /locked_quantity\s*=\s*locked_quantity\s*-\s*\?/u);
   assert.match(joined, /inbound_pending_inspection/u);
   assert.doesNotMatch(joined, /quality_inspection[\s\S]{0,300}available_quantity\s*=\s*available_quantity\s*\+/iu);
 });

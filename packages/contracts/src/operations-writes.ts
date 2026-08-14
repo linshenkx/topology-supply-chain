@@ -7,6 +7,7 @@ export const OPERATIONS_COMMANDS = Object.freeze({
   transfersPatch: "inventory.transfer.transition",
   productionOrdersPost: "manufacturing.order.create",
   productionOrdersPatch: "manufacturing.order.transition",
+  purchaseReceiptsPost: "purchase.receive",
   qualityInspectionsPost: "quality.inspection.submit",
   stocktakesPost: "inventory.stocktake.open",
   stocktakesPatch: "inventory.stocktake.transition",
@@ -25,6 +26,7 @@ export const OPERATIONS_COMMAND_RESOURCES: Readonly<Record<OperationsCommandName
   "inventory.transfer.transition": "r3.transfers.commands",
   "manufacturing.order.create": "r3.production-orders.commands",
   "manufacturing.order.transition": "r3.production-orders.commands",
+  "purchase.receive": "r3.purchase-receipts.commands",
   "quality.inspection.submit": "r3.quality-inspections.commands",
   "inventory.stocktake.open": "r3.stocktakes.commands",
   "inventory.stocktake.transition": "r3.stocktakes.commands",
@@ -146,12 +148,14 @@ export const productionOrderTransitionSchema = discriminatedObject([
         }),
       },
     }),
+    object(["id", "action"], { id, action: action("release_materials") }),
 ]);
 
 export const qualityInspectionSubmitSchema = object(
-  ["executionOrderId", "stage", "inspectionMethod", "batchQuantity", "inspectedQuantity", "passedQuantity", "failedQuantity", "inspectorType"],
+  ["stage", "inspectionMethod", "batchQuantity", "inspectedQuantity", "passedQuantity", "failedQuantity", "inspectorType"],
   {
     executionOrderId: id,
+    batchId: id,
     stage: { enum: ["incoming", "process", "finished", "finished_goods"] },
     inspectionMethod: { enum: ["sampling", "full"] },
     batchQuantity: positiveQuantity,
@@ -164,6 +168,14 @@ export const qualityInspectionSubmitSchema = object(
     sourceInspectionId: id,
   },
 );
+
+export const purchaseReceiptSchema = object(["purchaseOrderId", "orderItemId", "warehouseId"], {
+  purchaseOrderId: id,
+  orderItemId: id,
+  warehouseId: id,
+  receivedQuantity: positiveQuantity,
+  receivedAt: dateTime,
+});
 
 export const stocktakeOpenSchema = object(["warehouseId", "scope", "dueDate"], {
   warehouseId: id,

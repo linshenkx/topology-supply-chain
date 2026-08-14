@@ -59,7 +59,7 @@
     "e2e:cleanup": "node tooling/e2e/lifecycle.mjs cleanup",
     "e2e:evidence": "node tooling/e2e/lifecycle.mjs evidence",
     "test:e2e-foundation": "pnpm build:api && pnpm build:worker && pnpm build:web:preview && node --test --test-concurrency=1 tests/e2e-foundation.integration.test.mjs",
-    "test:e2e-scope-a": "pnpm build:api && pnpm build:worker && pnpm build:web:preview && node --test --test-concurrency=1 tests/e2e-scope-a.integration.test.mjs"
+    "test:e2e-scope-a": "pnpm build:api && pnpm build:worker && pnpm build:web:preview && node --test --test-concurrency=1 tests/e2e-scope-a.integration.test.mjs tests/e2e-scope-a-closures.integration.test.mjs"
   },
   "dependencies": {
     "@topology/shared-config": "workspace:*",

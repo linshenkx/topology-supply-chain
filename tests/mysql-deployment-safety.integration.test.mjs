@@ -192,7 +192,7 @@ test("explicit writer activation is transactional, partial, fail-closed, and ide
   async function evidence(resources, differences = 0) {
     const json = JSON.stringify({
       version: 1,
-      releaseContract: "topology-scm.scope-a.schema-0004.writer-generation-2",
+      releaseContract: "topology-scm.scope-a.schema-0005.writer-generation-2",
       releaseTag,
       writerGeneration: 2,
       wave: "integration-wave",
@@ -280,7 +280,7 @@ test("fresh install is ready while disabled, consumes only after activation, and
   const [freshFences] = await connection.query(
     "SELECT resource, owner, enabled, generation FROM writer_fences WHERE generation=2 ORDER BY resource",
   );
-  assert.equal(freshFences.length, 29);
+  assert.equal(freshFences.length, 30);
   assert.ok(freshFences.every(({ enabled }) => Number(enabled) === 0));
 
   let providerPosts = 0;
@@ -468,7 +468,7 @@ test("canonical MySQL history upgrades, repeats, and rejects divergent lineages"
   }
   let result = run("tooling/release/check-mysql-migration-history.mjs", databaseUrl(names.prefix));
   assert.equal(result.status, 0, result.stderr);
-  assert.match(result.stdout, /2\/5 canonical entries applied/u);
+  assert.match(result.stdout, /2\/6 canonical entries applied/u);
   const db = drizzle(prefix);
   const migrationsFolder = new URL("../database/migrations/mysql", import.meta.url).pathname.replace(/^\/(?:[A-Za-z]:)/u, (value) => value.slice(1));
   await migrate(db, { migrationsFolder });

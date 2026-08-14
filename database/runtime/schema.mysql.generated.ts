@@ -1,7 +1,7 @@
 /*
  * AUTO-GENERATED FILE — DO NOT EDIT DIRECTLY.
  * Source: database/runtime/schema.ts
- * Command: npm run db:generate:mysql-schema
+ * Command: pnpm db:generate:mysql-schema
  *
  * This is the RDS MySQL table-model baseline. API migration also needs to replace
  * SQLite-only SQL expressions and emulate INSERT ... RETURNING with insertId/select.
@@ -129,6 +129,7 @@ export const orderItems = mysqlTable("order_items", {
   itemType: text("item_type", { enum: ["finished", "auxiliary", "component"] }).notNull(),
   supplierId: int("supplier_id").references(() => suppliers.id),
   quantity: int("quantity").notNull(),
+  receivedQuantity: int("received_quantity").notNull().default(0),
   unitPriceTaxIncludedMinor: int("unit_price_tax_included_minor").notNull().default(0),
   amountTaxIncludedMinor: int("amount_tax_included_minor").notNull().default(0),
   dueDate: text("due_date"),
@@ -715,6 +716,19 @@ export const inventoryReservations = mysqlTable("inventory_reservations", {
   ...timestamps,
 });
 
+export const purchaseReceipts = mysqlTable("purchase_receipts", {
+  id: int("id").autoincrement().primaryKey(),
+  receiptNo: varchar("receipt_no", { length: 191 }).notNull().unique(),
+  purchaseOrderId: int("purchase_order_id").notNull().references(() => purchaseOrders.id),
+  orderItemId: int("order_item_id").notNull().references(() => orderItems.id),
+  warehouseId: int("warehouse_id").notNull().references(() => warehouses.id),
+  batchId: int("batch_id").notNull().references(() => inventoryBatches.id),
+  receivedQuantity: int("received_quantity").notNull(),
+  receivedAt: text("received_at").notNull(),
+  receivedBy: int("received_by").notNull().references(() => users.id),
+  ...timestamps,
+}, table => [uniqueIndex("purchase_receipt_order_item_unique").on(table.orderItemId)]);
+
 export const stocktakes = mysqlTable("stocktakes", {
   id: int("id").autoincrement().primaryKey(),
   stocktakeNo: varchar("stocktake_no", { length: 191 }).notNull().unique(),
@@ -805,7 +819,8 @@ export const qualityRules = mysqlTable("quality_rules", {
 
 export const qualityInspections = mysqlTable("quality_inspections", {
   id: int("id").autoincrement().primaryKey(),
-  executionOrderId: int("execution_order_id").notNull().references(() => executionOrders.id),
+  executionOrderId: int("execution_order_id").references(() => executionOrders.id),
+  batchId: int("batch_id").references(() => inventoryBatches.id),
   stage: text("stage", { enum: ["incoming", "finished_goods"] }).notNull(),
   inspectionMethod: text("inspection_method", { enum: ["sampling", "full"] }).notNull(),
   batchQuantity: int("batch_quantity").notNull(),

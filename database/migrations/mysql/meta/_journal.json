@@ -36,6 +36,13 @@
       "when": 1786521600000,
       "tag": "0004_scope_a_domain_writes",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1786737452225,
+      "tag": "0005_tricky_kabuki",
+      "breakpoints": true
     }
   ]
 }

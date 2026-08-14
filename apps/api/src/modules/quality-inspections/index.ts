@@ -23,6 +23,7 @@ const INSPECTION_LIMIT = 200;
 const INSPECTION_COLUMNS = `SELECT
   inspections.id,
   inspections.execution_order_id AS executionOrderId,
+  inspections.batch_id AS batchId,
   inspections.stage,
   inspections.inspection_method AS inspectionMethod,
   inspections.batch_quantity AS batchQuantity,
@@ -160,7 +161,8 @@ function nullableFinalResult(
 function inspection(row: DataRow): QualityInspection {
   return {
     id: positiveInteger(row.id),
-    executionOrderId: positiveInteger(row.executionOrderId),
+    executionOrderId: nullablePositiveInteger(row.executionOrderId),
+    batchId: nullablePositiveInteger(row.batchId),
     stage: enumeration(row.stage, ["incoming", "finished_goods"] as const),
     inspectionMethod: enumeration(row.inspectionMethod, [
       "sampling",

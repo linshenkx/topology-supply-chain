@@ -18,6 +18,7 @@ type CorePlatformMutationPath =
   | "/api/v1/inventory"
   | "/api/v1/inventory/transfers"
   | "/api/v1/production-orders"
+  | "/api/v1/purchase-receipts"
   | "/api/v1/quality-inspections"
   | "/api/v1/stocktakes"
   | "/api/v1/shipments"
@@ -66,6 +67,7 @@ const COMMAND_BY_PATH: Readonly<Record<CorePlatformMutationPath, string>> = {
   "/api/v1/inventory": "inventory.reserve",
   "/api/v1/inventory/transfers": "inventory.transfer.request",
   "/api/v1/production-orders": "manufacturing.order.create",
+  "/api/v1/purchase-receipts": "purchase.receive",
   "/api/v1/quality-inspections": "quality.inspection.submit",
   "/api/v1/stocktakes": "inventory.stocktake.open",
   "/api/v1/shipments": "logistics.shipment.command",

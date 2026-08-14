@@ -87,7 +87,7 @@
 ```json
 {
   "version": 1,
-  "releaseContract": "topology-scm.scope-a.schema-0004.writer-generation-2",
+  "releaseContract": "topology-scm.scope-a.schema-0005.writer-generation-2",
   "releaseTag": "20260812120000",
   "writerGeneration": 2,
   "wave": "pilot-iam",

@@ -200,7 +200,7 @@ async function status() {
   checks.api = (await json(`${state.origins.api}/api/v1/health/ready`).catch(() => ({ response: { ok: false } }))).response.ok;
   checks.https = (await httpsJson(`${state.origins.https}/_e2e/health`).catch(() => ({ status: 0 }))).status === 200;
   checks.web = (await fetch(`http://127.0.0.1:${state.resources.ports.web}`, { signal: AbortSignal.timeout(3_000) }).catch(() => ({ ok: false }))).ok;
-  checks.migration = await (async () => { const { stdout } = await run(process.execPath, ["tooling/release/check-mysql-migration-history.mjs"], { env: { DATABASE_URL: state.databaseUrl } }); return /5\/5 canonical entries applied/u.test(stdout); })().catch(() => false);
+  checks.migration = await (async () => { const { stdout } = await run(process.execPath, ["tooling/release/check-mysql-migration-history.mjs"], { env: { DATABASE_URL: state.databaseUrl } }); return /6\/6 canonical entries applied/u.test(stdout); })().catch(() => false);
   const ready = Object.values(checks).every(Boolean); print({ status: ready ? "ready" : "blocked", ready, checks, ...safe(state) }); if (!ready) process.exitCode = 2;
 }
 
