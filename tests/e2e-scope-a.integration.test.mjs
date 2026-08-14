@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { command, requestJson, safeHttp, signIn, stubControl, withScenario } from "./e2e/scope-a.helpers.mjs";
+import { command, requestJson, safeHttp, seedReturnEvidence, signIn, stubControl, withScenario } from "./e2e/scope-a.helpers.mjs";
 
 test("Stage 11 T2 identity, HTTPS same-origin, CSRF and legacy retirement", { timeout: 720_000 }, async (t) => {
   await withScenario(t, "identity", "foundation-auth-worker", async ({ runtime }) => {
@@ -90,14 +90,25 @@ test("Stage 11 T2 R3 production and quality stay inside the current Scope A boun
   });
 });
 
-test("Stage 11 T2 R3 shipment/return counterexample fails closed without side effects", { timeout: 720_000 }, async (t) => {
+test("Stage 11 T2 R3 shipment and return preserve contract, audit and outbox evidence", { timeout: 720_000 }, async (t) => {
   await withScenario(t, "r3logistics", "t2-r3-logistics", async ({ runtime, db }) => {
-    const fixture = runtime.fixture.entities; const session = await signIn(runtime);
-    const [[before]] = await db.query("SELECT (SELECT COUNT(*) FROM shipment_evidence WHERE delivery_batch_id=?) AS evidence, (SELECT COUNT(*) FROM inventory_movements WHERE delivery_batch_id=?) AS movements, (SELECT status FROM delivery_batches WHERE id=?) AS status", [fixture.shipmentId, fixture.shipmentId, fixture.shipmentId]);
-    const shipped = await command(session, "/api/v1/shipments", { action: "ship", deliveryBatchId: fixture.shipmentId, shippedAt: "2026-02-01T00:00:00.000Z", carrier: "e2e-local", logisticsNo: `E2E-${runtime.runId}-LOG`, evidenceFileId: fixture.shipmentEvidenceFileId }, { key: `${runtime.runId}-r3-ship-counterexample-0001` });
-    assert.equal(shipped.status, 500, JSON.stringify(safeHttp("shipment-ship", shipped))); assert.equal(shipped.body.code, "INTERNAL_SERVER_ERROR");
-    const [[after]] = await db.query("SELECT (SELECT COUNT(*) FROM shipment_evidence WHERE delivery_batch_id=?) AS evidence, (SELECT COUNT(*) FROM inventory_movements WHERE delivery_batch_id=?) AS movements, (SELECT status FROM delivery_batches WHERE id=?) AS status", [fixture.shipmentId, fixture.shipmentId, fixture.shipmentId]);
-    assert.deepEqual([Number(after.evidence), Number(after.movements), after.status], [Number(before.evidence), Number(before.movements), before.status]);
+    const fixture = runtime.fixture.entities; const supplyChain = await signIn(runtime); const admin = await signIn(runtime, "admin"); const factory = await signIn(runtime, "factory");
+    const shipPayload = { action: "ship", deliveryBatchId: fixture.shipmentId, shippedAt: "2026-02-01T00:00", carrier: "e2e-local", logisticsNo: `E2E-${runtime.runId}-LOG`, evidenceFileId: fixture.shipmentEvidenceFileId };
+    const shipKey = `${runtime.runId}-r3-ship-0001`; const shipped = await command(supplyChain, "/api/v1/shipments", shipPayload, { key: shipKey }); const shipReplay = await command(supplyChain, "/api/v1/shipments", shipPayload, { key: shipKey });
+    assert.equal(shipped.status, 200, JSON.stringify(safeHttp("shipment-ship", shipped))); assert.equal(shipped.body.result.status, "shipped"); assert.equal(shipReplay.status, 200); assert.equal(shipReplay.body.command.replayed, true);
+    const received = await command(admin, "/api/v1/shipments", { action: "receive", deliveryBatchId: fixture.shipmentId, receivedQuantity: 10, damagedQuantity: 0, receivedAt: "2026-02-02T00:00", receiptEvidenceFileId: fixture.receiptEvidenceFileId }, { key: `${runtime.runId}-r3-receipt-0001` });
+    assert.equal(received.status, 201, JSON.stringify(safeHttp("shipment-receive", received))); assert.equal(received.body.result.status, "received");
+    const returned = await command(supplyChain, "/api/v1/returns", { action: "receive", returnNo: `E2E-${runtime.runId}-RETURN`, sourceDeliveryBatchId: fixture.shipmentId, warehouseId: fixture.warehouseId, quantity: 1 }, { key: `${runtime.runId}-r3-return-receive-0001` });
+    assert.equal(returned.status, 201, JSON.stringify(safeHttp("return-receive", returned))); const returnId = returned.body.result.return.id;
+    const returnEvidenceFileId = await seedReturnEvidence(db, { runId: runtime.runId, productReturnId: returnId, ownerUserId: runtime.fixture.accounts.admin, factoryId: fixture.factoryId });
+    const inspected = await command(admin, "/api/v1/returns", { action: "inspect", productReturnId: returnId, inspectedQuantity: 1, passedQuantity: 1, failedQuantity: 0, evidenceFileId: returnEvidenceFileId }, { key: `${runtime.runId}-r3-return-inspect-0001` });
+    assert.equal(inspected.status, 201, JSON.stringify(safeHttp("return-inspect", inspected))); assert.equal(inspected.body.result.status, "pending_supply_chain");
+    const proposed = await command(factory, "/api/v1/returns", { action: "propose", productReturnId: returnId, dispositions: [{ type: "restock", quantity: 1 }] }, { key: `${runtime.runId}-r3-return-propose-0001` });
+    assert.equal(proposed.status, 200, JSON.stringify(safeHttp("return-propose", proposed)));
+    const reviewed = await command(supplyChain, "/api/v1/returns", { action: "review", productReturnId: returnId, decision: "approved" }, { key: `${runtime.runId}-r3-return-review-0001` });
+    assert.equal(reviewed.status, 200, JSON.stringify(safeHttp("return-review", reviewed))); assert.equal(reviewed.body.result.status, "restocked");
+    const [[facts]] = await db.query("SELECT (SELECT status FROM delivery_batches WHERE id=?) AS shipmentStatus, (SELECT COUNT(*) FROM shipment_evidence WHERE delivery_batch_id=?) AS evidenceRows, (SELECT COUNT(*) FROM shipment_receipts WHERE delivery_batch_id=?) AS receiptRows, (SELECT status FROM product_returns WHERE id=?) AS returnStatus, (SELECT COUNT(*) FROM product_return_inspections WHERE product_return_id=?) AS inspectionRows, (SELECT COUNT(*) FROM product_return_dispositions WHERE product_return_id=? AND status='approved') AS approvedDispositions, (SELECT COUNT(*) FROM audit_logs WHERE module IN ('shipping','returns') AND entity_id IN (?,?)) AS audits, (SELECT COUNT(*) FROM outbox_messages WHERE aggregate_type IN ('delivery_batch','product_return') AND aggregate_id IN (?,?)) AS outboxRows", [fixture.shipmentId, fixture.shipmentId, fixture.shipmentId, returnId, returnId, returnId, String(fixture.shipmentId), String(returnId), String(fixture.shipmentId), String(returnId)]);
+    assert.deepEqual([facts.shipmentStatus, Number(facts.evidenceRows), Number(facts.receiptRows), facts.returnStatus, Number(facts.inspectionRows), Number(facts.approvedDispositions)], ["received", 1, 1, "restocked", 1, 1]); assert.ok(Number(facts.audits) >= 6); assert.ok(Number(facts.outboxRows) >= 6);
   });
 });
 

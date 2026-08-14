@@ -82,5 +82,13 @@ export async function command(session, path, body, { method = "POST", key = rand
   return requestJson(session.origin, path, { method, body, headers });
 }
 
+export async function seedReturnEvidence(db, { runId, productReturnId, ownerUserId, factoryId }) {
+  const [result] = await db.execute(
+    "INSERT INTO file_objects (object_key,file_name,content_type,size_bytes,category,entity_type,entity_id,owner_user_id,factory_id,scan_status) VALUES (?,?, 'application/pdf',32,'quality_evidence','product_return',?,?,?,'clean')",
+    [`E2E-${runId}/return-${productReturnId}-evidence.pdf`, "return-evidence.pdf", String(productReturnId), ownerUserId, factoryId],
+  );
+  return result.insertId;
+}
+
 export function digest(value) { return createHash("sha256").update(JSON.stringify(value)).digest("hex"); }
 export function safeHttp(path, response) { return { path, status: response.status, bodySha256: digest(response.body ?? null), code: response.body?.code ?? null }; }

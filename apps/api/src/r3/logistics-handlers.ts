@@ -242,7 +242,7 @@ export async function shipmentCommand(
       );
     }
     await command.transaction.execute(
-      `INSERT INTO shipment_evidence (delivery_batch_id, file_key, file_name, uploaded_at)
+      `INSERT INTO shipment_evidence (delivery_batch_id, file_key, file_name, created_at)
        VALUES (?, ?, ?, CURRENT_TIMESTAMP(3))`,
       [id, file.objectKey, optionalString(body.evidenceFileName, 500) || "shipment evidence"],
     );
@@ -410,7 +410,7 @@ export async function returnCommand(
     const inserted = await command.transaction.execute(
       `INSERT INTO product_return_inspections (
          product_return_id, inspected_quantity, passed_quantity, failed_quantity,
-         defect_reason, evidence_file_key, inspected_by, created_at
+         defect_reason, evidence_file_key, inspected_by, inspected_at
        ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP(3))`,
       [productReturnId, inspected, passed, failed, reason, file.objectKey, command.access.userId],
     );
