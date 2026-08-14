@@ -98,8 +98,17 @@ const actualMigrator = [...explicitInjections.get("migrator") ?? []].sort();
 if (JSON.stringify(actualMigrator) !== JSON.stringify(expectedMigrator)) {
   errors.push(`Migrator environment must be exactly: ${expectedMigrator.join(", ")}`);
 }
-const preflightEnvFiles = composeConfig.services.preflight?.env_file ?? [];
-if (preflightEnvFiles.length !== 1 || !String(preflightEnvFiles[0].path ?? preflightEnvFiles[0]).endsWith(".env.production")) {
+const preflightStart = compose.indexOf("\n  preflight:");
+const preflightEnd = compose.indexOf("\n  migrator:", preflightStart);
+const preflightBlock = preflightStart >= 0 && preflightEnd > preflightStart
+  ? compose.slice(preflightStart, preflightEnd)
+  : "";
+const preflightEnvFileSection = /^    env_file:\r?\n((?:      - .*(?:\r?\n|$))+)/mu.exec(preflightBlock);
+const preflightEnvFiles = preflightEnvFileSection?.[1]
+  .split(/\r?\n/u)
+  .map((line) => line.replace(/^      - /u, "").trim())
+  .filter(Boolean) ?? [];
+if (preflightEnvFiles.length !== 1 || preflightEnvFiles[0] !== ".env.production") {
   errors.push("Production preflight must receive the single production env file outside the migrator boundary");
 }
 if (!environmentGuide.includes("PRODUCTION_PREFLIGHT_ENV_BOUNDARY")) {
