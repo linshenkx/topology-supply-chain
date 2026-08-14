@@ -55,6 +55,7 @@ if (!files.length) {
 
 console.log(`Running ${suite} suite (${files.length} files, skip is forbidden).`);
 const result = spawnSync(process.execPath, [
+  "--experimental-strip-types",
   "--test",
   "--test-concurrency=1",
   "--test-reporter=tap",
