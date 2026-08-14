@@ -2,7 +2,7 @@
 
 import { useEffect, useEffectEvent, useMemo, useState } from "react";
 import { uploadPlatformFile } from "../lib/mutation-client";
-import { writeSupplierPrice, writeSupplierPriceWithStepUp } from "../lib/r2-mutation-client";
+import { writeSupplierPrice, writeSupplierPriceWithStepUp } from "../lib/supply-mutation-client";
 
 type Toast = (message: string) => void;
 type Supplier = { id: number; name: string; code: string; tier: number };

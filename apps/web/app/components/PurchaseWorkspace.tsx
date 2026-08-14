@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { updatePurchaseOrder, updatePurchasePlan } from "../lib/r2-mutation-client";
+import { updatePurchaseOrder, updatePurchasePlan } from "../lib/supply-mutation-client";
 
 type PlanItem = {
   id: number; expectedArrivalDate: string; factoryId: number; factoryName: string;

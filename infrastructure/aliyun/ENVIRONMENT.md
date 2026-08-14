@@ -29,7 +29,7 @@
 | `OSS_INTERNAL_ENDPOINT` | Files / Web+API | 生产同地域默认 `true`，本地示例 `false` |
 | `APP_ENV` | Repository / Web+API | Compose 固定 production；不得用于隐式 writer activation |
 | `DEPLOY_TARGET` | Repository / Web+API | Compose 固定 aliyun；不得用于隐式 writer activation |
-| `DOMAIN_REGISTRATION_MODULES` | API / API | Compose 固定 R2+R3 canonical manifest；不是可随意删减的 operator 开关 |
+| `DOMAIN_REGISTRATION_MODULES` | API / API | Compose 固定 supply+operations 组合入口 manifest（冻结 ID `r2.master-procurement` / `r3.fulfillment-writes`）；不是可随意删减的 operator 开关 |
 | `NODE_ENV`, `HOST`, `PORT`, `WORKER_INTERNAL_URL` | Runtime/API / 对应进程 | Compose 中的硬编码 runtime 边界同样受机器合同覆盖，不再漏检 |
 
 ## 发布参数与 secret 边界

@@ -457,7 +457,7 @@ test("deploy keeps migration ordering and starts all runtime services", () => {
 });
 
 test("production API loads both Scope A manifests and release metadata covers every domain fence", () => {
-  assert.match(compose, /DOMAIN_REGISTRATION_MODULES:[^\n]*r2-master-procurement\/index\.js,[^\n]*r3\/manifest\.js/u);
+  assert.match(compose, /DOMAIN_REGISTRATION_MODULES:[^\n]*composition\/supply-writes-manifest\.js,[^\n]*composition\/operations-writes-manifest\.js/u);
   assert.match(releaseManifestScript, /r2\.imports\.preview/u);
   assert.match(releaseManifestScript, /r2\.purchase-orders\.update/u);
   assert.match(releaseManifestScript, /r3\.approvals\.commands/u);

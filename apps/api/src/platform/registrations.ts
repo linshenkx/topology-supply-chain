@@ -97,7 +97,7 @@ export interface DomainRegistrationManifest {
   register(context: DomainRegistrationContext): Promise<void> | void;
 }
 export type DomainRegistration = DomainRegistrationManifest["register"];
-export interface ParallelDomainRegistrations { r2?: DomainRegistration; r3?: DomainRegistration }
+export interface ParallelDomainRegistrations { supply?: DomainRegistration; operations?: DomainRegistration }
 
 export async function registerDomainManifests(
   context: DomainRegistrationContext,
@@ -118,8 +118,8 @@ export async function registerParallelDomainModules(
   registrations: ParallelDomainRegistrations,
 ): Promise<void> {
   await registerDomainManifests(context, [
-    ...(registrations.r2 === undefined ? [] : [{ id: "r2.domain", register: registrations.r2 }]),
-    ...(registrations.r3 === undefined ? [] : [{ id: "r3.domain", register: registrations.r3 }]),
+    ...(registrations.supply === undefined ? [] : [{ id: "r2.domain", register: registrations.supply }]),
+    ...(registrations.operations === undefined ? [] : [{ id: "r3.domain", register: registrations.operations }]),
   ]);
 }
 

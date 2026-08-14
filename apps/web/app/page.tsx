@@ -13,7 +13,7 @@ import ShippingWorkspace from "./components/ShippingWorkspace";
 import FinanceWorkspace from "./components/FinanceWorkspace";
 import AuditWorkspace from "./components/AuditWorkspace";
 import { finalRequestDigest, mutateJson, uploadPlatformFile } from "./lib/mutation-client";
-import { r2Imports } from "./lib/r2-mutation-client";
+import { supplyImports } from "./lib/supply-mutation-client";
 
 type Order = {
   id: string; factory: string; product: string; sku: string; qty: number;
@@ -416,7 +416,7 @@ export default function Home() {
       }));
       const fingerprint = `${file.name}:${file.size}:${file.lastModified}:${workbook.SheetNames.join("|")}`;
       const type = importKind === "plan" ? "purchase_plan" : "purchase_order";
-      const preview = await r2Imports.preview<ImportPreview>({ type, fileName: file.name, fingerprint, sheets });
+      const preview = await supplyImports.preview<ImportPreview>({ type, fileName: file.name, fingerprint, sheets });
       if (!preview.canCommit) {
         const first = preview.errors[0];
         setImportResult(`无法正式导入：发现 ${preview.summary.errorCount} 个错误${first ? `；${first.sheet} 第 ${first.row || "—"} 行 ${first.message}` : ""}`);
@@ -429,7 +429,7 @@ export default function Home() {
       form.append("entityId", String(sessionUserId));
       const uploaded = await uploadPlatformFile<UploadedImport>(form);
       if (!uploaded.usable) throw new Error("文件安全扫描尚未完成，请稍后重试");
-      const staged = await r2Imports.stage<ImportStage>({
+      const staged = await supplyImports.stage<ImportStage>({
         type: preview.type,
         fileObjectId: uploaded.file.id,
         fileName: preview.fileName,
@@ -438,7 +438,7 @@ export default function Home() {
         errors: preview.errors,
         warnings: preview.warnings,
       });
-      const committed = await r2Imports.commit<ImportCommit>({ batchId: staged.batch.id });
+      const committed = await supplyImports.commit<ImportCommit>({ batchId: staged.batch.id });
       const warning = preview.summary.warningCount ? `，另有 ${preview.summary.warningCount} 条提醒` : "";
       setImportResult(committed.awaitingMapping
         ? `校验通过并安全暂存：${preview.summary.validRows} 行${warning}；批次 ${staged.batch.importNo} 等待 SKU、工厂、仓库及 BOM 映射后生成正式单据。`

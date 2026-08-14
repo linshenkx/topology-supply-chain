@@ -8,7 +8,7 @@ async function source(path) {
   return readFile(new URL(path, repositoryRoot), "utf8");
 }
 
-test("finance and approval reads and R3 mutations use v1", async () => {
+test("finance and approval reads and operations mutations use v1", async () => {
   const [page, finance, exceptions] = await Promise.all([
     source("apps/web/app/page.tsx"),
     source("apps/web/app/components/FinanceWorkspace.tsx"),
@@ -24,7 +24,7 @@ test("finance and approval reads and R3 mutations use v1", async () => {
   assert.doesNotMatch([page, finance, exceptions].join("\n"), /["'`]\/api\/(?:approvals|finance)["'`]/u);
 });
 
-test("inventory and logistics reads and R3 mutations use v1", async () => {
+test("inventory and logistics reads and operations mutations use v1", async () => {
   const [inventory, stocktakes, warehouses, shipping] = await Promise.all([
     source("apps/web/app/components/InventoryWorkspace.tsx"),
     source("apps/web/app/components/StocktakeWorkspace.tsx"),
@@ -47,14 +47,14 @@ test("inventory and logistics reads and R3 mutations use v1", async () => {
     /["'`]\/api\/(?:inventory|stocktakes|warehouses|shipments|returns)(?:["'`/])/u);
 });
 
-test("production and R2 supplier mutations use their typed v1 adapters", async () => {
-  const [production, suppliers, prices, performance, performanceLifecycle, r2Client] = await Promise.all([
+test("production and supply supplier mutations use their typed v1 adapters", async () => {
+  const [production, suppliers, prices, performance, performanceLifecycle, supplyClient] = await Promise.all([
     source("apps/web/app/components/ProductionWorkspace.tsx"),
     source("apps/web/app/components/SupplierWorkspace.tsx"),
     source("apps/web/app/components/SupplierPriceWorkspace.tsx"),
     source("apps/web/app/components/SupplierPerformanceWorkspace.tsx"),
     source("apps/web/app/lib/supplier-performance-lifecycle.ts"),
-    source("apps/web/app/lib/r2-mutation-client.ts"),
+    source("apps/web/app/lib/supply-mutation-client.ts"),
   ]);
 
   assert.match(production, /fetch\("\/api\/v1\/production-orders"/u);
@@ -71,21 +71,21 @@ test("production and R2 supplier mutations use their typed v1 adapters", async (
   assert.match(performance, /window\.location\.href = `\/api\/v1\/supplier-performance\?/u);
   assert.match(performance, /writeSupplierPerformance/u);
   assert.doesNotMatch([suppliers, prices, performance, performanceLifecycle].join("\n"), /fetch\([`"]\/api\/(?:suppliers|supplier-skus|supplier-prices|supplier-performance)/u);
-  assert.match(r2Client, /"\/api\/v1\/supplier-prices"/u);
+  assert.match(supplyClient, /"\/api\/v1\/supplier-prices"/u);
 });
 
 test("session, purchase reads, and purchase mutations use v1", async () => {
-  const [page, purchase, r2Client] = await Promise.all([
+  const [page, purchase, supplyClient] = await Promise.all([
     source("apps/web/app/page.tsx"),
     source("apps/web/app/components/PurchaseWorkspace.tsx"),
-    source("apps/web/app/lib/r2-mutation-client.ts"),
+    source("apps/web/app/lib/supply-mutation-client.ts"),
   ]);
 
   assert.match(page, /fetch\("\/api\/v1\/session"\)/u);
-  assert.match(page, /r2Imports\.preview/u);
+  assert.match(page, /supplyImports\.preview/u);
   assert.match(page, /uploadPlatformFile/u);
-  assert.match(page, /r2Imports\.stage/u);
-  assert.match(page, /r2Imports\.commit/u);
+  assert.match(page, /supplyImports\.stage/u);
+  assert.match(page, /supplyImports\.commit/u);
   assert.match(page, /entityType", "import_upload"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-plans"/u);
   assert.match(purchase, /fetch\("\/api\/v1\/purchase-orders"/u);
@@ -93,8 +93,8 @@ test("session, purchase reads, and purchase mutations use v1", async () => {
   assert.match(purchase, /updatePurchasePlan/u);
   assert.match(purchase, /updatePurchaseOrder/u);
   assert.doesNotMatch(purchase, /fetch\([`"]\/api\/(?:purchase-plans|purchase-orders)/u);
-  assert.match(r2Client, /"\/api\/v1\/purchase-plans"/u);
-  assert.match(r2Client, /"\/api\/v1\/purchase-orders"/u);
+  assert.match(supplyClient, /"\/api\/v1\/purchase-plans"/u);
+  assert.match(supplyClient, /"\/api\/v1\/purchase-orders"/u);
 });
 
 test("platform user mutations and file uploads use the typed v1 mutation seam", async () => {

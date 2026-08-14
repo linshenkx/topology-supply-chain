@@ -35,7 +35,7 @@ pnpm verify:local
 pnpm verify:mysql
 ```
 
-必须显式设置 `MYSQL_ADMIN_TEST_URL`、`TEST_DATABASE_URL`、`MYSQL_WRITE_TEST_URL`、`MYSQL_R2_TEST_URL`、`MYSQL_R3_TEST_URL`。任何缺失或 TAP skip 都视为失败；不要把“无数据库所以跳过”报告为绿色。
+必须显式设置 `MYSQL_ADMIN_TEST_URL`、`TEST_DATABASE_URL`、`MYSQL_WRITE_TEST_URL`、`MYSQL_SUPPLY_TEST_URL`、`MYSQL_OPERATIONS_TEST_URL`。任何缺失或 TAP skip 都视为失败；不要把“无数据库所以跳过”报告为绿色。
 
 只需定向检查时可使用：
 

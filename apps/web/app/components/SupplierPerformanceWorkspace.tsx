@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
-import { writeSupplierPerformance } from "../lib/r2-mutation-client";
+import { writeSupplierPerformance } from "../lib/supply-mutation-client";
 import {
   buildSupplierPerformanceWeightCommand,
   isSupplierPerformanceSelectionCurrent,

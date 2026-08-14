@@ -38,8 +38,8 @@ if (suite === "mysql") {
     "MYSQL_ADMIN_TEST_URL",
     "TEST_DATABASE_URL",
     "MYSQL_WRITE_TEST_URL",
-    "MYSQL_R2_TEST_URL",
-    "MYSQL_R3_TEST_URL",
+    "MYSQL_SUPPLY_TEST_URL",
+    "MYSQL_OPERATIONS_TEST_URL",
   ];
   const missing = required.filter((name) => !process.env[name]?.trim());
   if (missing.length) {

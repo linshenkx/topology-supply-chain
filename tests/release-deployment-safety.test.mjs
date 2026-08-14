@@ -17,8 +17,8 @@ const rollback = readFileSync(new URL("../infrastructure/aliyun/rollback.sh", im
 const activation = readFileSync(new URL("../tooling/release/activate-writers.sh", import.meta.url), "utf8");
 const rollbackSafety = readFileSync(new URL("../tooling/release/check-legacy-rollback-safety.mjs", import.meta.url), "utf8");
 const platformCommands = readFileSync(new URL("../apps/api/src/platform/commands.ts", import.meta.url), "utf8");
-const r2Contracts = readFileSync(new URL("../packages/contracts/src/r2-writes.ts", import.meta.url), "utf8");
-const r3Contracts = readFileSync(new URL("../packages/contracts/src/r3-fulfillment-writes.ts", import.meta.url), "utf8");
+const supplyContracts = readFileSync(new URL("../packages/contracts/src/supply-writes.ts", import.meta.url), "utf8");
+const operationsContracts = readFileSync(new URL("../packages/contracts/src/operations-writes.ts", import.meta.url), "utf8");
 const workerServer = readFileSync(new URL("../apps/worker/src/server.ts", import.meta.url), "utf8");
 
 async function cloneManifest() {
@@ -65,17 +65,17 @@ test("release manifest is complete, canonical, and deterministic", async () => {
   assert.equal(new Set(RELEASE_MANIFEST.writer.resources.map(({ resource }) => resource)).size, 29);
 });
 
-test("release manifest identities match the frozen platform, R2, R3, and Worker runtime sources", () => {
+test("release manifest identities match the frozen platform, supply, operations, and Worker runtime sources", () => {
   const platform = quotedPairs(platformCommands, "COMMAND_WRITER_RESOURCES", "});");
-  const r2Section = r2Contracts.slice(r2Contracts.indexOf("R2_COMMANDS = ["), r2Contracts.indexOf("] as const"));
-  const r2 = [...r2Section.matchAll(/^\s*"([^"]+)",?$/gmu)].map(([, command]) => ({
+  const supplySection = supplyContracts.slice(supplyContracts.indexOf("SUPPLY_COMMANDS = ["), supplyContracts.indexOf("] as const"));
+  const supplyCommands = [...supplySection.matchAll(/^\s*"([^"]+)",?$/gmu)].map(([, command]) => ({
     command,
     generation: 2,
     owner: "fastify-v1",
     resource: `r2.${command}`,
   }));
-  const r3 = quotedPairs(r3Contracts, "R3_COMMAND_RESOURCES", "});");
-  const expectedCommands = [...platform, ...r2, ...r3].sort((left, right) => left.command.localeCompare(right.command));
+  const operationsResources = quotedPairs(operationsContracts, "OPERATIONS_COMMAND_RESOURCES", "});");
+  const expectedCommands = [...platform, ...supplyCommands, ...operationsResources].sort((left, right) => left.command.localeCompare(right.command));
   const actualCommands = [...RELEASE_MANIFEST.writer.commands].sort((left, right) => left.command.localeCompare(right.command));
   assert.deepEqual(actualCommands, expectedCommands);
 

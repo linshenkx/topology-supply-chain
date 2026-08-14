@@ -1,9 +1,9 @@
 "use client";
 
 import {
-  R2_COMMAND_BY_MUTATION,
-  type R2MutationPath,
-} from "./r2-mutation-contract";
+  SUPPLY_COMMAND_BY_MUTATION,
+  type SupplyMutationPath,
+} from "./supply-mutation-contract";
 
 type CorePlatformMutationPath =
   | "/api/v1/auth/login"
@@ -25,7 +25,7 @@ type CorePlatformMutationPath =
   | "/api/v1/finance"
   | "/api/v1/warehouses";
 
-export type PlatformMutationPath = CorePlatformMutationPath | R2MutationPath;
+export type PlatformMutationPath = CorePlatformMutationPath | SupplyMutationPath;
 
 type MutationMethod = "POST" | "PATCH" | "DELETE";
 
@@ -75,8 +75,8 @@ const COMMAND_BY_PATH: Readonly<Record<CorePlatformMutationPath, string>> = {
 };
 
 function commandName(path: PlatformMutationPath, method: MutationMethod): string {
-  const r2 = R2_COMMAND_BY_MUTATION[`${method} ${path}` as keyof typeof R2_COMMAND_BY_MUTATION];
-  if (r2 !== undefined) return r2;
+  const procurementCommand = SUPPLY_COMMAND_BY_MUTATION[`${method} ${path}` as keyof typeof SUPPLY_COMMAND_BY_MUTATION];
+  if (procurementCommand !== undefined) return procurementCommand;
   if (path === "/api/v1/users") {
     return method === "POST" ? "users.assign-role" : method === "PATCH" ? "users.unlock" : "users.revoke-role";
   }

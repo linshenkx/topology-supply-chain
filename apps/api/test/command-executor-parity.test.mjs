@@ -1,13 +1,13 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { R2_COMMANDS } from "@topology/contracts/r2-writes";
-import { R3_COMMAND_RESOURCES } from "@topology/contracts/r3-fulfillment-writes";
+import { SUPPLY_COMMANDS } from "@topology/contracts/supply-writes";
+import { OPERATIONS_COMMAND_RESOURCES } from "@topology/contracts/operations-writes";
 
 import { RELEASE_MANIFEST } from "../../../tooling/release/release-manifest.mjs";
-import { executeR2Command, r2FenceResource } from "../dist/modules/r2-master-procurement/command.js";
+import { executeSupplyCommand, supplyFenceResource } from "../dist/platform/supply-command.js";
 import { canonicalRequestDigest, COMMAND_WRITER_RESOURCES, executeCommand } from "../dist/platform/commands.js";
-import { executeR3Command } from "../dist/r3/command.js";
+import { executeOperationsCommand } from "../dist/platform/operations-command.js";
 
 const KEY = "adapter-parity-key-000001";
 const CSRF = "ab".repeat(32);
@@ -82,10 +82,10 @@ function casesFor(probe) {
       }),
     },
     {
-      name: "R2",
+      name: "supply",
       command: "supplier-performance.write",
       resource: "r2.supplier-performance.write",
-      execute: (payload, incoming = request()) => executeR2Command({
+      execute: (payload, incoming = request()) => executeSupplyCommand({
         actorScope: "user:9",
         command: "supplier-performance.write",
         context: { unitOfWork: probe.unitOfWork, requireWriterFence: probe.fenceCheck },
@@ -96,10 +96,10 @@ function casesFor(probe) {
       }),
     },
     {
-      name: "R3",
+      name: "operations",
       command: "inventory.reserve",
       resource: "r3.inventory.commands",
-      execute: (payload, incoming = request()) => executeR3Command({
+      execute: (payload, incoming = request()) => executeOperationsCommand({
         command: "inventory.reserve",
         context: {
           authenticate: async () => access,
@@ -120,8 +120,8 @@ function casesFor(probe) {
   ];
 }
 
-test("platform, R2, and R3 adapters preserve one executor state machine", async (t) => {
-  for (const fixtureName of ["platform", "R2", "R3"]) {
+test("platform, supply, and operations adapters preserve one executor state machine", async (t) => {
+  for (const fixtureName of ["platform", "supply", "operations"]) {
     await t.test(fixtureName, async () => {
       const probe = harness();
       const fixture = casesFor(probe).find(({ name }) => name === fixtureName);
@@ -143,11 +143,11 @@ test("platform, R2, and R3 adapters preserve one executor state machine", async 
   }
 });
 
-test("every R2 and R3 command is wired to its immutable writer resource", async (t) => {
-  for (const command of R2_COMMANDS) {
-    await t.test(`R2 ${command}`, async () => {
+test("every supply and operations command is wired to its immutable writer resource", async (t) => {
+  for (const command of SUPPLY_COMMANDS) {
+    await t.test(`supply ${command}`, async () => {
       const probe = harness();
-      const result = await executeR2Command({
+      const result = await executeSupplyCommand({
         actorScope: "user:9",
         command,
         context: { unitOfWork: probe.unitOfWork, requireWriterFence: probe.fenceCheck },
@@ -155,13 +155,13 @@ test("every R2 and R3 command is wired to its immutable writer resource", async 
         run: async () => ({ command }),
       });
       assert.equal(result.body.command.command, command);
-      assert.equal(probe.state.fences[0].resource, r2FenceResource(command));
+      assert.equal(probe.state.fences[0].resource, supplyFenceResource(command));
     });
   }
-  for (const [command, resource] of Object.entries(R3_COMMAND_RESOURCES)) {
-    await t.test(`R3 ${command}`, async () => {
+  for (const [command, resource] of Object.entries(OPERATIONS_COMMAND_RESOURCES)) {
+    await t.test(`operations ${command}`, async () => {
       const probe = harness();
-      const result = await executeR3Command({
+      const result = await executeOperationsCommand({
         command,
         context: {
           authenticate: async () => ({ localPreview: false, sessionId: 7, userId: 9 }),
@@ -179,8 +179,8 @@ test("every R2 and R3 command is wired to its immutable writer resource", async 
 test("adapter identity stays byte-aligned with the 35-command release protocol", () => {
   const expected = [
     ...Object.entries(COMMAND_WRITER_RESOURCES),
-    ...R2_COMMANDS.map((command) => [command, r2FenceResource(command)]),
-    ...Object.entries(R3_COMMAND_RESOURCES),
+    ...SUPPLY_COMMANDS.map((command) => [command, supplyFenceResource(command)]),
+    ...Object.entries(OPERATIONS_COMMAND_RESOURCES),
   ].map(([command, resource]) => ({ command, generation: 2, owner: "fastify-v1", resource }))
     .sort((left, right) => left.command.localeCompare(right.command));
   assert.equal(expected.length, 35);
@@ -190,14 +190,14 @@ test("adapter identity stays byte-aligned with the 35-command release protocol",
 });
 
 test("documented header compatibility differences remain explicit at adapters", async () => {
-  for (const fixtureName of ["platform", "R2"]) {
+  for (const fixtureName of ["platform", "supply"]) {
     const probe = harness();
     const fixture = casesFor(probe).find(({ name }) => name === fixtureName);
     await assert.rejects(fixture.execute({ value: 1 }, request({ "x-request-digest": ["bad"] })),
       { code: "BAD_REQUEST" });
   }
-  const r3Probe = harness();
-  const r3 = casesFor(r3Probe).find(({ name }) => name === "R3");
-  assert.equal((await r3.execute({ value: 1 }, request({ "x-request-digest": ["bad"] })))
+  const operationsProbe = harness();
+  const operationsCase = casesFor(operationsProbe).find(({ name }) => name === "operations");
+  assert.equal((await operationsCase.execute({ value: 1 }, request({ "x-request-digest": ["bad"] })))
     .body.command.replayed, false);
 });

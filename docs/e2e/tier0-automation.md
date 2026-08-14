@@ -25,8 +25,8 @@ pnpm test:non-mysql
 $env:MYSQL_ADMIN_TEST_URL = '<redacted>'
 $env:TEST_DATABASE_URL = '<redacted>'
 $env:MYSQL_WRITE_TEST_URL = '<redacted>'
-$env:MYSQL_R2_TEST_URL = '<redacted>'
-$env:MYSQL_R3_TEST_URL = '<redacted>'
+$env:MYSQL_SUPPLY_TEST_URL = '<redacted>'
+$env:MYSQL_OPERATIONS_TEST_URL = '<redacted>'
 pnpm test:mysql
 ```
 

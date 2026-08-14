@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import SupplierPriceWorkspace from "./SupplierPriceWorkspace";
 import SupplierPerformanceWorkspace from "./SupplierPerformanceWorkspace";
-import { writeSupplier, writeSupplierSku } from "../lib/r2-mutation-client";
+import { writeSupplier, writeSupplierSku } from "../lib/supply-mutation-client";
 
 type Toast = (message: string) => void;
 type Factory = { id: number; code: string; name: string; status: string };

@@ -1,9 +1,13 @@
 # Scope A 真人与 Agent E2E 验收手册
 
+> 术语说明：手册场景编号 R2/R3 沿用 Scope A 写迁移两批命令的历史代号（R2 = 供应侧 12 命令，R3 = 履约财务侧 13 命令）；代码已改用领域名 supply / operations，冻结的 `r2.*`/`r3.*` 命令名与 resource 不变。
+
 > 验收基线：`main@aa327330b7ae0deb7b4a5ee3257b6a8221309903`；父链包含 Stage 10/11 的文档、测试底座、自动化场景与最终验收。
 > 适用环境：本机或受控测试环境。不得连接生产、使用生产凭据、调用真实 provider，或执行部署。
 
-本目录把已有合同和测试证据转成可重复的验收步骤，不宣称已完成业务全闭环。它严格分为两层：可立即运行的 [Tier 0 自动化基线](./tier0-automation.md)，和必须先通过就绪门的 [Tier 1 现场 E2E](./tier1-readiness.md)。当前能力和已知缺口以[基础业务能力—测试覆盖矩阵](../business-capability-test-matrix.md)为准；最新结论见 [Stage 11 最终验收报告](../refactor/stage11-t3-final-e2e-acceptance.md)。
+
+2.*/
+3.* 命令名与 resource 不变。
 
 ## 执行入口
 
@@ -12,12 +16,18 @@
 3. 自动化执行者还必须完整遵守[Agent 执行规程](./agent-execution.md)，并使用[请求模板](./request-templates.md)与[fixture/evidence 模板](./templates/fixture-manifest.json)。
 4. 逐项执行[Scope A 场景清单](./scope-a-scenarios.md)。每项都要有 HTTP、数据库或审计/Outbox 中至少一种可复核证据；UI 没有稳定 selector 或夹具时，不得假装自动化完成。
 
+2.*/
+3.* 命令名与 resource 不变。
+
 ## 环境和边界
 
 - 只允许 loopback（`127.0.0.1` / `localhost`）服务、临时测试数据和受控 MySQL 8 容器。`tooling/e2e/lifecycle.mjs` 为每个 `RUN_ID` 创建带 Docker label 的独立容器/库、运行时 HTTPS 证书和仓库外日志；`cleanup` 只会删除匹配该 label 与状态文件的资源。URL、数据库名和日志目录必须在证据清单中记录，但不得记录密码、cookie、OTP 或访问密钥。
 - Web 位于 `:3000`，API 位于 `:3001`，Worker 位于 `:3002`；API 的健康检查为 `/api/v1/health/live` 和 `/api/v1/health/ready`。在受控 aliyun-runtime 配置中，`/api/health` 在 OSS 或数据库不可用时应返回受控 `503` 与 `degraded`，不得泄露凭据。
 - 所有 R2/R3 写命令都使用独一无二的 `idempotency-key`；同一业务动作的重放才复用同一个 key 和完全相同的请求，换请求内容不得复用 key。R2 key 长度为 16–128 且符合 Contracts 规定的字符集。
 - Scope B：Purchase Receipt、BOM 实际预留/领料/消耗、质检驱动库存放行/隔离、真实支付、真实 provider、生产部署/凭据。它们均不执行也不判定通过。
+
+2.*/
+3.* 命令名与 resource 不变。
 
 ## 最小证据包
 
@@ -28,6 +38,9 @@
 - `db/`：只查询本次 `RUN_ID` 关联记录的输出，或经人工签字的查询截图；至少包括业务记录、`audit_logs`、`outbox_messages` 的关联证据。
 - `ui/`：人工检查截图，并标明页面、时间、操作者、可见角色和检查点；截图不含个人数据或密钥。
 - `logs/`：Web/API/Worker 的后台日志尾部及退出码。失败必须保留日志和停止原因，不可删除后重跑掩盖失败。
+
+2.*/
+3.* 命令名与 resource 不变。
 
 ## 场景覆盖与判定
 

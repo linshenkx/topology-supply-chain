@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { writeMasterData } from "../lib/r2-mutation-client";
+import { writeMasterData } from "../lib/supply-mutation-client";
 
 type Toast = (message: string) => void;
 type Sku = { id: number; code: string; name: string; itemType: string; stockUnit: string; status: string; verificationStatus: string };

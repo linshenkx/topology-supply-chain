@@ -12,6 +12,23 @@ import { buildRuntimeApp } from "../dist/runtime.js";
 
 const IDEMPOTENCY_KEY = "platform-command-key-0001";
 
+test("platform support stays free of domain tables, DTOs, and ownership helpers", async () => {
+  const root = new URL("../../../", import.meta.url);
+  const [supplySupport, operationsSupport] = await Promise.all([
+    readFile(new URL("apps/api/src/platform/supply-support.ts", root), "utf8"),
+    readFile(new URL("apps/api/src/platform/operations-support.ts", root), "utf8"),
+  ]);
+
+  assert.doesNotMatch(
+    supplySupport,
+    /\b(?:approval_requests|reminder_schedules|file_objects|purchase_plan_items)\b|\b(?:FileRow|PlanItemRow|PlanRow|SupplierRow|PriceRow|OrderRow|createApproval|approvalNotification|createReminder|requireFile|planItems)\b/u,
+  );
+  assert.doesNotMatch(
+    operationsSupport,
+    /\b(?:warehouses|execution_orders|order_items|file_objects|warehouse_inventory_freeze|stocktakes|stocktake_counts|delivery_batches)\b|\b(?:requireWarehouseScope|requireExecutionScope|requireCleanFile|lockWarehouseFreeze|freezeExists|requireShipmentRow)\b/u,
+  );
+});
+
 test("deterministic session tokens are isolated by authenticated subject", () => {
   const key = "scope-a-session-signing-key-00000001";
   const firstSubject = "a".repeat(64);
@@ -27,7 +44,7 @@ test("deterministic session tokens are isolated by authenticated subject", () =>
   );
 });
 
-test("independent domain manifests receive the frozen R2/R3 platform ports", async () => {
+test("independent domain manifests receive the frozen supply/operations platform ports", async () => {
   const registrations = [];
   const context = {
     app: {}, database: {}, unitOfWork: async (run) => run({}), executeCommand, requireWriterFence,
@@ -53,7 +70,7 @@ test("independent domain manifests receive the frozen R2/R3 platform ports", asy
   ]), /rejected/u);
 });
 
-test("R2 and R3 writer resources can be fenced independently without a global switch", async () => {
+test("Supply and operations writer resources can be fenced independently without a global switch", async () => {
   const fences = new Map([
     ["r2.commands", { owner: "r2-v1", enabled: 1, generation: 2 }],
     ["r3.commands", { owner: "r3-v1", enabled: 0, generation: 2 }],

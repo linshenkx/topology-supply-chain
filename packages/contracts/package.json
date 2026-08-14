@@ -10,13 +10,13 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js"
     },
-    "./r2-writes": {
-      "types": "./dist/r2-writes.d.ts",
-      "import": "./dist/r2-writes.js"
+    "./supply-writes": {
+      "types": "./dist/supply-writes.d.ts",
+      "import": "./dist/supply-writes.js"
     },
-    "./r3-fulfillment-writes": {
-      "types": "./dist/r3-fulfillment-writes.d.ts",
-      "import": "./dist/r3-fulfillment-writes.js"
+    "./operations-writes": {
+      "types": "./dist/operations-writes.d.ts",
+      "import": "./dist/operations-writes.js"
     }
   },
   "files": [

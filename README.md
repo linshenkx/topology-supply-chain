@@ -71,7 +71,7 @@ MySQL 门禁使用以下环境变量：
 
 - `MYSQL_ADMIN_TEST_URL`：可创建/删除本门禁精确命名临时库的 MySQL 8 管理连接；
 - `TEST_DATABASE_URL`：支付锁测试库；
-- `MYSQL_WRITE_TEST_URL`、`MYSQL_R2_TEST_URL`、`MYSQL_R3_TEST_URL`：已应用 canonical migration 的测试库。
+- `MYSQL_WRITE_TEST_URL`、`MYSQL_SUPPLY_TEST_URL`、`MYSQL_OPERATIONS_TEST_URL`：已应用 canonical migration 的测试库。
 
 ## 部署入口
 

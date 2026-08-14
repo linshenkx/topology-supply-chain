@@ -251,8 +251,8 @@ test("row-lock helper fails closed outside MySQL or without transaction support"
 });
 
 test("all payable-ledger writers retain serialized SELECT FOR UPDATE protocol", () => {
-  const finance = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
-  const approvals = fs.readFileSync(new URL("../apps/api/src/r3/approval-handler.ts", import.meta.url), "utf8");
+  const finance = fs.readFileSync(new URL("../apps/api/src/modules/finance/writes.ts", import.meta.url), "utf8");
+  const approvals = fs.readFileSync(new URL("../apps/api/src/modules/approvals/writes.ts", import.meta.url), "utf8");
   const payment = finance.slice(finance.indexOf('if (action === "record_payment")'), finance.indexOf('if (action === "record_refund")'));
   const refund = finance.slice(finance.indexOf('if (action === "record_refund")'), finance.indexOf('if (action === "request_record_correction")'));
   const replacement = finance.slice(finance.indexOf('if (action === "link_replacement_invoice")'), finance.indexOf('if (action === "record_payment")'));
@@ -272,7 +272,7 @@ test("all payable-ledger writers retain serialized SELECT FOR UPDATE protocol", 
 });
 
 test("record payment locks, validates step-up, writes and recomputes in order", () => {
-  const handler = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
+  const handler = fs.readFileSync(new URL("../apps/api/src/modules/finance/writes.ts", import.meta.url), "utf8");
   const section = handler.slice(handler.indexOf('if (action === "record_payment")'), handler.indexOf('if (action === "record_refund")'));
   const ordered = [
     "FROM factory_payment_requests WHERE id = ? LIMIT 1 FOR UPDATE",
@@ -295,7 +295,7 @@ test("record payment locks, validates step-up, writes and recomputes in order", 
 });
 
 test("correction requests and finance UI share the payable classification", () => {
-  const financeRoute = fs.readFileSync(new URL("../apps/api/src/r3/finance-handler.ts", import.meta.url), "utf8");
+  const financeRoute = fs.readFileSync(new URL("../apps/api/src/modules/finance/writes.ts", import.meta.url), "utf8");
   const financeUi = fs.readFileSync(new URL("../apps/web/app/components/FinanceWorkspace.tsx", import.meta.url), "utf8");
   const requestSection = financeRoute.slice(
     financeRoute.indexOf('if (action === "request_record_correction")'),

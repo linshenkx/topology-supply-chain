@@ -1,4 +1,4 @@
-import { r3Mutation, r3Read } from "../../../lib/r3-v1-bridge";
-export const GET = r3Read("/api/v1/production-orders");
-export const POST = r3Mutation("/api/v1/production-orders");
-export const PATCH = r3Mutation("/api/v1/production-orders");
+import { operationsMutation, operationsRead } from "../../../lib/operations-v1-bridge";
+export const GET = operationsRead("/api/v1/production-orders");
+export const POST = operationsMutation("/api/v1/production-orders");
+export const PATCH = operationsMutation("/api/v1/production-orders");

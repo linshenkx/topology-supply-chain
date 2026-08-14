@@ -69,7 +69,7 @@ services:
       API_SESSION_SIGNING_KEY: "${API_SESSION_SIGNING_KEY:-}"
       OTP_SEALING_KEY_ID: "${OTP_SEALING_KEY_ID:-}"
       OTP_SEALING_KEY: "${OTP_SEALING_KEY:-}"
-      DOMAIN_REGISTRATION_MODULES: "../modules/r2-master-procurement/index.js,../r3/manifest.js"
+      DOMAIN_REGISTRATION_MODULES: "../composition/supply-writes-manifest.js,../composition/operations-writes-manifest.js"
       WORKER_INTERNAL_URL: "http://worker:3002"
       DB_TRANSACTION_TIMEOUT_MS: "${DB_TRANSACTION_TIMEOUT_MS:-30000}"
       DB_CONNECT_TIMEOUT_MS: "${DB_CONNECT_TIMEOUT_MS:-5000}"

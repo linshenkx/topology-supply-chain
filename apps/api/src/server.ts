@@ -6,7 +6,7 @@ import { safeErrorName } from "./safe-logging.js";
 
 const defaultHost = "0.0.0.0";
 const defaultPort = 3001;
-const productionDomainManifests = "../modules/r2-master-procurement/index.js,../r3/manifest.js";
+const productionDomainManifests = "../composition/supply-writes-manifest.js,../composition/operations-writes-manifest.js";
 
 function readPort(rawPort: string | undefined): number {
   if (rawPort === undefined || rawPort.trim() === "") {
