@@ -1,6 +1,6 @@
 # 文档索引
 
-README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。当前 accepted 基线为 Stage 9 GO，真实部署与生产凭据不在本文档范围内。
+README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。当前 accepted 基线为 `main@aa327330` 的 Stage 11 Scope A 受控本机技术验收 GO；真实部署、生产凭据与真人业务签字不在该结论范围内。
 
 ## 当前规范与能力
 
@@ -15,8 +15,10 @@ README 是当前工程的唯一入口；本索引只负责把材料按证据属�
 
 | 文档 | 状态与边界 |
 | --- | --- |
-| [Stage 10 E2E 最终验收](./refactor/stage10-e2e-final-acceptance.md) | 当前 Stage 10 的文档与基础门禁验收；Tier 0 可立即运行，Tier 1 现场 E2E 须先具备受控环境、账号、fixture 与 provider 条件；不是生产部署验收。 |
-| [Stage 9 物理分离最终验收](./refactor/stage9-physical-separation-final-acceptance.md) | 当前最近一次 Scope A 阶段验收；结论为 GO，包含已运行门禁和已接受的非阻断观察项。 |
+| [Stage 11 真人与 Agent 联合 E2E 最终验收](./refactor/stage11-t3-final-e2e-acceptance.md) | 当前最近一次 Scope A 验收；结论为受控本机技术验收 GO，明确保留真人 UI/UAT、真实 provider 和部署检查点。 |
+| [Stage 11 Scope A 自动化 E2E 报告](./refactor/stage11-t2-scope-a-e2e-report.md) | 8 个 Scope A 场景与 Tier 1 foundation 的实际运行证据、边界和未覆盖项。 |
+| [Stage 10 E2E 最终验收](./refactor/stage10-e2e-final-acceptance.md) | Stage 10 的文档与基础门禁验收；其 Tier 1 待办已由 Stage 11 部分实现，保留作时点证据。 |
+| [Stage 9 物理分离最终验收](./refactor/stage9-physical-separation-final-acceptance.md) | 物理分离与质量安全阶段验收；保留作早期时点证据。 |
 | [Stage 9 T3 工程规范化最终验收](./refactor/t3-engineering-normalization-final-acceptance.md) | Stage 9 内部验收材料，供追溯，不替代最终验收。 |
 | [Stage 6 Scope A 验收](./refactor/stage6-scope-a-acceptance.md) | 早期阶段验收，保留其时点证据，不代表最新结果。 |
 

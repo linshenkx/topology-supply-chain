@@ -28,6 +28,8 @@ jobs:
           cache: pnpm
       - name: Frozen install
         run: pnpm install --frozen-lockfile
+      - name: Prepare CI-only production environment contract file
+        run: cp infrastructure/aliyun/.env.production.template infrastructure/aliyun/.env.production
       - name: Verify TypeScript, lint baseline, tests, and Web builds
         run: pnpm verify:local
 

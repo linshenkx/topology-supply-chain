@@ -6,14 +6,14 @@ Agent 只能在本地或明确授权的受控测试环境执行；不能自行�
 
 ```text
 RUN_ID=e2e-YYYYMMDD-HHMMSS-<short-random>
-WEB_ORIGIN=http://127.0.0.1:3000
-API_ORIGIN=http://127.0.0.1:3001
-WORKER_ORIGIN=http://127.0.0.1:3002
+HTTPS_ORIGIN=<e2e:status.origins.https>
+API_ORIGIN=<e2e:status.origins.api>
+WORKER_ORIGIN=<e2e:status.origins.worker>
 EVIDENCE_DIR=./evidence/<RUN_ID>
 TEST_PREFIX=E2E-<RUN_ID>-
 ```
 
-- 只接受 `127.0.0.1` 或 `localhost` origin；若变量解析为其他 host，停止并写明原因。MySQL 必须是经授权的 loopback 测试实例，且数据库/测试数据以 `RUN_ID` 精确命名。
+- origin 和端口必须来自同一 RUN_ID 的 `e2e:status`/evidence manifest，不得手写固定端口。浏览器/API 业务请求统一使用 `HTTPS_ORIGIN`；`API_ORIGIN` 与 `WORKER_ORIGIN` 只用于生命周期就绪核验。只接受 `127.0.0.1` 或 `localhost` origin；若变量解析为其他 host，停止并写明原因。MySQL 必须是经授权的 loopback 测试实例，且数据库/测试数据以 `RUN_ID` 精确命名。
 - 每个写操作生成 `<RUN_ID>-<scenario>-<ordinal>` idempotency key。只有字节等同的重放复用原 key 和 digest；任何 body、目标、身份或 header 变化都生成新 key。
 - 启动进程必须后台运行、重定向 stdout/stderr 至 `EVIDENCE_DIR/logs/`，保存 PID 和启动命令（不含秘密）。每条 HTTP 命令指定连接和总超时；轮询最多 12 次、间隔 5 秒，超限即失败并停止。不得无限重试或把超时改为成功。
 - 不打印或落盘密码、cookie、Authorization、CSRF、OTP、数据库 URL 查询串、AccessKey。证据只保留变量名、主机、端口、SHA 和脱敏摘要。

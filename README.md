@@ -2,7 +2,7 @@
 
 广州拓扑睡眠科技有限公司的供应链协同系统。本仓库是一个多运行时 monorepo：Web、Fastify API 与后台 Worker 分别构建和运行，但共享 Git、pnpm lockfile、契约、MySQL migration history 与发布清单。
 
-本文是当前工程入口。文档按当前规范/能力、阶段验收、实施记录、逐提交审查和历史快照分类，统一从 [docs 文档索引](./docs/README.md) 路由。Scope A 最近一次已记录验收是 [Stage 9 物理分离最终验收](./docs/refactor/stage9-physical-separation-final-acceptance.md)（GO）；2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，不代表当前实时生产状态。
+本文是当前工程入口。文档按当前规范/能力、阶段验收、实施记录、逐提交审查和历史快照分类，统一从 [docs 文档索引](./docs/README.md) 路由。Scope A 最近一次已接受验收是 [Stage 11 真人与 Agent 联合 E2E 最终验收](./docs/refactor/stage11-t3-final-e2e-acceptance.md)（受控本机技术验收 GO）；2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，不代表当前实时生产状态。
 
 ## 运行拓扑与支持矩阵
 
@@ -57,7 +57,13 @@ pnpm verify:mysql
 
 # 完整本地合同门禁
 pnpm verify
+
+# 受控本机 Scope A E2E（loopback MySQL/API/Worker/Web HTTPS/stub）
+pnpm test:e2e-foundation
+pnpm test:e2e-scope-a
 ```
+
+E2E 生命周期、随机端口、fixture、证据和真人检查点见 [Scope A 真人与 Agent E2E 手册](./docs/e2e/README.md)。这两项 E2E 是独立显式门禁，不属于普通 `test:mysql` 文件选择范围。
 
 `pnpm lint` 运行完整 ESLint 检查；Stage 9 验收记录为 0 errors / 0 warnings。`pnpm lint:baseline` 是无新增债务回归门禁，后续专门批次可以减少问题，但不得新增文件/规则计数。
 

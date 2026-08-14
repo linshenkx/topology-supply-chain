@@ -1,9 +1,9 @@
 # Scope A 真人与 Agent E2E 验收手册
 
-> 验收基线：`59a36fa6bab3a3349b4225faf677b2506ad60c53`；父链含 Stage 10 T1/T2。
+> 验收基线：`main@aa327330b7ae0deb7b4a5ee3257b6a8221309903`；父链包含 Stage 10/11 的文档、测试底座、自动化场景与最终验收。
 > 适用环境：本机或受控测试环境。不得连接生产、使用生产凭据、调用真实 provider，或执行部署。
 
-本目录把已有合同和测试证据转成可重复的验收步骤，不宣称已完成业务全闭环。它严格分为两层：可立即运行的[Tier 0 自动化基线](./tier0-automation.md)，和必须先通过就绪门的[Tier 1 现场 E2E](./tier1-readiness.md)。当前能力和已知缺口以[基础业务能力—测试覆盖矩阵](../business-capability-test-matrix.md)为准；本轮最终结论见[Stage 10 最终验收报告](../refactor/stage10-e2e-final-acceptance.md)。
+本目录把已有合同和测试证据转成可重复的验收步骤，不宣称已完成业务全闭环。它严格分为两层：可立即运行的 [Tier 0 自动化基线](./tier0-automation.md)，和必须先通过就绪门的 [Tier 1 现场 E2E](./tier1-readiness.md)。当前能力和已知缺口以[基础业务能力—测试覆盖矩阵](../business-capability-test-matrix.md)为准；最新结论见 [Stage 11 最终验收报告](../refactor/stage11-t3-final-e2e-acceptance.md)。
 
 ## 执行入口
 

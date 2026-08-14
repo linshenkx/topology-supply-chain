@@ -1,14 +1,15 @@
 # 基础业务能力—测试覆盖矩阵
 
-> 证据基线：accepted HEAD `d9c5fea881e304c97713ae777675cd059e8dade4`（Stage 9 GO）。
+> 证据基线：accepted `main@aa327330b7ae0deb7b4a5ee3257b6a8221309903`（Stage 11 Scope A 受控本机技术验收 GO）。
 >
-> 取证范围：`packages/contracts/src/{commands,r2-writes,r3-fulfillment-writes}.ts`、`apps/api/src/modules/r2-master-procurement/index.ts`、`apps/api/src/r3/manifest.ts`、相关 handlers，以及 `tests/`、`apps/api/test/`、`apps/worker/test/` 的已命名测试。这里的“已有证据”仅表示已定位到合同或测试；不等同于完整业务闭环、真实部署验证或覆盖率结论。
+> 取证范围：`packages/contracts/src/{commands,r2-writes,r3-fulfillment-writes}.ts`、`apps/api/src/modules/r2-master-procurement/index.ts`、`apps/api/src/r3/manifest.ts`、相关 handlers，以及 `tests/`、`apps/api/test/`、`apps/worker/test/` 的已命名测试，并结合 [Stage 10 基础业务测试报告](./refactor/stage10-business-invariant-test-report.md) 与 [Stage 11 自动化 E2E 报告](./refactor/stage11-t2-scope-a-e2e-report.md)。这里的“已有证据”不等同于完整业务闭环、真实部署验证或覆盖率结论。
 
 ## 读法与共同边界
 
 - R2 是主数据/采购的 12 个命令；每个写命令要求 `idempotency-key`，进入相同来源、CSRF、会话和数据库可用性边界。
 - R3 是履约/财务的 13 个命令；`R3_COMMAND_RESOURCES` 将每个命令绑定 writer resource，统一命令执行器负责命令摘要、幂等、fence、审计和 Outbox 协作。
-- `pnpm test:non-mysql` 选择 `tests/`、`apps/api/test/`、`apps/worker/test/` 中全部非 `.integration.test.mjs` 文件；`pnpm test:mysql` 只选择 integration 文件，且需要五个显式 MySQL URL，skip 视为失败。矩阵按测试层级建议，不把文件数或百分比当成目标。
+- `pnpm test:non-mysql` 选择 `tests/`、`apps/api/test/`、`apps/worker/test/` 中全部非 `.integration.test.mjs` 文件；`pnpm test:mysql` 选择普通数据库 integration（显式排除 `e2e-*`），且需要五个显式 MySQL URL，skip 视为失败。Scope A E2E 由 `test:e2e-foundation` / `test:e2e-scope-a` 独立运行。矩阵按测试层级建议，不把文件数或百分比当成目标。
+- Stage 10 已补齐 12 条 R2 与 13 条 R3 route/identity/早拒绝的参数化合同证据；Stage 11 又对 purchase plan、SKU、supplier-SKU、purchase order、库存/调拨/盘点、生产/质检、物流/退货和财务负路径进行了真实 loopback E2E。它们仍不等于 25 个 handler 的逐字段 MySQL 全覆盖。
 
 | 业务域 | 正常路径与合同入口 | 校验、权限/数据范围 | 状态不变量 | 重复/并发 | 审计/Outbox | 已有测试证据（路径与测试名） | 已知缺口与建议测试层级 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -21,9 +22,9 @@
 | 财务 | R3 finance create_invoice/verify_invoice/record_payment/invalidate/link replacement/refund/correction/release risk；finance read。 | 金额为整数且多数为正；高风险动作要求 server-consumed Step-up；读仅 internal roles。 | 可支付账本重算、退款/更正符号和受影响金额约束；payment 先锁定、校验 Step-up、写入并重算。 | 主键 `SELECT FOR UPDATE`、锁排序、第二笔超付拒绝；R3 replay/fence。 | 读审计敏感财务数据；R3 通用审计/Outbox 和 MySQL 事务证据。 | `tests/payment-concurrency-guard.test.mjs`：ledger/lock/overpayment；`tests/step-up-security.test.mjs`：finance 不信任客户端 `smsVerified`；`apps/api/test/finance.test.mjs`：范围/脱敏；`mysql-r3-write-migration.integration.test.mjs`。 | **Critical，合同缺陷验证**：并发 payment/refund/correction × 相同/不同 idempotency key 的真实 MySQL 金额守恒、Step-up 消费、audit/outbox 断言。发票覆盖、税务和月结规则的最终业务口径需裁决（Important）。 |
 | audit / outbox / 幂等 / 并发 | 平台命令及 R2/R3 command metadata 均返回 command、key、digest、replayed；writer resources 可独立 fence。 | command header 格式、同源/CSRF、session；unknown commit outcome fail-closed。 | 一次完成可重放，换 digest 复用键拒绝；fence/unknown outcome 不静默成功。 | R2/R3 使用共享 executor；支付锁、调拨 CAS、OTP CAS 有针对性测试。 | audit writer 参数化且五年保留；R2/R3 的真实 MySQL integration 明示 atomic/audited/outboxed。 | `apps/api/test/platform-write-foundation.test.mjs`：digest/replay/fence/unknown outcome；`apps/api/test/audit-writer.test.mjs`：retention/fail-closed；四个 `mysql-*.integration.test.mjs`：平台、R2、R3、write foundation。 | **Critical，合同缺陷验证**：生成“命令 × 幂等结果 × 审计行 × Outbox 事件 × fence”的可追溯参数矩阵，不能只依赖通用 integration 的一句断言。Worker 消费/投递至少需 Important 的失败重试、重复投递和 poison-event 合同测试；不触及真实 provider。 |
 
-## 下一阶段基础测试补充清单
+## Stage 11 后剩余测试与业务裁决清单
 
-以下清单是下一阶段的结果合同，不是本阶段授权实现；优先级按资金/库存/权限后果与现有证据粒度排序。
+以下清单扣除了 Stage 10/11 已运行证据，仍是后续候选而非自动授权；优先级只表示进一步补强证据的风险顺序，不代表已确认生产缺陷，也不推翻 Stage 11 GO。是否继续投入应由业务风险和真实验收反馈驱动，不能为了穷尽矩阵而过度测试。
 
 ### Critical
 

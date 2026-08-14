@@ -23,11 +23,13 @@ const locationForSuite = {
 };
 
 const integration = (name) => name.endsWith(".integration.test.mjs");
+const e2eIntegration = (name) => name.startsWith("e2e-") && integration(name);
+const mysqlIntegration = (name) => integration(name) && !e2eIntegration(name);
 const files = locationForSuite[suite]
   .flatMap((directory) => readdirSync(resolve(root, directory), { withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".test.mjs"))
     .filter((entry) => entry.name !== "rendered-html.test.mjs")
-    .filter((entry) => suite === "mysql" ? integration(entry.name) : !integration(entry.name))
+    .filter((entry) => suite === "mysql" ? mysqlIntegration(entry.name) : !integration(entry.name))
     .map((entry) => relative(root, resolve(root, directory, entry.name)).replaceAll("\\", "/")))
   .sort();
 

@@ -48,6 +48,15 @@ pnpm test:mysql
 pnpm build:web:production
 ```
 
+受控本机 Scope A E2E 使用独立显式入口，不由 `test:mysql` 隐式选择：
+
+```bash
+pnpm test:e2e-foundation
+pnpm test:e2e-scope-a
+```
+
+它们会创建精确 RUN_ID 的 loopback MySQL/API/Worker/Web HTTPS/stub 资源并在结束时清理；执行者必须遵守 [E2E 手册](./docs/e2e/README.md)，不得连接生产或真实 provider。
+
 ## 安全与兼容审查
 
 改动必须保持：

@@ -113,3 +113,16 @@ test("TAP zero-skip runners share fail-closed detection for standard directives 
     assert.match(source, /assertTapHasNoSkips\(result\.stdout \?\? ""/u);
   }
 });
+
+test("CI prepares its ignored environment file and keeps explicit E2E suites out of the MySQL gate", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/verify.yml", import.meta.url), "utf8");
+  const suiteRunner = await readFile(new URL("../tooling/checks/run-test-suite.mjs", import.meta.url), "utf8");
+
+  assert.match(
+    workflow,
+    /cp infrastructure\/aliyun\/\.env\.production\.template infrastructure\/aliyun\/\.env\.production/u,
+  );
+  assert.match(suiteRunner, /const e2eIntegration = .*name\.startsWith\("e2e-"\)/u);
+  assert.match(suiteRunner, /const mysqlIntegration = .*&& !e2eIntegration\(name\)/u);
+  assert.match(suiteRunner, /suite === "mysql" \? mysqlIntegration\(entry\.name\)/u);
+});

@@ -7,7 +7,7 @@
 1. 记录 `RUN_ID`、Git SHA、环境 URL、执行时间和操作者；确认 URL 为 loopback 或书面授权的测试环境。
 2. 准备互不重叠的测试身份：组织管理员、工厂/供应链操作者、审批人、财务角色和无权角色。测试组织、工厂、供应商、SKU、仓库、批次和单据的名称均加 `E2E-<RUN_ID>-` 前缀。
 3. 环境管理员确认可查看测试库中本次前缀的数据、`audit_logs` 与 `outbox_messages`，并确认 Worker 使用 stub/受控 webhook，非真实 provider。
-4. 以浏览器打开 Web（通常 `http://127.0.0.1:3000`）和 API health。页面当前没有面向所有场景的稳定 selector 或统一 fixture；每个 UI 步骤均是人工检查点，API/DB 证据才是可重复替代路径。
+4. 从 `pnpm e2e:status -- --run <RUN_ID>` 的 `origins.https` 读取本次随机 HTTPS 同源入口，以浏览器打开该地址；不得固定使用 `http://127.0.0.1:3000` 或绕过 Secure Cookie。API/Worker 内部 origin 与随机端口同样以 status/manifest 为准。页面当前没有面向所有场景的稳定 selector；每个 UI 步骤均是人工检查点，API/DB 证据才是可重复替代路径。
 
 ## 通用操作和取证
 
