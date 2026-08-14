@@ -282,8 +282,9 @@ test("normalized Compose config separates production preflight from the migratio
   assert.deepEqual(Object.keys(normalized.services.migrator.environment).sort(), [
     "DATABASE_URL", "DB_SSL", "DB_SSL_REJECT_UNAUTHORIZED",
   ]);
-  assert.equal(normalized.services.preflight.env_file.length, 1);
-  assert.match(normalized.services.preflight.env_file[0].path, /\.env\.production$/u);
+  const preflight = composeService("preflight");
+  assert.match(preflight, /^    env_file:\n      - \.env\.production$/mu);
+  assert.equal((preflight.match(/^    env_file:$/gmu) ?? []).length, 1);
 });
 
 test("compose applies a read-only, least-privilege API runtime boundary", () => {
