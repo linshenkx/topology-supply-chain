@@ -1,6 +1,6 @@
 # Tier 1：现场 E2E 环境与就绪门
 
-Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。功能代码锚点 `254e3a0` 沿用受控的本机 fixture、provider stub 与 HTTPS 底座，并新增整批收货/整批质检/生产真实预留三条闭环；它不决定业务状态机、职责分离或更复杂的业务扩展。
+Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN_CHECKPOINT`。功能代码锚点 `254e3a0` 沿用受控的本机 fixture、provider stub 与 HTTPS 底座，并新增整批收货/整批质检/生产真实预留三条闭环；它不决定业务状态机、职责分离或更复杂的业务扩展。
 
 ## 启动顺序（仅受控测试环境）
 
@@ -13,7 +13,7 @@ Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。
 
 ## 认证、cookie 与 CSRF
 
-真人从 Web 登录页提交 `POST /api/v1/auth/login`，body 为 `account`、`password`、`deviceId`（可选 `deviceName`），并携带唯一 `idempotency-key` 和与当前 origin 完全一致的 `Origin`。若结果为 OTP challenge，真人只能通过已授权的受控 SMS stub 或已分配测试手机取得 OTP；没有其中之一即 `HUMAN-CHECKPOINT`，不得从日志、数据库或 preview code 取码。
+真人从 Web 登录页提交 `POST /api/v1/auth/login`，body 为 `account`、`password`、`deviceId`（可选 `deviceName`），并携带唯一 `idempotency-key` 和与当前 origin 完全一致的 `Origin`。若结果为 OTP challenge，真人只能通过已授权的受控 SMS stub 或已分配测试手机取得 OTP；没有其中之一即 `HUMAN_CHECKPOINT`，不得从日志、数据库或 preview code 取码。
 
 Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login command response 的 `result.challengeNo` 后，使用 `POST /api/v1/auth/verify`，body 为 `challengeNo`、6 位 `code`（可选 `deviceName`），同样带唯一 key 与同源 Origin。verify 成功时安全保留响应的 `topology_session`（HttpOnly）和 `topology_csrf` cookie；后续写操作把 `topology_csrf` 原值作为 `x-csrf-token`，并让 jar 自动发送两枚 cookie。不得把 cookie、OTP、Authorization、CSRF 或完整 Set-Cookie 写入命令行、文件、日志或 evidence。
 
@@ -23,7 +23,7 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 
 `tests/e2e/fixtures/scope-a.fixture.json` 是版本化逻辑 pack；`prepare` 使用现有 MySQL schema/handler 可见的字段生成每运行一份实际 ID manifest。账号密码、OTP、cookie、CSRF、DB URL、stub key 仅存在于仓库外运行状态，永不写入 manifest、日志或 Git。以[evidence manifest 模板](./templates/evidence-manifest.json)记录每次运行；其 `ready=true` 仅在以下内容全具备时成立：
 
-- 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；当前 fixture 只生成 admin/supply_chain/factory/approver/finance/denied，账号格式 `<role>.<RUN_ID>@e2e.invalid`，账号 owner、测试 OTP 路径及过期/轮换时间。独立 company_qc/supplier_qc 账号不在 fixture，需环境管理员额外授权，否则该身份 human-checkpoint/BLOCKED。
+- 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；当前 fixture 只生成 admin/supply_chain/factory/approver/finance/denied，账号格式 `<role>.<RUN_ID>@e2e.invalid`，账号 owner、测试 OTP 路径及过期/轮换时间。独立 company_qc/supplier_qc 账号不在 fixture，需环境管理员额外授权，否则该身份 HUMAN_CHECKPOINT/BLOCKED。
 - 范围：组织、factory、tiered supplier、SKU、有效 BOM、warehouse、库存 batch（含成品与组件 batch、可用/锁定/待检/隔离数量）、supplier-SKU 关系、有效价格与证据文件。
 - 单据：可决策 pending approval（含 version/effect）、采购计划/item、采购订单/item（含 received_quantity 与唯一权威 plan link）、生产/execution order（含 production_material_lines）、质量规则（incoming 与 finished_goods）、整批收货待检批次、库存 reservation/transfer、stocktake、shipment、return、invoice/payment/exception 等每个要执行场景所需 ID 与版本。
 - 支撑：测试上传文件/扫描结果、Outbox/Worker stub contract、数据库名/清理 owner、fixture SHA/生成时间/有效期。

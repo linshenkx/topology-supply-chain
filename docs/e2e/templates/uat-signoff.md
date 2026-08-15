@@ -1,6 +1,6 @@
 # UAT 结果与签字模板（Stage 12 业务闭环）
 
-本模板是可填写的副本，不重复主手册内容。复制为 .\e2e-runtime\evidence\<RUN_ID>\signoff.md 后填写；签字前确认 git status --short 干净、repositorySha 与 git rev-parse HEAD 一致、证据位于 gitignored 目录、未落盘任何秘密。
+本模板是可填写的副本，不重复主手册内容。复制为 .\delivery\agent-uat\<RUN_ID>\signoff.md 后填写；签字前确认 git status --short 干净、repositorySha 与 git rev-parse HEAD 一致、证据位于 gitignored 目录、未落盘任何秘密。
 
 ## 运行信息
 
@@ -23,19 +23,19 @@
 | RUN_ID | <S12-C1-RUN_ID> | <S12-C2-RUN_ID> |
 | repositorySha | <git rev-parse HEAD> | <git rev-parse HEAD> |
 | HTTPS origin | <e2e:status.origins.https> | <e2e:status.origins.https> |
-| 证据路径 | .\e2e-runtime\evidence\<S12-C1-RUN_ID> | .\e2e-runtime\evidence\<S12-C2-RUN_ID> |
+| 证据路径 | .\delivery\agent-uat\<S12-C1-RUN_ID> | .\delivery\agent-uat\<S12-C2-RUN_ID> |
 | 清理状态 | complete/not-needed/blocked | complete/not-needed/blocked |
 
 ## 场景结果
 
-每行结果只允许 pass / fail / blocked / human-checkpoint / not-applicable。pass 必须附证据路径；blocked/human-checkpoint 必须写原因与交接对象；fail 必须保留首个失败响应与日志。
+每行结果只允许 PASS / PASS_WITH_ISSUES / FAIL / BLOCKED / HUMAN_CHECKPOINT / NOT_RUN / NOT_APPLICABLE / NEEDS_DECISION。PASS 必须附证据路径；BLOCKED/HUMAN_CHECKPOINT 必须写原因与交接对象；FAIL 必须保留首个失败响应与日志。禁止用 skip 冒充 PASS。
 
 | 场景ID | 页面/业务链 | 操作者角色 | 执行方式 | 结果 | 证据路径 | 备注/未覆盖原因 |
 | --- | --- | --- | --- | --- | --- | --- |
 | A1 | 登录/OTP/Step-up/范围 | admin/supply_chain/denied | UI+API+DB | | | |
 | A2 | 审批批准/拒绝/重放 | approver | UI+API+DB | | | |
 | S12-A | 采购单→整批收货→待检批次 | supply_chain/factory | UI+API+DB | | | |
-| S12-B | 待检批次→整批质检→放行/隔离 | admin（inspectorType=company_qc） | UI+API+DB | | | company_qc/supplier_qc 无 fixture 账号时 human-checkpoint |
+| S12-B | 待检批次→整批质检→放行/隔离 | admin（inspectorType=company_qc） | UI+API+DB | | | company_qc/supplier_qc 无 fixture 账号时 HUMAN_CHECKPOINT |
 | S12-C1 | 生产预留→领料/消耗→释放（C1，独立 RUN_ID） | supply_chain/factory | UI+API+DB | | | 连续浏览器证据仅覆盖 reserve→materials→release；RUN_ID 见上表 |
 | S12-C2 | 生产完工 complete（C2，独立 RUN_ID，不先 release） | supply_chain/factory | UI+API+DB | | | reserve→materials→complete；不与 C1 冒充同一连续浏览器链 |
 | R2 | 主数据/供应商/采购/导入 | supply_chain/factory | API 优先+UI | | | |

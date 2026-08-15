@@ -1,5 +1,7 @@
 # Stage 12 真人业务验收手册（浏览器 UAT）
 
+本手册是 Stage 12 三条业务闭环的真人浏览器/UAT 入口。自动化或 Agent 可以先提供证据，真人负责关键操作、体验和业务结果确认；已有自动化覆盖的负路径不要求在浏览器中重复执行。覆盖边界见 [coverage-matrix.md](./coverage-matrix.md)，结果与问题规则见 [governance/verdict-severity-and-continuation.md](./governance/verdict-severity-and-continuation.md)。
+
 ## 1. 文档定位与基线
 
 - 本手册是 topology-supply-chain 收口阶段 D1 的真人浏览器/UAT 结果，把旧 docs/e2e 收口为可直接执行的业务验收手册。
@@ -45,7 +47,7 @@ $env:RUN_ID = "e2e-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$((New-Guid).ToString('
 pnpm e2e:prepare -- --run $env:RUN_ID --fence-profile t2-operations-scope-a-closures
 pnpm e2e:start -- --run $env:RUN_ID
 pnpm e2e:status -- --run $env:RUN_ID
-$evidenceManifest = Join-Path (Get-Location) ("e2e-runtime\evidence\" + $env:RUN_ID + "\evidence-manifest.json")
+$evidenceManifest = Join-Path (Get-Location) ("delivery\agent-uat\" + $env:RUN_ID + "\evidence-manifest.json")
 pnpm e2e:evidence -- --run $env:RUN_ID --out $evidenceManifest
 pnpm e2e:stop -- --run $env:RUN_ID
 pnpm e2e:cleanup -- --run $env:RUN_ID
@@ -66,7 +68,7 @@ export RUN_ID="e2e-$(date +%Y%m%d-%H%M%S)-$(printf '%04x' $RANDOM)-$(printf '%04
 pnpm e2e:prepare -- --run "$RUN_ID" --fence-profile t2-operations-scope-a-closures
 pnpm e2e:start -- --run "$RUN_ID"
 pnpm e2e:status -- --run "$RUN_ID"
-pnpm e2e:evidence -- --run "$RUN_ID" --out "./e2e-runtime/evidence/$RUN_ID/evidence-manifest.json"
+pnpm e2e:evidence -- --run "$RUN_ID" --out "./delivery/agent-uat/$RUN_ID/evidence-manifest.json"
 pnpm e2e:stop -- --run "$RUN_ID"
 pnpm e2e:cleanup -- --run "$RUN_ID"
 ```
@@ -91,7 +93,7 @@ pnpm e2e:cleanup -- --run "$RUN_ID"
 | denied | 供应商角色（非 supplier_qc） | 越权负路径 |
 
 - 独立 company_qc / supplier_qc 账号不在当前 fixture。整批质检在当前 fixture 由 admin 以 inspectorType=company_qc 执行（handler 允许 admin 走 company_qc 判级；UI 允许 admin/company_qc 操作待检批次）。
-- 若验收方要求真人以真实 company_qc 或 supplier_qc 身份签字，环境管理员必须额外授权对应账号并写入 fixture manifest；否则该身份只能是 human-checkpoint 或 BLOCKED。supplier_qc 路径还要求该账号绑定到目标 supplier。
+- 若验收方要求真人以真实 company_qc 或 supplier_qc 身份签字，环境管理员必须额外授权对应账号并写入 fixture manifest；否则该身份只能是 HUMAN_CHECKPOINT 或 BLOCKED。supplier_qc 路径还要求该账号绑定到目标 supplier。
 - 所有测试组织、工厂、供应商、SKU、BOM、仓库、批次、单据名称使用 E2E-<RUN_ID>- 前缀；fixture 实际生成 E2E-<RUN_ID> 相关实体（详见 [fixture 模板](./templates/fixture-manifest.json)）。
 - 三条闭环必需 fixture 实体：confirmed 采购单与 finished 明细、唯一采购计划分配（factory/warehouse）、活动工厂仓库、组件库存批次、approved active BOM、planned execution order、生产物料行、incoming/finished_goods 两条 quality rule（最低合格率 9500 bps）。
 
@@ -151,22 +153,22 @@ Remove-Variable password, otpToken, stubPort, code, account, state, resp, json -
 ```
 
 - 每次 `/otp` 读取会消费当前验证码（随后再次读取返回 404），code 只用一次且短期有效，不得重复轮询到第二个 code 后继续使用旧值。
-- 若没有环境管理员提供上述本地读取通道，真人 OTP 环节只能是 human-checkpoint/BLOCKED，不得从日志、数据库或 preview code 取码。
+- 若没有环境管理员提供上述本地读取通道，真人 OTP 环节只能是 HUMAN_CHECKPOINT/BLOCKED，不得从日志、数据库或 preview code 取码。
 
 ## 6. 证据目录与取证
 
-人工采集证据统一写入仓库内 gitignored 相对目录 .\e2e-runtime\evidence\<RUN_ID>\（prose 写作 e2e-runtime/evidence/<RUN_ID>/）：
+人工采集证据统一写入仓库内 gitignored 相对目录 .\delivery\agent-uat\<RUN_ID>\（prose 写作 delivery/agent-uat/<RUN_ID>/）：
 
 ```text
-e2e-runtime/evidence/<RUN_ID>/
-├── manifest.json          # 环境、SHA、角色、命令与结果摘要
+delivery/agent-uat/<RUN_ID>/
+├── evidence-manifest.json # 环境、SHA、角色、命令与结果摘要
 ├── http/                  # 脱敏请求摘要/响应状态/command metadata
 ├── db/                    # 本次 RUN_ID 的业务记录、audit_logs、outbox_messages
 ├── ui/                    # 页面截图：页面、时间、操作者、可见角色、检查点
 └── logs/                  # Web/API/Worker 日志尾部与退出码
 ```
 
-注意：不要写 /e2e-runtime/...（Windows 下会被解析为 C:\e2e-runtime）。路径一律使用相对仓库根目录的 .\e2e-runtime\evidence\<RUN_ID>\ 或 e2e-runtime/evidence/<RUN_ID>/。
+注意：不要写 /delivery/...（Windows 下会被解析为 C:\delivery）。路径一律使用相对仓库根目录的 .\delivery\agent-uat\<RUN_ID>\ 或 delivery/agent-uat/<RUN_ID>/。
 
 每条可复核证据至少覆盖 HTTP、DB 业务事实、audit、outbox 四类之一。写操作成功响应必须含 command.command、command.idempotencyKey、command.requestDigest、command.replayed；首发应为 replayed:false，字节等同重放才允许 true。
 
@@ -262,7 +264,7 @@ e2e-runtime/evidence/<RUN_ID>/
 #### 操作者
 
 - 当前 fixture：admin 以 inspectorType=company_qc 执行整批判定。
-- 若验收方要求真实 company_qc 身份签字，需环境管理员额外授权 company_qc 账号；supplier_qc 整批路径当前 fixture 无对应账号，缺账号时 human-checkpoint/BLOCKED。
+- 若验收方要求真实 company_qc 身份签字，需环境管理员额外授权 company_qc 账号；supplier_qc 整批路径当前 fixture 无对应账号，缺账号时 HUMAN_CHECKPOINT/BLOCKED。
 
 #### UI 步骤
 
@@ -366,7 +368,7 @@ e2e-runtime/evidence/<RUN_ID>/
 
 - pnpm e2e:stop -- --run $env:RUN_ID 后保存日志尾部与退出码；pnpm e2e:cleanup -- --run $env:RUN_ID 精确清理 Docker 容器/临时库/证书/运行态。
 - 按 RUN_ID/E2E-<RUN_ID>- 复核业务、audit、outbox 记录已清零，或记录未清理原因与责任人。
-- 结果填入 [UAT 结果与签字模板](./templates/uat-signoff.md)，每个场景必须给出 pass/fail/blocked/human-checkpoint 与证据路径。
+- 结果填入 [UAT 结果与签字模板](./templates/uat-signoff.md)，每个场景从 PASS / PASS_WITH_ISSUES / FAIL / BLOCKED / HUMAN_CHECKPOINT / NOT_RUN / NOT_APPLICABLE / NEEDS_DECISION 中选择真实状态并附证据路径或原因。
 
 ## 10. 明确未实现/超范围清单
 
@@ -386,6 +388,8 @@ e2e-runtime/evidence/<RUN_ID>/
 ## 12. 文档索引
 
 - [e2e README](./README.md)：入口与执行顺序。
+- [覆盖矩阵](./coverage-matrix.md)、[稳定 ID](./stable-ids.md)。
+- [证据要求](./governance/evidence-protocol.md)、[结果与严重度规则](./governance/verdict-severity-and-continuation.md)。
 - [Tier 0 自动化基线](./tier0-automation.md)、[Tier 1 就绪门](./tier1-readiness.md)。
 - [真人执行规程](./human-execution.md)、[Agent 执行规程](./agent-execution.md)。
 - [Scope A 场景清单](./scope-a-scenarios.md)、[请求模板](./request-templates.md)。

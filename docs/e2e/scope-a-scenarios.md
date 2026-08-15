@@ -1,5 +1,7 @@
 # Scope A 场景清单
 
+本清单统一自动化、Agent 和真人 UAT 使用的场景步骤。覆盖边界见 [coverage-matrix.md](./coverage-matrix.md)，稳定标识见 [stable-ids.md](./stable-ids.md)，结果与问题规则见 [governance/verdict-severity-and-continuation.md](./governance/verdict-severity-and-continuation.md)。
+
 所有路径先通过[Tier 1 就绪门](./tier1-readiness.md)；没有 fixture manifest、账号/OTP/stub provider/授权测试 MySQL 时，每条现场场景均为 `BLOCKED`。Web 只作为同域入口/人工观察。每个 R2/R3 的可复制字段模板、成功码与查询对象见[请求模板](./request-templates.md)，本文不伪造未固化的业务字段或状态迁移。共同 header 是有效测试会话、Origin、CSRF，以及每个写操作的唯一 `idempotency-key`；R2 可使用 `x-request-digest`。记录实际 HTTP 状态和错误 code。
 
 | ID | 操作入口与步骤 | 预期和取证 | 失败/人工检查点 |
@@ -24,7 +26,7 @@
 | ID | 链路 | 通过门槛 |
 | --- | --- | --- |
 | S12-A | 采购单 → 整批收货 → 待检批次 | 唯一权威分配；整批守恒；purchase_receipts/order_items/inventory_batches/inventory_movements + audit + PurchaseOrderItemReceived 可取证；部分/重复/越权/冻结负路径符合预期 |
-| S12-B | 待检批次 → 整批质检 → 放行/隔离 | 整批 pass/fail；pending 转 available 或 quarantine；quality_inspections + audit + InspectionCompleted/DispositionRequired 可取证；部分/抽样/混合/来源歧义负路径符合预期。fixture 中由 admin 以 inspectorType=company_qc 执行，独立 company_qc/supplier_qc 账号缺授权时 human-checkpoint/BLOCKED |
+| S12-B | 待检批次 → 整批质检 → 放行/隔离 | 整批 PASS/FAIL（放行/隔离）；pending 转 available 或 quarantine；quality_inspections + audit + InspectionCompleted/DispositionRequired 可取证；部分/抽样/混合/来源歧义负路径符合预期。fixture 中由 admin 以 inspectorType=company_qc 执行，独立 company_qc/supplier_qc 账号缺授权时 HUMAN_CHECKPOINT/BLOCKED |
 | S12-C | 生产预留 → 领料/消耗 → 释放 / 完工（C1 与 C2 独立执行） | inventory_reservations/production_material_lines/inventory_batches 守恒；release 零预留 409 零副作用；audit + ProductionOrderCreated、ProductionOrderStarted、ProductionMaterialsReported、ProductionReservationReleased、ProductionOrderCompleted、ProductionVarianceRequested 可取证；C1=reserve→materials→release、C2=reserve→materials→complete 使用两个独立 RUN_ID（默认 fixture 只有一个 executionOrderId），不冒充同一连续浏览器链 |
 
 ### C1 的完整 18 条路径
