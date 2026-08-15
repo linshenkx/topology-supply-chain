@@ -34,6 +34,7 @@
 
 - 数量非负且守恒：available + locked + pending_inspection + quarantine 每批守恒；预留/消耗/释放都在同一事务内 CAS。
 - 状态转换受 `SELECT ... FOR UPDATE` 与条件 UPDATE 保护；重复 action 因业务唯一键/条件更新失败。
+- `release_materials` 在产生 version/audit/outbox/movement 前必须确认正数可释放量 > 0；纯零数量 active reservation（`inventory.reserve` 缺货记录）稳定返回 409 且零副作用，不改变 inventory.reserve 缺货语义。
 - 关键成功写入同事务产生幂等记录、审计与 domain event/outbox。
 - 沿用身份、角色、组织范围、CSRF/同源、writer fence；无旁路。
 
@@ -46,7 +47,7 @@
 
 - pnpm typecheck、pnpm lint、pnpm lint:baseline（0 errors / 0 warnings）、pnpm build:all：通过。
 - pnpm test:non-mysql：395 pass / 0 fail / 0 skip。
-- pnpm test:mysql：28 pass / 0 fail / 0 skip（9 个 MySQL 集成文件；含新增 closure MySQL 集成测试）。
+- pnpm test:mysql：30 pass / 0 fail / 0 skip（9 个 MySQL 集成文件；含新增 closure MySQL 集成测试）。
 - pnpm test:e2e-foundation：1 pass / 0 fail / 0 skip。
 - pnpm test:e2e-scope-a：9 pass / 0 fail / 0 skip（新增业务闭环 E2E + 原 Scope A E2E 共 9 个 top-level 测试）。
 - pnpm audit:policy、pnpm architecture:check、pnpm docker:check-context、pnpm deploy:check-env-contract、pnpm db:verify-generation：通过。

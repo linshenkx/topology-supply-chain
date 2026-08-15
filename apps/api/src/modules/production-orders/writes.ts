@@ -155,6 +155,9 @@ async function releaseReservedMaterials(
     );
     released += remaining;
   }
+  if (released <= 0) {
+    throw new PlatformError(409, "CONFLICT", "No positive reserved quantity to release");
+  }
   return released;
 }
 

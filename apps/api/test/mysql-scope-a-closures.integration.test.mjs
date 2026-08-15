@@ -735,6 +735,78 @@ test("Scope A closures: purchase receipt -> pending batch -> quality pass/fail -
     assert.equal(unknownRes.statusCode, 409, unknownRes.body);
   });
 
+  await t.test("release_materials with only zero-quantity active reservations is a stable no-op 409", async () => {
+    const order = await createFinishedProductionOrder(2);
+    const zeroBatch = await createComponentBatch(0);
+    const reservePayload = { batchId: zeroBatch, entityType: "production_order", entityId: order.productionOrderId, requestedQuantity: 2, priority: 0 };
+    const reserve = await app.inject({ method: "POST", url: "/api/v1/inventory", headers: headers(admin, "inventory.reserve", reservePayload), payload: reservePayload });
+    assert.equal(reserve.statusCode, 201, reserve.body);
+    const [reservation] = await db.query(
+      "SELECT reserved_quantity AS reserved, shortage_quantity AS shortage, status FROM inventory_reservations WHERE entity_type = 'production_order' AND entity_id = ?",
+      [order.productionOrderId],
+    );
+    assert.deepEqual([Number(reservation.reserved), Number(reservation.shortage), reservation.status], [0, 2, "active"]);
+
+    const stateSql = "SELECT (SELECT COUNT(*) FROM audit_logs WHERE module = 'production' AND entity_type = 'execution_order' AND entity_id = ?) AS audits, (SELECT COUNT(*) FROM outbox_messages WHERE aggregate_type = 'execution_order' AND aggregate_id = ?) AS outbox, (SELECT version FROM resource_versions WHERE resource_type = 'execution_order' AND resource_id = ?) AS version, (SELECT COUNT(*) FROM inventory_movements WHERE type = 'production_release') AS releaseMovements";
+    const [before] = await db.query(stateSql, [order.productionOrderId, order.productionOrderId, String(order.productionOrderId)]);
+
+    const releasePayload = { id: order.productionOrderId, action: "release_materials" };
+    const first = await app.inject({ method: "PATCH", url: "/api/v1/production-orders", headers: headers(admin, "manufacturing.order.transition", releasePayload), payload: releasePayload });
+    assert.equal(first.statusCode, 409, first.body);
+    const second = await app.inject({ method: "PATCH", url: "/api/v1/production-orders", headers: headers(admin, "manufacturing.order.transition", releasePayload), payload: releasePayload });
+    assert.equal(second.statusCode, 409, second.body);
+
+    const [after] = await db.query(stateSql, [order.productionOrderId, order.productionOrderId, String(order.productionOrderId)]);
+    assert.deepEqual([Number(after.audits), Number(after.outbox), Number(after.version), Number(after.releaseMovements)], [Number(before.audits), Number(before.outbox), Number(before.version), Number(before.releaseMovements)]);
+    const [batch] = await db.query("SELECT available_quantity AS available, locked_quantity AS locked FROM inventory_batches WHERE id = ?", [zeroBatch]);
+    assert.deepEqual([Number(batch.available), Number(batch.locked)], [0, 0]);
+    const [reservationAfter] = await db.query(
+      "SELECT reserved_quantity AS reserved, shortage_quantity AS shortage, status FROM inventory_reservations WHERE entity_type = 'production_order' AND entity_id = ?",
+      [order.productionOrderId],
+    );
+    assert.deepEqual([Number(reservationAfter.reserved), Number(reservationAfter.shortage), reservationAfter.status], [0, 2, "active"]);
+  });
+
+  await t.test("release_materials mixed zero and positive reservations releases only positive then no-ops", async () => {
+    const order = await createFinishedProductionOrder(2);
+    const zeroBatch = await createComponentBatch(0);
+    const positiveBatch = await createComponentBatch(2);
+    const zeroPayload = { batchId: zeroBatch, entityType: "production_order", entityId: order.productionOrderId, requestedQuantity: 2, priority: 0 };
+    const zeroReserve = await app.inject({ method: "POST", url: "/api/v1/inventory", headers: headers(admin, "inventory.reserve", zeroPayload), payload: zeroPayload });
+    assert.equal(zeroReserve.statusCode, 201, zeroReserve.body);
+    const positivePayload = { batchId: positiveBatch, entityType: "production_order", entityId: order.productionOrderId, requestedQuantity: 2, priority: 0 };
+    const positiveReserve = await app.inject({ method: "POST", url: "/api/v1/inventory", headers: headers(admin, "inventory.reserve", positivePayload), payload: positivePayload });
+    assert.equal(positiveReserve.statusCode, 201, positiveReserve.body);
+
+    const stateSql = "SELECT (SELECT COUNT(*) FROM audit_logs WHERE module = 'production' AND entity_type = 'execution_order' AND entity_id = ?) AS audits, (SELECT COUNT(*) FROM outbox_messages WHERE aggregate_type = 'execution_order' AND aggregate_id = ?) AS outbox, (SELECT version FROM resource_versions WHERE resource_type = 'execution_order' AND resource_id = ?) AS version, (SELECT COUNT(*) FROM inventory_movements WHERE type = 'production_release') AS releaseMovements";
+    const [before] = await db.query(stateSql, [order.productionOrderId, order.productionOrderId, String(order.productionOrderId)]);
+
+    const releasePayload = { id: order.productionOrderId, action: "release_materials" };
+    const first = await app.inject({ method: "PATCH", url: "/api/v1/production-orders", headers: headers(admin, "manufacturing.order.transition", releasePayload), payload: releasePayload });
+    assert.equal(first.statusCode, 200, first.body);
+
+    const [mid] = await db.query(stateSql, [order.productionOrderId, order.productionOrderId, String(order.productionOrderId)]);
+    assert.equal(Number(mid.audits), Number(before.audits) + 1);
+    assert.equal(Number(mid.outbox), Number(before.outbox) + 1);
+    assert.equal(Number(mid.version), Number(before.version) + 1);
+    assert.equal(Number(mid.releaseMovements), Number(before.releaseMovements) + 1);
+
+    const [positiveBatchAfter] = await db.query("SELECT available_quantity AS available, locked_quantity AS locked FROM inventory_batches WHERE id = ?", [positiveBatch]);
+    assert.deepEqual([Number(positiveBatchAfter.available), Number(positiveBatchAfter.locked)], [2, 0]);
+    const [zeroBatchAfter] = await db.query("SELECT available_quantity AS available, locked_quantity AS locked FROM inventory_batches WHERE id = ?", [zeroBatch]);
+    assert.deepEqual([Number(zeroBatchAfter.available), Number(zeroBatchAfter.locked)], [0, 0]);
+    const [positiveReservationAfter] = await db.query("SELECT reserved_quantity AS reserved, shortage_quantity AS shortage, status FROM inventory_reservations WHERE batch_id = ? AND entity_type = 'production_order' AND entity_id = ?", [positiveBatch, order.productionOrderId]);
+    assert.deepEqual([Number(positiveReservationAfter.reserved), Number(positiveReservationAfter.shortage), positiveReservationAfter.status], [0, 0, "released"]);
+    const [zeroReservationAfter] = await db.query("SELECT reserved_quantity AS reserved, shortage_quantity AS shortage, status FROM inventory_reservations WHERE batch_id = ? AND entity_type = 'production_order' AND entity_id = ?", [zeroBatch, order.productionOrderId]);
+    assert.deepEqual([Number(zeroReservationAfter.reserved), Number(zeroReservationAfter.shortage), zeroReservationAfter.status], [0, 2, "active"]);
+
+    const second = await app.inject({ method: "PATCH", url: "/api/v1/production-orders", headers: headers(admin, "manufacturing.order.transition", releasePayload), payload: releasePayload });
+    assert.equal(second.statusCode, 409, second.body);
+
+    const [after] = await db.query(stateSql, [order.productionOrderId, order.productionOrderId, String(order.productionOrderId)]);
+    assert.deepEqual([Number(after.audits), Number(after.outbox), Number(after.version), Number(after.releaseMovements)], [Number(mid.audits), Number(mid.outbox), Number(mid.version), Number(mid.releaseMovements)]);
+  });
+
   await t.test("duplicate and illegal release are stable and non-mutating", async () => {
     const differentKeyPayload = { id: productionOrderId, action: "release_materials" };
     const differentKeyRes = await app.inject({ method: "PATCH", url: "/api/v1/production-orders", headers: headers(admin, "manufacturing.order.transition", differentKeyPayload), payload: differentKeyPayload });
