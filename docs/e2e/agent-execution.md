@@ -4,13 +4,14 @@ Agent 只能在本地或明确授权的受控测试环境执行；不能自行�
 
 ## 变量、命名与进程
 
-```text
-RUN_ID=e2e-YYYYMMDD-HHMMSS-<short-random>
-HTTPS_ORIGIN=<e2e:status.origins.https>
-API_ORIGIN=<e2e:status.origins.api>
-WORKER_ORIGIN=<e2e:status.origins.worker>
-EVIDENCE_DIR=/e2e-runtime/evidence/<RUN_ID>
-TEST_PREFIX=E2E-<RUN_ID>-
+```powershell
+$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-<short-random>"
+$env:EVIDENCE_DIR = Join-Path (Get-Location) ("e2e-runtime/evidence/" + $env:RUN_ID)
+$env:TEST_PREFIX = "E2E-$env:RUN_ID-"
+# HTTPS/API/Worker origin 从同一 RUN_ID 的 e2e:status 读取，不得手写端口：
+#   HTTPS_ORIGIN = status.origins.https
+#   API_ORIGIN = status.origins.api
+#   WORKER_ORIGIN = status.origins.worker
 ```
 
 - origin 和端口必须来自同一 RUN_ID 的 `e2e:status`/evidence manifest，不得手写固定端口。浏览器/API 业务请求统一使用 `HTTPS_ORIGIN`；`API_ORIGIN` 与 `WORKER_ORIGIN` 只用于生命周期就绪核验。只接受 `127.0.0.1` 或 `localhost` origin；若变量解析为其他 host，停止并写明原因。MySQL 必须是经授权的 loopback 测试实例，且数据库/测试数据以 `RUN_ID` 精确命名。

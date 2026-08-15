@@ -2,14 +2,14 @@
 
 本规程由业务验收人、测试操作者和环境管理员共同执行。它是 Tier 1：先完成[环境与 fixture 就绪门](./tier1-readiness.md)和 Tier 0，缺少经授权受控环境、测试角色、HTTPS 会话条件或可清理测试数据即记录 `BLOCKED`，不要使用生产账户或数据替代。
 
-当前基线为 `254e3a0`（Stage 12 业务闭环）；三条闭环的逐页面必验步骤与签字以 [Stage 12 真人业务验收手册](./stage12-human-business-acceptance.md) 为准。
+功能代码锚点为 `254e3a0`（Stage 12 业务闭环），本 docs/e2e 是其 docs-only 后代；实际 repositorySha 以 git rev-parse HEAD 为准并等于 e2e:status.repositorySha。三条闭环的逐页面必验步骤与签字以 [Stage 12 真人业务验收手册](./stage12-human-business-acceptance.md) 为准。
 
 ## 开始前
 
 1. 记录 `RUN_ID`、Git SHA、环境 URL、执行时间和操作者；确认 URL 为 loopback 或书面授权的测试环境。
-2. 准备互不重叠的测试身份：组织管理员、工厂/供应链操作者、审批人、财务角色和无权角色。测试组织、工厂、供应商、SKU、仓库、批次和单据的名称均加 `E2E-<RUN_ID>-` 前缀。
+2. 准备互不重叠的测试身份：组织管理员、工厂/供应链操作者、审批人、财务角色和无权角色。当前 fixture 只生成 admin/supply_chain/factory/approver/finance/denied，账号格式为 `<role>.<RUN_ID>@e2e.invalid`；独立 company_qc/supplier_qc 账号不在 fixture，需环境管理员额外授权，否则该身份 human-checkpoint/BLOCKED。测试组织、工厂、供应商、SKU、仓库、批次和单据的名称均加 `E2E-<RUN_ID>-` 前缀。
 3. 环境管理员确认可查看测试库中本次前缀的数据、`audit_logs` 与 `outbox_messages`，并确认 Worker 使用 stub/受控 webhook，非真实 provider。
-4. 从 `pnpm e2e:status -- --run <RUN_ID>` 的 `origins.https` 读取本次随机 HTTPS 同源入口，以浏览器打开该地址；不得固定使用 `http://127.0.0.1:3000` 或绕过 Secure Cookie。API/Worker 内部 origin 与随机端口同样以 status/manifest 为准。页面当前没有面向所有场景的稳定 selector；每个 UI 步骤均是人工检查点，API/DB 证据才是可重复替代路径。
+4. 从 `pnpm e2e:status -- --run $env:RUN_ID` 的 `origins.https` 读取本次随机 HTTPS 同源入口，以浏览器打开该地址；不得固定使用 `http://127.0.0.1:3000` 或绕过 Secure Cookie。API/Worker 内部 origin 与随机端口同样以 status/manifest 为准。页面当前没有面向所有场景的稳定 selector；每个 UI 步骤均是人工检查点，API/DB 证据才是可重复替代路径。
 
 ## 通用操作和取证
 
@@ -28,7 +28,7 @@
 - 主数据、采购、库存、调拨、盘点、生产/质检、发货/退货、财务：确认列表和详情只显示该角色/组织/工厂应见范围；提交后记录页面通知或错误文案，但以 API/DB 为最终事实。
 - 整批收货：采购单明细只显示唯一权威收货仓库；确认后提示“已整批收货，进入待检批次”，刷新后“已收货”且待检批次出现该批次。
 - 整批质检：待检批次只对 admin/company_qc 可操作；整批合格提示转入可用、整批不合格提示转入隔离；刷新后批次从待检列表消失，最近质检出现 passed/failed。
-- 生产预留/领料/释放/完工：物料实绩保存、释放剩余预留与完工提示必须与刷新后的生产单状态、库存批次与审计/Outbox 一致；零预留或重复释放要能观察到稳定失败提示。
+- 生产预留/领料/释放：物料实绩保存、释放剩余预留提示必须与刷新后的生产单状态、库存批次与审计/Outbox 一致；零预留或重复释放要能观察到稳定失败提示。生产完工 complete 是独立人工检查点，用另一个仍有合法物料状态的 execution order 或在未先 release 的路径完成，不能把已 release 的单继续报正数领用/完工。
 - 导入：人工核对 preview、stage、commit 是三个独立动作；上传人/导入归属不匹配应被拒绝。没有固定测试文件或 selector 时，使用 API 响应和 DB 记录替代，不标“UI 自动化通过”。
 - 旧 GET/health：浏览器网络面板或 API 客户端保存状态、响应头和 JSON。Web health 的 OSS 缺失检查只能在受控 aliyun-runtime 测试配置执行；预览环境的 `200 preview` 不构成该场景证据。
 

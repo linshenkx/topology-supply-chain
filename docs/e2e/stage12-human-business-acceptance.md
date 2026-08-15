@@ -2,9 +2,10 @@
 
 ## 1. 文档定位与基线
 
-- 本手册是 topology-supply-chain 收口阶段 D1 的最终真人浏览器/UAT 结果，把旧 docs/e2e 从“有基础框架但基线过期、存在异常文本”收口为可直接执行的业务验收手册。
-- 精确基线：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（detached HEAD，worktree clean）。
-- Stage 12 父链（三段闭合）：254e3a0 ← 59e1fb1 ← 736f104 ← cdfe87c。三段提交的主题、范围与验收证据见 [Scope A 业务闭环最小设计](../scope-a-business-closure-design.md)。
+- 本手册是 topology-supply-chain 收口阶段 D1 的真人浏览器/UAT 结果，把旧 docs/e2e 收口为可直接执行的业务验收手册。
+- 功能代码锚点：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（Stage 12 三条业务闭环的最终代码提交）。本手册是 254e3a0 的 docs-only 后代（D1 提交 7784a82ea7034d9eedabed75f66549ca89bd3158）。
+- 实际 UAT 执行不写死上述任一 SHA：环境管理员/执行者必须记录 git rev-parse HEAD，且该值必须等于 e2e:status 输出的 repositorySha；两者不一致即 BLOCKED。
+- Stage 12 代码父链（三段闭合）：254e3a0 ← 59e1fb1 ← 736f104 ← cdfe87c。三段提交的主题、范围与自动化验收证据见 [Scope A 业务闭环最小设计](../scope-a-business-closure-design.md)。
 - 来源主任务 threadId：019ff47b-64cb-7233-9a73-c6728ef839bb。本手册是 D1 唯一结果所有者的 docs-only 交付，不授权修改生产/测试代码、package/lock、migration/schema、Docker/部署配置、delivery 目录或历史 Stage 报告。
 - 术语：R2/R3 是 Scope A 写迁移两批命令的历史代号（R2=供应侧，R3=履约财务侧）；代码已改用领域名 supply/operations，冻结的 r2.*/r3.* 命令名与 writer resource 不变。purchase.receive 属于 R3 侧新增命令，writer resource 为 r3.purchase-receipts.commands。
 
@@ -19,6 +20,7 @@
 
 - 幂等重放、digest/key 冲突拒绝、writer fence、unknown outcome fail-closed、CSRF/同源、审计、Outbox、Worker stub 投递，以及三条闭环的负路径（重复、越权、冻结、零预留释放、部分收货拒绝、整批质检约束）。
 - 旧 18 个业务 GET 精确 410 退役、受控 OSS 缺失 Web health 503。
+- 连续浏览器 E2E（tests/e2e-scope-a-closures.integration.test.mjs）覆盖生产预留 → 领料/消耗 → 释放剩余预留；生产完工 complete 是独立人工检查点，未由该连续浏览器 E2E 覆盖（见 9.3）。
 - 这些已由 pnpm test:non-mysql、pnpm test:mysql、pnpm test:e2e-foundation、pnpm test:e2e-scope-a 覆盖；真人仍需在浏览器里至少观察一次 UI 提示与刷新后状态，不能只以自动化绿灯替代签字。
 
 ### 2.3 明确未实现/超范围（不得作为首期必测）
@@ -31,50 +33,93 @@
 
 - 只允许 loopback（127.0.0.1 / localhost）服务、临时测试数据和受控 MySQL 8 容器。
 - 禁止连接生产、使用生产凭据、调用真实 SMS/支付/OSS/provider、执行部署或 push/PR。
-- 证据中不得出现密码、cookie、Authorization、CSRF、OTP、数据库 URL 查询串、AccessKey、stub control token。
+- 证据中不得出现密码、cookie、Authorization、CSRF、OTP、数据库 URL 查询串、AccessKey、stub control token、otpToken。
 - RUN_ID 只允许小写 e2e- 开头（生命周期正则 ^e2e-[a-z0-9][a-z0-9-]{5,80}$），例如 e2e-20260815-d1ab12。
 
-## 4. 启动、状态与清理命令
+## 4. 启动、状态与清理命令（Windows PowerShell 为主）
 
 生命周期只能在本机受控环境执行，顺序固定为 prepare → start → status → evidence → stop → cleanup。
 
-```text
-RUN_ID=e2e-YYYYMMDD-HHMMSS-<short-random>
-pnpm e2e:prepare -- --run $RUN_ID --fence-profile t2-operations-scope-a-closures
-pnpm e2e:start -- --run $RUN_ID
-pnpm e2e:status -- --run $RUN_ID
-pnpm e2e:evidence -- --run $RUN_ID --out /e2e-runtime/evidence/$RUN_ID/evidence-manifest.json
-pnpm e2e:stop -- --run $RUN_ID
-pnpm e2e:cleanup -- --run $RUN_ID
+```powershell
+$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-<short-random>"
+pnpm e2e:prepare -- --run $env:RUN_ID --fence-profile t2-operations-scope-a-closures
+pnpm e2e:start -- --run $env:RUN_ID
+pnpm e2e:status -- --run $env:RUN_ID
+$evidenceManifest = Join-Path (Get-Location) ("e2e-runtime\evidence\" + $env:RUN_ID + "\evidence-manifest.json")
+pnpm e2e:evidence -- --run $env:RUN_ID --out $evidenceManifest
+pnpm e2e:stop -- --run $env:RUN_ID
+pnpm e2e:cleanup -- --run $env:RUN_ID
+```
+
+执行前必须核对实际 repositorySha 与运行态一致（不一致即 BLOCKED）：
+
+```powershell
+$head = git rev-parse HEAD
+$status = pnpm e2e:status -- --run $env:RUN_ID | ConvertFrom-Json
+if ($head -ne $status.repositorySha) { throw "repositorySha mismatch: $head vs $($status.repositorySha)" }
+```
+
+仅 WSL / Git Bash 环境的备用命令（与上表不混用）：
+
+```bash
+export RUN_ID="e2e-YYYYMMDD-HHMMSS-<short-random>"
+pnpm e2e:prepare -- --run "$RUN_ID" --fence-profile t2-operations-scope-a-closures
+pnpm e2e:start -- --run "$RUN_ID"
+pnpm e2e:status -- --run "$RUN_ID"
+pnpm e2e:evidence -- --run "$RUN_ID" --out "./e2e-runtime/evidence/$RUN_ID/evidence-manifest.json"
+pnpm e2e:stop -- --run "$RUN_ID"
+pnpm e2e:cleanup -- --run "$RUN_ID"
 ```
 
 - prepare 只创建带 topology.e2e.run_id=<RUN_ID> label 的 MySQL 8 临时容器/库，复核 canonical migration 后 seed 版本化 Scope A pack [scope-a.fixture.json](../../tests/e2e/fixtures/scope-a.fixture.json)，不读 .env 或生产凭据。
 - fence profile 只接受冻结的精确 resource 集合；三条闭环使用 t2-operations-scope-a-closures（含 auth.commands、outbox.worker、r3.purchase-receipts.commands、r3.quality-inspections.commands、r3.inventory.commands、r3.production-orders.commands）。
 - status 必须确认：repository SHA、build/entry identity、fixture JSON 与 seed module SHA、fence profile 与 writer-fence 状态、HTTPS、API/Worker ready、三类 stub health、canonical migration、监听项/PID/Docker label owner。任一失败即 BLOCKED。
 - 运行时 origin 全部来自 status.origins：https（浏览器/业务请求统一入口）、api、worker。所有端口随机，不得手写 :3000/:3001/:3002。HTTPS 使用一次性自签名证书，浏览器需先信任或接受该测试证书。
-- 生命周期运行态位于仓库外 %TEMP%/topology-e2e/<RUN_ID>/（state.json、logs、manifest.json、evidence-manifest.json）；cleanup 只删除匹配该 RUN_ID label 与状态的资源。
+- 生命周期运行态位于仓库外 %TEMP%\topology-e2e\<RUN_ID>\（state.json、logs、manifest.json、evidence-manifest.json）；cleanup 只删除匹配该 RUN_ID label 与状态的资源。
 
-## 5. 角色、组织范围与测试数据命名
+## 5. 角色、账号与测试数据命名
 
-fixture pack 生成的角色互不重叠：
+当前 fixture 只生成以下 6 个账号，格式为 <role>.<RUN_ID>@e2e.invalid：
 
-| 角色 | 说明 | 可用于 |
+| 账号 | 说明 | 可用于 |
 | --- | --- | --- |
-| admin | 系统管理员 | 系统管理、审批、公司质检（company_qc 整批判定） |
+| admin | 系统管理员 | 系统管理、审批、整批质检（以 inspectorType=company_qc 判定） |
 | supply_chain | 供应链 | 主数据/供应商/采购/库存/生产/收货等 R2+R3 命令 |
 | factory | 组装工厂（带 factory binding） | 工厂确认、工厂范围读写、整批收货（绑定权威工厂） |
 | approver | 供应链审批人（fixture 中同 supply_chain role） | 审批决策 |
 | finance | 财务 | 财务命令，对收货等越权应 403 |
-| denied | 供应商无权角色 | 越权负路径 |
-| supplier_qc / company_qc | 供应商质检 / 公司质检 | 质检命令；公司质检读取待检批次 |
+| denied | 供应商角色（非 supplier_qc） | 越权负路径 |
 
-所有测试组织、工厂、供应商、SKU、BOM、仓库、批次、单据名称使用 E2E-<RUN_ID>- 前缀；fixture 实际生成 E2E-<RUN_ID> 相关实体（详见 [fixture 模板](./templates/fixture-manifest.json)）。
+- 独立 company_qc / supplier_qc 账号不在当前 fixture。整批质检在当前 fixture 由 admin 以 inspectorType=company_qc 执行（handler 允许 admin 走 company_qc 判级；UI 允许 admin/company_qc 操作待检批次）。
+- 若验收方要求真人以真实 company_qc 或 supplier_qc 身份签字，环境管理员必须额外授权对应账号并写入 fixture manifest；否则该身份只能是 human-checkpoint 或 BLOCKED。supplier_qc 路径还要求该账号绑定到目标 supplier。
+- 所有测试组织、工厂、供应商、SKU、BOM、仓库、批次、单据名称使用 E2E-<RUN_ID>- 前缀；fixture 实际生成 E2E-<RUN_ID> 相关实体（详见 [fixture 模板](./templates/fixture-manifest.json)）。
+- 三条闭环必需 fixture 实体：confirmed 采购单与 finished 明细、唯一采购计划分配（factory/warehouse）、活动工厂仓库、组件库存批次、approved active BOM、planned execution order、生产物料行、incoming/finished_goods 两条 quality rule（最低合格率 9500 bps）。
 
-三条闭环必需 fixture 实体：confirmed 采购单与 finished 明细、唯一采购计划分配（factory/warehouse）、活动工厂仓库、组件库存批次、approved active BOM、planned execution order、生产物料行、incoming/finished_goods 两条 quality rule（最低合格率 9500 bps）。
+### 5.1 可执行登录与 OTP 读取（环境管理员）
+
+随机 password、otpToken 与数据库 URL 只存在于 %TEMP%\topology-e2e\<RUN_ID>\state.json。环境管理员仅在本地临时 PowerShell 会话读取，禁止 Start-Transcript、写日志/evidence、命令行硬编码或复制到文档；使用后立即 Remove-Variable。
+
+```powershell
+$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-xxxx"
+$statePath = Join-Path $env:TEMP ("topology-e2e\" + $env:RUN_ID + "\state.json")
+$state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+$password = $state.password
+$otpToken = $state.secrets.otpToken
+$stubPort = $state.resources.ports.stub
+# 浏览器登录账号：<role>.<RUN_ID>@e2e.invalid，密码为 $password（例如 admin.$env:RUN_ID@e2e.invalid）
+# OTP challenge 出现后，读取并消费同一 loopback stub 的验证码：
+$otpResp = Invoke-RestMethod -Method Get -Uri ("http://127.0.0.1:" + $stubPort + "/otp?runId=" + $env:RUN_ID) -Headers @{ "x-e2e-otp-token" = $otpToken }
+$code = $otpResp.code
+# 在浏览器输入 $code 完成核验；使用后立即清理秘密变量：
+Remove-Variable password, otpToken, stubPort, otpResp, code -ErrorAction SilentlyContinue
+```
+
+- OTP stub 的 GET /otp 要求 header x-e2e-otp-token 与查询 runId 同时匹配；每次读取会消费当前验证码（随后再次读取返回 404）。
+- 若没有环境管理员提供上述本地读取通道，真人 OTP 环节只能是 human-checkpoint/BLOCKED，不得从日志、数据库或 preview code 取码。
 
 ## 6. 证据目录与取证
 
-人工采集证据写入 gitignored 目录 /e2e-runtime/evidence/<RUN_ID>/：
+人工采集证据统一写入仓库内 gitignored 相对目录 .\e2e-runtime\evidence\<RUN_ID>\（prose 写作 e2e-runtime/evidence/<RUN_ID>/）：
 
 ```text
 e2e-runtime/evidence/<RUN_ID>/
@@ -85,6 +130,8 @@ e2e-runtime/evidence/<RUN_ID>/
 └── logs/                  # Web/API/Worker 日志尾部与退出码
 ```
 
+注意：不要写 /e2e-runtime/...（Windows 下会被解析为 C:\e2e-runtime）。路径一律使用相对仓库根目录的 .\e2e-runtime\evidence\<RUN_ID>\ 或 e2e-runtime/evidence/<RUN_ID>/。
+
 每条可复核证据至少覆盖 HTTP、DB 业务事实、audit、outbox 四类之一。写操作成功响应必须含 command.command、command.idempotencyKey、command.requestDigest、command.replayed；首发应为 replayed:false，字节等同重放才允许 true。
 
 ## 7. NO-GO / 阻断判定
@@ -93,6 +140,7 @@ e2e-runtime/evidence/<RUN_ID>/
 
 - HTTP 非预期；越权却成功；相同请求无法重放；换 digest 未被拒绝；写入无审计/Outbox；数据越出组织/工厂范围；响应泄露凭据。
 - 缺少受控 HTTPS 同源会话、测试账号/OTP stub、授权测试 MySQL、fixture manifest，或 status 任一就绪检查失败。
+- repositorySha 与 git rev-parse HEAD 不一致；company_qc/supplier_qc 无授权账号却声称已按该身份签字。
 - UI 无稳定 selector/夹具却声称“UI 自动化通过”；以本地 preview 空数据替代真实 DB 证据。
 
 ## 8. 分页面人工验收清单
@@ -106,8 +154,8 @@ e2e-runtime/evidence/<RUN_ID>/
 | 采购管理 | 采购计划/采购单/整批收货；计划确认、下单核对、工厂确认、24h 采购单确认 | 越权、部分收货 400、重复收货 409 | — |
 | 供应商管理 | 供应商、supplier-SKU、价格、绩效 | 越权范围、Step-up 价格激活 | — |
 | 物料与补料 | SKU/BOM 主数据 | 越权、非法 BOM 版本 | — |
-| 执行单 | 生产单创建/开工/物料实绩/释放预留/完工 | 超权威分配、BOM 不生效、冻结、越权 | — |
-| 生产质检 | 待检批次整批放行/隔离、质检记录 | 部分/抽样/混合判、来源歧义、越权 | — |
+| 执行单 | 生产单创建/开工/物料实绩/释放预留；完工为独立检查点 | 超权威分配、BOM 不生效、冻结、越权 | — |
+| 生产质检 | 待检批次整批放行/隔离、质检记录（fixture 中由 admin 以 company_qc 判定） | 部分/抽样/混合判、来源歧义、越权 | — |
 | 发货管理 | 发货/收货/异常 | 越权、缺证据文件 | — |
 | 库存管理 | 库存/预留/调拨/盘点 | 冻结、负数、超量 | — |
 | 财务结算 | 发票/付款/更正/退款/风险释放 | 高风险需 Step-up、越权、超付 | 禁止真实支付 |
@@ -177,7 +225,8 @@ e2e-runtime/evidence/<RUN_ID>/
 
 #### 操作者
 
-- 公司质检 company_qc 或 admin（整批判定路径）；supplier_qc 仅可用于其 supplier 绑定的非整批 finished_goods 路径。
+- 当前 fixture：admin 以 inspectorType=company_qc 执行整批判定。
+- 若验收方要求真实 company_qc 身份签字，需环境管理员额外授权 company_qc 账号；supplier_qc 整批路径当前 fixture 无对应账号，缺账号时 human-checkpoint/BLOCKED。
 
 #### UI 步骤
 
@@ -214,7 +263,7 @@ e2e-runtime/evidence/<RUN_ID>/
 - 无待检数量 → 409；无 active quality rule → 409；不合格缺 reason → 400；越权 inspectorType → 403。
 - 幂等：同 key 同 body 重放 → replayed:true；换 key 再判同批次 → 409。
 
-### 9.3 闭环 C：生产单 + 真实预留 → 领料/消耗 → 释放剩余预留 → 完工
+### 9.3 闭环 C：生产单 + 真实预留 → 领料/消耗 → 释放剩余预留（complete 为独立检查点）
 
 #### 前置 fixture
 
@@ -225,18 +274,28 @@ e2e-runtime/evidence/<RUN_ID>/
 
 - admin / supply_chain / 绑定生产工厂的 factory。
 
-#### UI 步骤
+#### 连续浏览器证据：reserve → materials → release（同一 execution order）
 
 1. 「库存管理」执行预留（或按 API 执行 POST /api/v1/inventory）。
 2. 「执行单」选择生产单 → “开工”（start）。
 3. 展开“物料”，填写实际领料/消耗/损耗 → “保存实绩”（materials）。
 4. 点“释放预留”（release_materials）释放剩余预留。
-5. 点“完工”（complete），输入实际完工数量。
 
-#### 预期提示与刷新后状态
+预期提示与刷新后状态：
 
-- “生产已开始”“物料实绩已保存”“剩余预留已释放”“完工报告已提交；如有偏差将自动进入审批”。
-- 刷新后生产单状态：planned → in_production → completed（无偏差）或 variance_pending（超/欠产、物料偏差，生成审批）。
+- “生产已开始”“物料实绩已保存”“剩余预留已释放”。
+- 刷新后生产单状态：planned → in_production（release 不改变状态）；库存批次 locked 回落、available 回升；movement production_release。
+
+#### 独立人工检查点：complete（不要在已 release 的同一单上继续）
+
+release 已把剩余 active reservation 置为 released，随后再对该单报正数领用会因无真实预留而 409。因此 complete 用另一个仍有合法物料状态的 execution order，或在未先 release 的路径完成：
+
+1. 对第二个 execution order（或未 release 的目标单）建立预留 → 开工。
+2. 保存物料实绩（consumed+loss ≤ issued，且不超过 active 预留）。
+3. 点“完工”（complete），输入实际完工数量 actualFinishedQuantity。
+4. 刷新后状态：无偏差且 actual>0 → completed，生成 production_report 与成品待检批次（PROD-...，pending_inspection_quantity=actual）；有偏差 → variance_pending 并生成 production_variance 审批。
+
+正数完工（actualFinishedQuantity=2）已有 MySQL 自动化证据（apps/api/test/mysql-scope-a-closures.integration.test.mjs，app.inject），但这不是连续浏览器 E2E，不能冒充真人连续浏览器证据。
 
 #### 预期 API/HTTP
 
@@ -257,17 +316,18 @@ e2e-runtime/evidence/<RUN_ID>/
 #### audit / outbox
 
 - audit_logs：module=production，action 分别为 create/start/materials/release_materials/complete；预留侧为 module=inventory。
-- outbox_messages：ProductionOrderCreated/Started/MaterialsReported/ReservationReleased/Completed 或 ProductionVarianceRequested。
+- outbox_messages 精确事件名：ProductionOrderCreated、ProductionOrderStarted、ProductionMaterialsReported、ProductionReservationReleased、ProductionOrderCompleted、ProductionVarianceRequested（complete 无偏差 → ProductionOrderCompleted；有偏差 → ProductionVarianceRequested）。
 
 #### 负路径
 
 - 无 active 预留即释放 → 409（No active reservations to release）；纯零数量 active reservation 释放 → 409 且零副作用（254e3a0 修复）。
 - 领料数量下降 → 409；领用超过 active 预留 → 409；consumed+loss>issued → 409；冻结 → 409；越权 factory → 403。
+- 已 release 后再报正数领用/完工 → 409（Issued quantity exceeds real inventory reservations）。
 - 幂等：materials/release_materials 同 key 同 body 重放 → replayed:true；释放后再次用新 key 释放 → 409。
 
 ### 9.4 清理与结果填写
 
-- pnpm e2e:stop -- --run <RUN_ID> 后保存日志尾部与退出码；pnpm e2e:cleanup -- --run <RUN_ID> 精确清理 Docker 容器/临时库/证书/运行态。
+- pnpm e2e:stop -- --run $env:RUN_ID 后保存日志尾部与退出码；pnpm e2e:cleanup -- --run $env:RUN_ID 精确清理 Docker 容器/临时库/证书/运行态。
 - 按 RUN_ID/E2E-<RUN_ID>- 复核业务、audit、outbox 记录已清零，或记录未清理原因与责任人。
 - 结果填入 [UAT 结果与签字模板](./templates/uat-signoff.md)，每个场景必须给出 pass/fail/blocked/human-checkpoint 与证据路径。
 
@@ -284,7 +344,7 @@ e2e-runtime/evidence/<RUN_ID>/
 
 ## 11. 结果填写与签字
 
-逐场景结果与签字使用 [UAT 结果与签字模板](./templates/uat-signoff.md)。签字前必须满足：git status --short 干净、证据在 gitignored 目录、无秘密落盘、BLOCKED/NO-GO 项已写明原因与交接对象。
+逐场景结果与签字使用 [UAT 结果与签字模板](./templates/uat-signoff.md)。签字前必须满足：git status --short 干净、repositorySha 与 git rev-parse HEAD 一致、证据在 gitignored 目录、无秘密落盘、BLOCKED/NO-GO 项已写明原因与交接对象。
 
 ## 12. 文档索引
 

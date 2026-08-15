@@ -1,6 +1,6 @@
 # 文档索引
 
-README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。当前基线为 `254e3a0` 的 Stage 12 业务闭环（detached HEAD）；真实部署、生产凭据与真人业务签字不在该结论范围内，真人浏览器/UAT 以 [Stage 12 真人业务验收手册](./e2e/stage12-human-business-acceptance.md) 为执行入口。
+README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。功能代码锚点为 `254e3a0` 的 Stage 12 业务闭环，本 docs 是其 docs-only 后代；实际 repositorySha 以执行时 git rev-parse HEAD 为准并等于 e2e:status.repositorySha。真实部署、生产凭据与真人业务签字不在该结论范围内，真人浏览器/UAT 以 [Stage 12 真人业务验收手册](./e2e/stage12-human-business-acceptance.md) 为执行入口。
 
 ## 当前规范与能力
 

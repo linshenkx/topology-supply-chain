@@ -1,12 +1,12 @@
 # Tier 1：现场 E2E 环境与就绪门
 
-Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。Stage 12 基线 `254e3a0` 沿用受控的本机 fixture、provider stub 与 HTTPS 底座，并新增整批收货/整批质检/生产真实预留三条闭环；它不决定业务状态机、职责分离或更复杂的业务扩展。
+Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。功能代码锚点 `254e3a0` 沿用受控的本机 fixture、provider stub 与 HTTPS 底座，并新增整批收货/整批质检/生产真实预留三条闭环；它不决定业务状态机、职责分离或更复杂的业务扩展。
 
 ## 启动顺序（仅受控测试环境）
 
-1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID> --fence-profile <profile>`。基础用 `foundation-auth-worker`；三条业务闭环必须用 `t2-operations-scope-a-closures`（含 `r3.purchase-receipts.commands`、`r3.quality-inspections.commands`、`r3.inventory.commands`、`r3.production-orders.commands`）。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。fence profile 仅接受测试代码中的冻结精确 resource 集合，绝不存在全量启用入口。
+1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），在 Windows PowerShell 中先设置 `$env:RUN_ID = "e2e-..."`，再执行 `pnpm e2e:prepare -- --run $env:RUN_ID --fence-profile <profile>`。基础用 `foundation-auth-worker`；三条业务闭环必须用 `t2-operations-scope-a-closures`（含 `r3.purchase-receipts.commands`、`r3.quality-inspections.commands`、`r3.inventory.commands`、`r3.production-orders.commands`）。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。fence profile 仅接受测试代码中的冻结精确 resource 集合，绝不存在全量启用入口。
 2. 冻结安装与构建：`pnpm install --frozen-lockfile`、`pnpm build:contracts`、`pnpm build:api`、`pnpm build:worker`、`pnpm build:web:preview`。构建失败停止，不改源码或依赖。
-3. 执行 `pnpm e2e:start -- --run <RUN_ID>`，再执行 `pnpm e2e:status -- --run <RUN_ID>`。运行时仅监听 `127.0.0.1`：stub、Worker、API、Web 和 HTTPS proxy 都采用各自随机端口。HTTPS 使用只在临时运行目录存在的一日自签名证书；浏览器必须在人工检查前显式信任或接受该测试证书。
+3. 执行 `pnpm e2e:start -- --run $env:RUN_ID`，再执行 `pnpm e2e:status -- --run $env:RUN_ID`，并确认 `git rev-parse HEAD` 等于 `status.repositorySha`。运行时仅监听 `127.0.0.1`：stub、Worker、API、Web 和 HTTPS proxy 都采用各自随机端口。HTTPS 使用只在临时运行目录存在的一日自签名证书；浏览器必须在人工检查前显式信任或接受该测试证书。
 4. `status` 必须同时确认当前 repository SHA、实际 build/entry identity、fixture JSON 与 seed module SHA、声明 profile 与数据库 writer-fence 状态、HTTPS、API/Worker ready、三类 stub health、canonical migration、已记录服务监听项/进程 owner 及 Docker label owner。任一失败即 `BLOCKED`，不得进入场景。
 
 每个进程用独立 stdout/stderr 文件和带随机 owner token 的 wrapper PID 后台启动；停止/清理会先校验 wrapper 命令行的 `RUN_ID`、token 与 entry，状态文件被篡改、PID 重用或非 owner PID 会 fail-closed，绝不执行 `taskkill`。所有子进程使用显式安全环境 allowlist，清除宿主 provider URL/key、代理与生产凭据；仅注入 `127.0.0.1` stub URL。
@@ -23,7 +23,7 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 
 `tests/e2e/fixtures/scope-a.fixture.json` 是版本化逻辑 pack；`prepare` 使用现有 MySQL schema/handler 可见的字段生成每运行一份实际 ID manifest。账号密码、OTP、cookie、CSRF、DB URL、stub key 仅存在于仓库外运行状态，永不写入 manifest、日志或 Git。以[evidence manifest 模板](./templates/evidence-manifest.json)记录每次运行；其 `ready=true` 仅在以下内容全具备时成立：
 
-- 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；账号 owner、测试 OTP 路径及过期/轮换时间。
+- 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；当前 fixture 只生成 admin/supply_chain/factory/approver/finance/denied，账号格式 `<role>.<RUN_ID>@e2e.invalid`，账号 owner、测试 OTP 路径及过期/轮换时间。独立 company_qc/supplier_qc 账号不在 fixture，需环境管理员额外授权，否则该身份 human-checkpoint/BLOCKED。
 - 范围：组织、factory、tiered supplier、SKU、有效 BOM、warehouse、库存 batch（含成品与组件 batch、可用/锁定/待检/隔离数量）、supplier-SKU 关系、有效价格与证据文件。
 - 单据：可决策 pending approval（含 version/effect）、采购计划/item、采购订单/item（含 received_quantity 与唯一权威 plan link）、生产/execution order（含 production_material_lines）、质量规则（incoming 与 finished_goods）、整批收货待检批次、库存 reservation/transfer、stocktake、shipment、return、invoice/payment/exception 等每个要执行场景所需 ID 与版本。
 - 支撑：测试上传文件/扫描结果、Outbox/Worker stub contract、数据库名/清理 owner、fixture SHA/生成时间/有效期。

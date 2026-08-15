@@ -2,13 +2,13 @@
 
 > 术语说明：R2/R3 沿用 Scope A 写迁移两批命令的历史代号（R2=供应侧 12 命令，R3=履约财务侧 13 命令）；代码已改用领域名 supply/operations，冻结的 r2.*/r3.* 命令名与 writer resource 不变。Stage 12 新增 r3.purchase-receipts.commands。
 
-> 验收基线：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（Stage 12 业务闭环阶段，detached HEAD）。Stage 10/11 历史报告保留在 docs/refactor/，是历史证据。
+> 功能代码锚点：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（Stage 12 业务闭环的最终代码提交）；本 docs/e2e 是其 docs-only 后代。实际 UAT 必须记录 git rev-parse HEAD，且该值等于 e2e:status.repositorySha。Stage 10/11 历史报告保留在 docs/refactor/，是历史证据。
 > 适用环境：本机或受控测试环境。不得连接生产、使用生产凭据、调用真实 provider，或执行部署。
 
 ## 执行入口
 
 1. 先执行 [Tier 0 自动化基线](./tier0-automation.md)。
-2. Tier 1 先以本地测试底座创建独立 RUN_ID（pnpm e2e:prepare/start/status -- --run <RUN_ID>），再过 [环境与 fixture 就绪门](./tier1-readiness.md)，由业务验收人按 [真人执行规程](./human-execution.md) 确定角色、样本和签字范围。
+2. Tier 1 先以本地测试底座创建独立 RUN_ID（PowerShell：$env:RUN_ID = "e2e-..."，随后 pnpm e2e:prepare/start/status -- --run $env:RUN_ID），再过 [环境与 fixture 就绪门](./tier1-readiness.md)，由业务验收人按 [真人执行规程](./human-execution.md) 确定角色、样本和签字范围。
 3. 自动化执行者还必须完整遵守 [Agent 执行规程](./agent-execution.md)，并使用 [请求模板](./request-templates.md) 与 [fixture/evidence 模板](./templates/fixture-manifest.json)。
 4. 逐项执行 [Scope A 场景清单](./scope-a-scenarios.md) 与 [Stage 12 真人业务验收手册](./stage12-human-business-acceptance.md)。每项都要有 HTTP、数据库或审计/Outbox 中至少一种可复核证据；UI 没有稳定 selector 或夹具时，不得假装自动化完成。
 
@@ -21,7 +21,7 @@
 
 ## 最小证据包
 
-每次运行创建一个只含测试数据的运行标识 RUN_ID，并保存到 gitignored 目录 /e2e-runtime/evidence/<RUN_ID>/：
+每次运行创建一个只含测试数据的运行标识 RUN_ID，并保存到仓库内 gitignored 相对目录 .\e2e-runtime\evidence\<RUN_ID>\（prose 写作 e2e-runtime/evidence/<RUN_ID>/；不要写 /e2e-runtime，Windows 下会被解析为 C:\e2e-runtime）：
 
 - manifest.json：环境、版本、角色、命令和结果摘要；格式见 Agent 规程。
 - http/：脱敏后的请求摘要、响应状态和 command metadata；不得保存会话、CSRF、OTP 或密钥。
@@ -38,8 +38,8 @@
 | R2 | 主数据、供应商、采购、导入 preview-stage-commit | API 优先，UI 人工检查 | command metadata、范围和导入归属可取证 |
 | R3 | 库存、调拨、盘点、生产/质检、发货/退货、财务当前边界 | API 优先，UI 人工检查 | 现有 schema/状态边界、审计和 Outbox 可取证 |
 | S12-A | 采购单→整批收货→待检批次 | 真人 + API/DB | 唯一权威分配、整批守恒、待检批次与审计可取证 |
-| S12-B | 待检批次→整批质检→放行/隔离 | 真人 + API/DB | 整批 pass/fail、库存放行/隔离与审计可取证 |
-| S12-C | 生产真实预留→领料/消耗→释放→完工 | 真人 + API/DB | 预留/消耗/释放守恒、零预留 409 零副作用可取证 |
+| S12-B | 待检批次→整批质检→放行/隔离 | 真人 + API/DB | 整批 pass/fail、库存放行/隔离与审计可取证；fixture 中由 admin 以 company_qc 判定 |
+| S12-C | 生产真实预留→领料/消耗→释放 | 真人 + API/DB | 预留/消耗/释放守恒、零预留 409 零副作用可取证；complete 为独立人工检查点 |
 | P1 | 幂等、digest、fence、unknown outcome | API/测试夹具 | replay 一致；冲突和不确定结果不静默成功 |
 | P2 | audit、Outbox、Worker retry/重复投递 | API/DB/Worker 日志 | 仅验证当前实现的可观察边界；不调用 provider |
 | C1 | 18 个旧 GET 退役 | API | 精确 410、WRITER_MOVED、successor Link |
