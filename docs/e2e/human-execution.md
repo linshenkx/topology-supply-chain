@@ -28,7 +28,7 @@
 - 主数据、采购、库存、调拨、盘点、生产/质检、发货/退货、财务：确认列表和详情只显示该角色/组织/工厂应见范围；提交后记录页面通知或错误文案，但以 API/DB 为最终事实。
 - 整批收货：采购单明细只显示唯一权威收货仓库；确认后提示“已整批收货，进入待检批次”，刷新后“已收货”且待检批次出现该批次。
 - 整批质检：待检批次只对 admin/company_qc 可操作；整批合格提示转入可用、整批不合格提示转入隔离；刷新后批次从待检列表消失，最近质检出现 passed/failed。
-- 生产预留/领料/释放：物料实绩保存、释放剩余预留提示必须与刷新后的生产单状态、库存批次与审计/Outbox 一致；零预留或重复释放要能观察到稳定失败提示。生产完工 complete 是独立人工检查点，用另一个仍有合法物料状态的 execution order 或在未先 release 的路径完成，不能把已 release 的单继续报正数领用/完工。
+- 生产预留/领料/释放：物料实绩保存、释放剩余预留提示必须与刷新后的生产单状态、库存批次与审计/Outbox 一致；零预留或重复释放要能观察到稳定失败提示。生产完工 complete 是独立人工检查点：C1（reserve→materials→release）与 C2（reserve→materials→complete，不先 release）使用两个独立 RUN_ID（默认 fixture 只有一个 executionOrderId）；C2 在独立 run 内完成且不先 release，不能把已 release 的单继续报正数领用/完工。仅当环境管理员额外提供第二个 execution order 时才可同 run 继续。
 - 导入：人工核对 preview、stage、commit 是三个独立动作；上传人/导入归属不匹配应被拒绝。没有固定测试文件或 selector 时，使用 API 响应和 DB 记录替代，不标“UI 自动化通过”。
 - 旧 GET/health：浏览器网络面板或 API 客户端保存状态、响应头和 JSON。Web health 的 OSS 缺失检查只能在受控 aliyun-runtime 测试配置执行；预览环境的 `200 preview` 不构成该场景证据。
 

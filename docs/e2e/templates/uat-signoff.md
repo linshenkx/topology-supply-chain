@@ -6,13 +6,25 @@
 
 | 字段 | 值 |
 | --- | --- |
-| RUN_ID | e2e-YYYYMMDD-HHMMSS-xxxx |
-| 功能代码锚点 | 254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（D1 docs-only 后代） |
+| RUN_ID | <RUN_ID> |
+| 功能代码锚点 | 254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（docs-only 后代链，不是实际执行 SHA） |
 | repositorySha | <git rev-parse HEAD>（必须等于 <e2e:status.repositorySha>） |
 | fenceProfile | t2-operations-scope-a-closures |
 | HTTPS origin | <e2e:status.origins.https> |
 | fixtureManifestSha | <e2e:status.fixtureSha> |
 | 执行时间 | <ISO-8601 起止> |
+
+### S12-C 双 RUN_ID 记录（C1 与 C2 独立执行）
+
+默认 fixture 只有一个 executionOrderId：C1（reserve→materials→release）与 C2（reserve→materials→complete，不先 release）必须使用两个独立 RUN_ID，各自 prepare/start/status/evidence/stop/cleanup；repositorySha、fenceProfile、HTTPS origin 读取规则相同。只有环境管理员额外提供第二个 execution order 时才可在同一 RUN_ID 内继续 C2。
+
+| 检查点 | S12-C1 | S12-C2 |
+| --- | --- | --- |
+| RUN_ID | <S12-C1-RUN_ID> | <S12-C2-RUN_ID> |
+| repositorySha | <git rev-parse HEAD> | <git rev-parse HEAD> |
+| HTTPS origin | <e2e:status.origins.https> | <e2e:status.origins.https> |
+| 证据路径 | .\e2e-runtime\evidence\<S12-C1-RUN_ID> | .\e2e-runtime\evidence\<S12-C2-RUN_ID> |
+| 清理状态 | complete/not-needed/blocked | complete/not-needed/blocked |
 
 ## 场景结果
 
@@ -24,8 +36,8 @@
 | A2 | 审批批准/拒绝/重放 | approver | UI+API+DB | | | |
 | S12-A | 采购单→整批收货→待检批次 | supply_chain/factory | UI+API+DB | | | |
 | S12-B | 待检批次→整批质检→放行/隔离 | admin（inspectorType=company_qc） | UI+API+DB | | | company_qc/supplier_qc 无 fixture 账号时 human-checkpoint |
-| S12-C1 | 生产预留→领料/消耗→释放 | supply_chain/factory | UI+API+DB | | | 连续浏览器证据 |
-| S12-C2 | 生产完工 complete（独立检查点） | supply_chain/factory | UI+API+DB | | | 用另一 execution order 或未先 release 的路径 |
+| S12-C1 | 生产预留→领料/消耗→释放（C1，独立 RUN_ID） | supply_chain/factory | UI+API+DB | | | 连续浏览器证据仅覆盖 reserve→materials→release；RUN_ID 见上表 |
+| S12-C2 | 生产完工 complete（C2，独立 RUN_ID，不先 release） | supply_chain/factory | UI+API+DB | | | reserve→materials→complete；不与 C1 冒充同一连续浏览器链 |
 | R2 | 主数据/供应商/采购/导入 | supply_chain/factory | API 优先+UI | | | |
 | R3 | 库存/调拨/盘点/生产/质检/发货/退货/财务 | supply_chain/factory/finance | API 优先+UI | | | |
 | P1/P2 | 幂等/fence/unknown/audit/outbox | 任意 | API/DB/Worker | | | |

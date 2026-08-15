@@ -5,7 +5,7 @@ Agent 只能在本地或明确授权的受控测试环境执行；不能自行�
 ## 变量、命名与进程
 
 ```powershell
-$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-<short-random>"
+$env:RUN_ID = "e2e-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$((New-Guid).ToString('N').Substring(0,8))"
 $env:EVIDENCE_DIR = Join-Path (Get-Location) ("e2e-runtime/evidence/" + $env:RUN_ID)
 $env:TEST_PREFIX = "E2E-$env:RUN_ID-"
 # HTTPS/API/Worker origin 从同一 RUN_ID 的 e2e:status 读取，不得手写端口：
@@ -34,7 +34,7 @@ $env:TEST_PREFIX = "E2E-$env:RUN_ID-"
 
 ```json
 {
-  "runId": "e2e-YYYYMMDD-HHMMSS-ab12",
+  "runId": "<RUN_ID>",
   "gitSha": "<sha>",
   "environment": { "web": "https://127.0.0.1:<port>", "api": "https://127.0.0.1:<port>", "worker": "http://127.0.0.1:<port>" },
   "scenarios": [{ "id": "A1", "status": "pass|fail|blocked|human-checkpoint", "evidence": ["http/A1-01.json"], "humanCheckpoint": null }],

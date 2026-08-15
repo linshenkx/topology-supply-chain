@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "runId": "E2E-YYYYMMDD-HHMMSS-xxxx",
+  "runId": "<RUN_ID>",
   "repositorySha": "<frozen-commit-sha>",
   "fixtureSha": "<fixture-pack-content-sha>",
   "fixturePack": "scope-a-tier1",

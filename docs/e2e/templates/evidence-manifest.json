@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "runId": "E2E-YYYYMMDD-HHMMSS-xxxx",
+  "runId": "<RUN_ID>",
   "repositorySha": "<sha>",
   "tier": "tier0|tier1",
   "fixtureManifestSha": "<sha-or-null>",

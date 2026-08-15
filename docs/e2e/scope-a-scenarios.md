@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | S12-A | 采购单 → 整批收货 → 待检批次 | 唯一权威分配；整批守恒；purchase_receipts/order_items/inventory_batches/inventory_movements + audit + PurchaseOrderItemReceived 可取证；部分/重复/越权/冻结负路径符合预期 |
 | S12-B | 待检批次 → 整批质检 → 放行/隔离 | 整批 pass/fail；pending 转 available 或 quarantine；quality_inspections + audit + InspectionCompleted/DispositionRequired 可取证；部分/抽样/混合/来源歧义负路径符合预期。fixture 中由 admin 以 inspectorType=company_qc 执行，独立 company_qc/supplier_qc 账号缺授权时 human-checkpoint/BLOCKED |
-| S12-C | 生产预留 → 领料/消耗 → 释放（complete 为独立检查点） | inventory_reservations/production_material_lines/inventory_batches 守恒；release 零预留 409 零副作用；audit + ProductionOrderCreated、ProductionOrderStarted、ProductionMaterialsReported、ProductionReservationReleased、ProductionOrderCompleted、ProductionVarianceRequested 可取证；complete 用另一 execution order 或未先 release 的路径，不冒充连续浏览器 E2E |
+| S12-C | 生产预留 → 领料/消耗 → 释放 / 完工（C1 与 C2 独立执行） | inventory_reservations/production_material_lines/inventory_batches 守恒；release 零预留 409 零副作用；audit + ProductionOrderCreated、ProductionOrderStarted、ProductionMaterialsReported、ProductionReservationReleased、ProductionOrderCompleted、ProductionVarianceRequested 可取证；C1=reserve→materials→release、C2=reserve→materials→complete 使用两个独立 RUN_ID（默认 fixture 只有一个 executionOrderId），不冒充同一连续浏览器链 |
 
 ### C1 的完整 18 条路径
 

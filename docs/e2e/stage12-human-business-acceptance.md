@@ -3,7 +3,7 @@
 ## 1. 文档定位与基线
 
 - 本手册是 topology-supply-chain 收口阶段 D1 的真人浏览器/UAT 结果，把旧 docs/e2e 收口为可直接执行的业务验收手册。
-- 功能代码锚点：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（Stage 12 三条业务闭环的最终代码提交）。本手册是 254e3a0 的 docs-only 后代（D1 提交 7784a82ea7034d9eedabed75f66549ca89bd3158）。
+- 功能代码锚点：254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（Stage 12 三条业务闭环的最终代码提交）。本手册是功能锚点 254e3a0 的 docs-only 后代链；实际执行 SHA 动态记录（git rev-parse HEAD），且必须等于 e2e:status.repositorySha。
 - 实际 UAT 执行不写死上述任一 SHA：环境管理员/执行者必须记录 git rev-parse HEAD，且该值必须等于 e2e:status 输出的 repositorySha；两者不一致即 BLOCKED。
 - Stage 12 代码父链（三段闭合）：254e3a0 ← 59e1fb1 ← 736f104 ← cdfe87c。三段提交的主题、范围与自动化验收证据见 [Scope A 业务闭环最小设计](../scope-a-business-closure-design.md)。
 - 来源主任务 threadId：019ff47b-64cb-7233-9a73-c6728ef839bb。本手册是 D1 唯一结果所有者的 docs-only 交付，不授权修改生产/测试代码、package/lock、migration/schema、Docker/部署配置、delivery 目录或历史 Stage 报告。
@@ -41,7 +41,7 @@
 生命周期只能在本机受控环境执行，顺序固定为 prepare → start → status → evidence → stop → cleanup。
 
 ```powershell
-$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-<short-random>"
+$env:RUN_ID = "e2e-$(Get-Date -Format 'yyyyMMdd-HHmmss')-$((New-Guid).ToString('N').Substring(0,8))"
 pnpm e2e:prepare -- --run $env:RUN_ID --fence-profile t2-operations-scope-a-closures
 pnpm e2e:start -- --run $env:RUN_ID
 pnpm e2e:status -- --run $env:RUN_ID
@@ -62,7 +62,7 @@ if ($head -ne $status.repositorySha) { throw "repositorySha mismatch: $head vs $
 仅 WSL / Git Bash 环境的备用命令（与上表不混用）：
 
 ```bash
-export RUN_ID="e2e-YYYYMMDD-HHMMSS-<short-random>"
+export RUN_ID="e2e-$(date +%Y%m%d-%H%M%S)-$(printf '%04x' $RANDOM)-$(printf '%04x' $RANDOM)"
 pnpm e2e:prepare -- --run "$RUN_ID" --fence-profile t2-operations-scope-a-closures
 pnpm e2e:start -- --run "$RUN_ID"
 pnpm e2e:status -- --run "$RUN_ID"
@@ -97,24 +97,60 @@ pnpm e2e:cleanup -- --run "$RUN_ID"
 
 ### 5.1 可执行登录与 OTP 读取（环境管理员）
 
-随机 password、otpToken 与数据库 URL 只存在于 %TEMP%\topology-e2e\<RUN_ID>\state.json。环境管理员仅在本地临时 PowerShell 会话读取，禁止 Start-Transcript、写日志/evidence、命令行硬编码或复制到文档；使用后立即 Remove-Variable。
+随机 password、otpToken 与数据库 URL 只存在于 %TEMP%\topology-e2e\<RUN_ID>\state.json。环境管理员仅在本地临时 PowerShell 会话读取，禁止 Start-Transcript、写日志/evidence、命令行硬编码或复制到文档；任何秘密只能短暂出现在内存/控制台。
+
+**第 1 步：读取本地 state 的账号与随机密码（不要重新生成 RUN_ID）**
 
 ```powershell
-$env:RUN_ID = "e2e-YYYYMMDD-HHMMSS-xxxx"
+# 复用第 4 节 prepare 前已设置并用于本次启动的 $env:RUN_ID；不要在 OTP 阶段重新生成。
 $statePath = Join-Path $env:TEMP ("topology-e2e\" + $env:RUN_ID + "\state.json")
 $state = Get-Content -LiteralPath $statePath -Raw | ConvertFrom-Json
+$account = "admin.$env:RUN_ID@e2e.invalid"   # 按需替换为 <role>.<RUN_ID>@e2e.invalid
 $password = $state.password
 $otpToken = $state.secrets.otpToken
 $stubPort = $state.resources.ports.stub
-# 浏览器登录账号：<role>.<RUN_ID>@e2e.invalid，密码为 $password（例如 admin.$env:RUN_ID@e2e.invalid）
-# OTP challenge 出现后，读取并消费同一 loopback stub 的验证码：
-$otpResp = Invoke-RestMethod -Method Get -Uri ("http://127.0.0.1:" + $stubPort + "/otp?runId=" + $env:RUN_ID) -Headers @{ "x-e2e-otp-token" = $otpToken }
-$code = $otpResp.code
-# 在浏览器输入 $code 完成核验；使用后立即清理秘密变量：
-Remove-Variable password, otpToken, stubPort, otpResp, code -ErrorAction SilentlyContinue
+# 秘密仅保留在本临时 PowerShell 会话内存；禁止 Transcript/日志/evidence/命令行硬编码。
 ```
 
-- OTP stub 的 GET /otp 要求 header x-e2e-otp-token 与查询 runId 同时匹配；每次读取会消费当前验证码（随后再次读取返回 404）。
+**第 2 步：真人先在浏览器提交登录并看到 challenge**
+
+浏览器打开 `e2e:status.origins.https`，用 `$account` 与 `$password`（仅显示在控制台，不复制）提交登录；看到 OTP challenge 页面后停下并保持页面打开。未看到 challenge 前不得读取 `/otp`。
+
+**第 3 步：challenge 出现后，有界轮询 loopback `/otp`（最多 80 次 × 250ms）**
+
+```powershell
+$code = $null
+$attempts = 0
+while ($attempts -lt 80) {
+  $attempts++
+  try {
+    $resp = Invoke-WebRequest -Method Get -Uri ("http://127.0.0.1:" + $stubPort + "/otp?runId=" + $env:RUN_ID) -Headers @{ "x-e2e-otp-token" = $otpToken } -TimeoutSec 2
+    $json = $resp.Content | ConvertFrom-Json
+    $code = $json.code
+    break
+  } catch {
+    $status = [int]$_.Exception.Response.StatusCode
+    if ($status -eq 404) {
+      Start-Sleep -Milliseconds 250
+      continue
+    }
+    throw "OTP stub unexpected status: $status"
+  }
+}
+if (-not $code) { throw "OTP stub timeout after 80x250ms" }
+```
+
+`GET /otp` 要求 `x-e2e-otp-token` 与查询 `runId` 同时匹配；404 表示尚无可用 code（继续有界轮询），403/其他非 404 错误必须立即失败，不继续轮询；80 次仍无 code 即超时并 `BLOCKED`。
+
+**第 4 步：显示临时 code 供真人输入，浏览器 verify 成功后再清理**
+
+```powershell
+Write-Host "Temporary OTP code (enter in browser): $code"
+# 真人立即在浏览器输入并完成 verify；确认登录成功后再执行清理：
+Remove-Variable password, otpToken, stubPort, code, account, state, resp, json -ErrorAction SilentlyContinue
+```
+
+- 每次 `/otp` 读取会消费当前验证码（随后再次读取返回 404），code 只用一次且短期有效，不得重复轮询到第二个 code 后继续使用旧值。
 - 若没有环境管理员提供上述本地读取通道，真人 OTP 环节只能是 human-checkpoint/BLOCKED，不得从日志、数据库或 preview code 取码。
 
 ## 6. 证据目录与取证
@@ -263,18 +299,19 @@ e2e-runtime/evidence/<RUN_ID>/
 - 无待检数量 → 409；无 active quality rule → 409；不合格缺 reason → 400；越权 inspectorType → 403。
 - 幂等：同 key 同 body 重放 → replayed:true；换 key 再判同批次 → 409。
 
-### 9.3 闭环 C：生产单 + 真实预留 → 领料/消耗 → 释放剩余预留（complete 为独立检查点）
+### 9.3 闭环 C：生产单 + 真实预留 → 领料/消耗 → 释放 / 完工（C1 与 C2 独立执行）
 
 #### 前置 fixture
 
 - confirmed 采购单 finished 明细 + 唯一权威计划分配；approved active BOM 且 PO 下单日在 BOM 有效期；execution_order（planned）与 production_material_lines。
 - 组件库存批次（可用数量充足），并已通过 POST /api/v1/inventory 建立 entity_type=production_order 的 active reservation。
+- 默认 fixture 只有一个 executionOrderId。因此 C1（reserve→materials→release）与 C2（reserve→materials→complete，不先 release）必须使用两个独立 RUN_ID，各自 prepare/start/status/evidence/stop/cleanup，且 repositorySha、fenceProfile、HTTPS origin 读取规则相同。只有环境管理员额外提供第二个 execution order 时才可在同一 RUN_ID 内继续 C2；否则不得要求当前默认 fixture 在同一 RUN_ID 有第二单。
 
 #### 操作者
 
 - admin / supply_chain / 绑定生产工厂的 factory。
 
-#### 连续浏览器证据：reserve → materials → release（同一 execution order）
+#### C1：reserve → materials → release（独立 RUN_ID，连续浏览器证据）
 
 1. 「库存管理」执行预留（或按 API 执行 POST /api/v1/inventory）。
 2. 「执行单」选择生产单 → “开工”（start）。
@@ -286,16 +323,16 @@ e2e-runtime/evidence/<RUN_ID>/
 - “生产已开始”“物料实绩已保存”“剩余预留已释放”。
 - 刷新后生产单状态：planned → in_production（release 不改变状态）；库存批次 locked 回落、available 回升；movement production_release。
 
-#### 独立人工检查点：complete（不要在已 release 的同一单上继续）
+#### C2：reserve → materials → complete（独立 RUN_ID，不先 release）
 
-release 已把剩余 active reservation 置为 released，随后再对该单报正数领用会因无真实预留而 409。因此 complete 用另一个仍有合法物料状态的 execution order，或在未先 release 的路径完成：
+在另一个独立 RUN_ID 中重新 prepare/start 得到全新的默认 fixture（同一唯一 executionOrderId），在同一单上完成 reserve→materials→complete，且不要在 complete 前执行 release：
 
-1. 对第二个 execution order（或未 release 的目标单）建立预留 → 开工。
+1. 建立预留 → 开工（start）。
 2. 保存物料实绩（consumed+loss ≤ issued，且不超过 active 预留）。
 3. 点“完工”（complete），输入实际完工数量 actualFinishedQuantity。
 4. 刷新后状态：无偏差且 actual>0 → completed，生成 production_report 与成品待检批次（PROD-...，pending_inspection_quantity=actual）；有偏差 → variance_pending 并生成 production_variance 审批。
 
-正数完工（actualFinishedQuantity=2）已有 MySQL 自动化证据（apps/api/test/mysql-scope-a-closures.integration.test.mjs，app.inject），但这不是连续浏览器 E2E，不能冒充真人连续浏览器证据。
+正数完工（actualFinishedQuantity=2）已有 MySQL 自动化证据（apps/api/test/mysql-scope-a-closures.integration.test.mjs，app.inject），但这不是连续浏览器 E2E，不能冒充真人连续浏览器证据；也不得把 C1 与 C2 冒充同一连续浏览器链（C2 是独立 RUN_ID 的独立人工检查点）。
 
 #### 预期 API/HTTP
 
