@@ -140,3 +140,63 @@ export const qualityInspectionsResponseSchema = {
     preview: { const: true },
   },
 } as const;
+
+export const qualityPendingBatchesSchemaId = "QualityPendingBatches";
+
+export type QualityPendingBatchSource = "receipt" | "production";
+
+export interface QualityPendingBatch {
+  batchId: number;
+  batchNo: string;
+  warehouseId: number;
+  warehouseName: string;
+  sku: string;
+  pendingInspectionQuantity: number;
+  source: QualityPendingBatchSource;
+  stage: "incoming" | "finished_goods";
+}
+
+export interface QualityPendingBatchesResponse {
+  pendingBatches: QualityPendingBatch[];
+  preview?: true;
+}
+
+const pendingBatchSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: [
+    "batchId",
+    "batchNo",
+    "warehouseId",
+    "warehouseName",
+    "sku",
+    "pendingInspectionQuantity",
+    "source",
+    "stage",
+  ],
+  properties: {
+    batchId: positiveInteger,
+    batchNo: { type: "string", minLength: 1 },
+    warehouseId: positiveInteger,
+    warehouseName: { type: "string", minLength: 1 },
+    sku: { type: "string", minLength: 1 },
+    pendingInspectionQuantity: positiveInteger,
+    source: { type: "string", enum: ["receipt", "production"] },
+    stage: { type: "string", enum: ["incoming", "finished_goods"] },
+  },
+} as const;
+
+export const qualityPendingBatchesResponseSchema = {
+  $id: qualityPendingBatchesSchemaId,
+  type: "object",
+  additionalProperties: false,
+  required: ["pendingBatches"],
+  properties: {
+    pendingBatches: {
+      type: "array",
+      maxItems: 200,
+      items: pendingBatchSchema,
+    },
+    preview: { const: true },
+  },
+} as const;

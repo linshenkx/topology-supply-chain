@@ -51,9 +51,9 @@ export async function seedScopeAFixture(connection, { runId, password }) {
   const bomComponentId = await insert(connection,
     "INSERT INTO bom_components (bom_id,component_sku,item_type,is_core,quantity_per_finished) VALUES (?,?,'component',true,1)", [bomId, componentSku]);
   const warehouseId = await insert(connection,
-    "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'finished_goods', ?, 'test-only', 'active')", [`${tag}-WH`, `${tag} Warehouse`, factoryId]);
+    "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'factory', ?, 'test-only', 'active')", [`${tag}-WH`, `${tag} Warehouse`, factoryId]);
   const transferWarehouseId = await insert(connection,
-    "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'finished_goods', ?, 'test-only transfer target', 'active')", [`${tag}-WH-TRANSFER`, `${tag} Transfer Warehouse`, factoryId]);
+    "INSERT INTO warehouses (code,name,type,factory_id,address,status) VALUES (?,?, 'factory', ?, 'test-only transfer target', 'active')", [`${tag}-WH-TRANSFER`, `${tag} Transfer Warehouse`, factoryId]);
   const batchId = await insert(connection,
     "INSERT INTO inventory_batches (batch_no,warehouse_id,sku,inbound_date,available_quantity,locked_quantity,defective_quantity,pending_inspection_quantity,ownership,expiry_status) VALUES (?,?,?,'2026-01-01',100,0,0,0,'company','normal')", [`${tag}-BATCH`, warehouseId, sku]);
   const componentBatchId = await insert(connection,
@@ -76,15 +76,19 @@ export async function seedScopeAFixture(connection, { runId, password }) {
   const planItemId = await insert(connection,
     "INSERT INTO purchase_plan_items (purchase_plan_id,expected_arrival_date,factory_id,warehouse_id,sku,product_name,bom_id,planned_quantity) VALUES (?,'2026-02-01',?,?,?,?,?,10)", [planId, factoryId, warehouseId, sku, `${tag} SKU`, bomId]);
   const purchaseOrderId = await insert(connection,
-    "INSERT INTO purchase_orders (order_no,status,order_date,total_tax_included_minor) VALUES (?,'draft','2026-01-01',1000)", [`${tag}-PO`]);
+    "INSERT INTO purchase_orders (order_no,status,order_date,total_tax_included_minor) VALUES (?,'confirmed','2026-01-01',1000)", [`${tag}-PO`]);
   const orderItemId = await insert(connection,
     "INSERT INTO order_items (purchase_order_id,sku,product_name,item_type,supplier_id,quantity,unit_price_tax_included_minor,amount_tax_included_minor,due_date) VALUES (?,?,?,'finished',?,10,100,1000,'2026-02-01')", [purchaseOrderId, sku, `${tag} Finished SKU`, supplierId]);
+  await connection.execute(
+    "INSERT INTO purchase_plan_order_links (purchase_plan_item_id,order_item_id,allocated_quantity,match_method,confirmed_by) VALUES (?,?,10,'manual',?)", [planItemId, orderItemId, accounts.supply_chain]);
   const executionOrderId = await insert(connection,
     "INSERT INTO execution_orders (execution_no,order_item_id,factory_id,bom_id,planned_quantity,status,due_date,planned_start_date,planned_finish_date) VALUES (?,?,?,?,10,'planned','2026-02-01','2026-01-10','2026-01-20')", [`${tag}-EXE`, orderItemId, factoryId, bomId]);
   await connection.execute(
     "INSERT INTO production_material_lines (execution_order_id,bom_component_id,theoretical_quantity,reserved_quantity,issued_quantity,consumed_quantity,loss_quantity,deviation_status) VALUES (?,?,10,10,0,0,0,'within_tolerance')", [executionOrderId, bomComponentId]);
   const qualityRuleId = await insert(connection,
     "INSERT INTO quality_rules (scope,sku,stage,minimum_pass_rate_bps,active,created_by) VALUES ('sku',?,'incoming',9500,true,?)", [sku, accounts.supply_chain]);
+  await insert(connection,
+    "INSERT INTO quality_rules (scope,sku,stage,minimum_pass_rate_bps,active,created_by) VALUES ('sku',?,'finished_goods',9500,true,?)", [sku, accounts.supply_chain]);
   const qualityInspectionId = await insert(connection,
     "INSERT INTO quality_inspections (execution_order_id,stage,inspection_method,batch_quantity,inspected_quantity,passed_quantity,failed_quantity,pass_rate_bps,quality_rule_id,system_result,final_result,inspector_type,submitted_by) VALUES (?,'incoming','full',10,10,10,0,10000,?,'passed','passed','company_qc',?)", [executionOrderId, qualityRuleId, accounts.supply_chain]);
   const stocktakeId = await insert(connection,

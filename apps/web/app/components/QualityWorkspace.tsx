@@ -3,32 +3,50 @@
 import { useCallback, useEffect, useState } from "react";
 import { mutateJson } from "../lib/mutation-client";
 
-type Warehouse = { id: number; name: string };
-type Batch = { id: number; batchNo: string; warehouseId: number; sku: string; pendingInspectionQuantity: number };
+type PendingBatch = {
+  batchId: number; batchNo: string; warehouseId: number; warehouseName: string;
+  sku: string; pendingInspectionQuantity: number;
+  source: "receipt" | "production"; stage: "incoming" | "finished_goods";
+};
 type Inspection = { id: number; batchId?: number | null; executionOrderId?: number | null; stage: string; finalResult: string | null; passedQuantity: number; failedQuantity: number; createdAt: string };
 
 export default function QualityWorkspace({ toast }: { toast: (message: string) => void }) {
-  const [batches, setBatches] = useState<Batch[]>([]);
-  const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
+  const [pendingBatches, setPendingBatches] = useState<PendingBatch[]>([]);
   const [inspections, setInspections] = useState<Inspection[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
-  const [rejecting, setRejecting] = useState<Batch | null>(null);
+  const [canInspect, setCanInspect] = useState(false);
+  const [pendingForbidden, setPendingForbidden] = useState(false);
+  const [rejecting, setRejecting] = useState<PendingBatch | null>(null);
   const [defectReason, setDefectReason] = useState("");
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [inv, qi] = await Promise.all([
-        fetch("/api/v1/inventory", { cache: "no-store" }),
+      const [pendingResponse, inspectionResponse, sessionResponse] = await Promise.all([
+        fetch("/api/v1/quality-inspections/pending-batches", { cache: "no-store" }),
         fetch("/api/v1/quality-inspections", { cache: "no-store" }),
+        fetch("/api/v1/session", { cache: "no-store" }),
       ]);
-      const [invBody, qiBody] = await Promise.all([inv.json(), qi.json()]);
-      if (!inv.ok) throw new Error(invBody.error ?? "库存数据加载失败");
-      if (!qi.ok) throw new Error(qiBody.error ?? "质检数据加载失败");
-      setBatches((invBody.batches ?? []).filter((row: Batch) => row.pendingInspectionQuantity > 0));
-      setWarehouses(invBody.warehouses ?? []);
-      setInspections(qiBody.inspections ?? []);
+      const [pendingBody, inspectionBody, sessionBody] = await Promise.all([
+        pendingResponse.json(), inspectionResponse.json(), sessionResponse.json(),
+      ]);
+      if (!inspectionResponse.ok) throw new Error(inspectionBody.error ?? "质检数据加载失败");
+      setInspections(inspectionBody.inspections ?? []);
+      if (pendingResponse.ok) {
+        setPendingBatches(pendingBody.pendingBatches ?? []);
+        setPendingForbidden(false);
+      } else if (pendingResponse.status === 403) {
+        setPendingBatches([]);
+        setPendingForbidden(true);
+      } else {
+        throw new Error(pendingBody.error ?? "待检批次加载失败");
+      }
+      if (sessionResponse.ok) {
+        setCanInspect(Boolean(sessionBody.user?.roles?.some((role: string) => ["company_qc", "admin"].includes(role))));
+      } else {
+        setCanInspect(false);
+      }
     } catch (error) {
       toast(error instanceof Error ? error.message : "质检数据加载失败");
     } finally {
@@ -38,35 +56,45 @@ export default function QualityWorkspace({ toast }: { toast: (message: string) =
 
   useEffect(() => {
     const controller = new AbortController();
+    const signal = controller.signal;
     void Promise.all([
-      fetch("/api/v1/inventory", { cache: "no-store", signal: controller.signal }),
-      fetch("/api/v1/quality-inspections", { cache: "no-store", signal: controller.signal }),
-    ]).then(async ([inv, qi]) => {
-      const [invBody, qiBody] = await Promise.all([inv.json(), qi.json()]);
-      if (!inv.ok) throw new Error(invBody.error ?? "库存数据加载失败");
-      if (!qi.ok) throw new Error(qiBody.error ?? "质检数据加载失败");
-      return { invBody, qiBody };
-    }).then(({ invBody, qiBody }) => {
-      if (controller.signal.aborted) return;
-      setBatches((invBody.batches ?? []).filter((row: Batch) => row.pendingInspectionQuantity > 0));
-      setWarehouses(invBody.warehouses ?? []);
-      setInspections(qiBody.inspections ?? []);
-    }).catch(error => {
-      if (!controller.signal.aborted) toast(error instanceof Error ? error.message : "质检数据加载失败");
-    }).finally(() => {
-      if (!controller.signal.aborted) setLoading(false);
-    });
+      fetch("/api/v1/quality-inspections/pending-batches", { cache: "no-store", signal }),
+      fetch("/api/v1/quality-inspections", { cache: "no-store", signal }),
+      fetch("/api/v1/session", { cache: "no-store", signal }),
+    ]).then(async ([pendingResponse, inspectionResponse, sessionResponse]) => {
+      const [pendingBody, inspectionBody, sessionBody] = await Promise.all([
+        pendingResponse.json(), inspectionResponse.json(), sessionResponse.json(),
+      ]);
+      if (!inspectionResponse.ok) throw new Error(inspectionBody.error ?? "质检数据加载失败");
+      return { pendingResponse, pendingBody, inspectionBody, sessionBody, sessionOk: sessionResponse.ok };
+    }).then(({ pendingResponse, pendingBody, inspectionBody, sessionBody, sessionOk }) => {
+      if (signal.aborted) return;
+      setInspections(inspectionBody.inspections ?? []);
+      if (pendingResponse.ok) {
+        setPendingBatches(pendingBody.pendingBatches ?? []);
+        setPendingForbidden(false);
+      } else if (pendingResponse.status === 403) {
+        setPendingBatches([]);
+        setPendingForbidden(true);
+      } else {
+        throw new Error(pendingBody.error ?? "待检批次加载失败");
+      }
+      if (sessionOk) {
+        setCanInspect(Boolean(sessionBody.user?.roles?.some((role: string) => ["company_qc", "admin"].includes(role))));
+      } else {
+        setCanInspect(false);
+      }
+    }).catch(error => { if (!signal.aborted) toast(error instanceof Error ? error.message : "质检数据加载失败"); })
+      .finally(() => { if (!signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, [load, toast]);
 
-  const warehouseName = (id: number) => warehouses.find(row => row.id === id)?.name ?? ("仓库 #" + id);
-
-  async function decide(batch: Batch, result: "passed" | "failed", reason?: string) {
+  async function decide(batch: PendingBatch, result: "passed" | "failed", reason?: string) {
     setBusy(true);
     try {
       await mutateJson("/api/v1/quality-inspections", "POST", {
-        batchId: batch.id,
-        stage: "incoming",
+        batchId: batch.batchId,
+        stage: batch.stage,
         inspectionMethod: "full",
         batchQuantity: batch.pendingInspectionQuantity,
         inspectedQuantity: batch.pendingInspectionQuantity,
@@ -87,11 +115,13 @@ export default function QualityWorkspace({ toast }: { toast: (message: string) =
   }
 
   return <section className="quality-page real-quality">
-    <div className="module-banner quality-banner"><div><span className="eyebrow">来料整批质检</span><h2>待检批次整批合格放行或整批隔离</h2><p>整批质检只允许全部合格或全部不合格；成功后刷新页面结果保持一致。</p></div><button onClick={() => void load()}>刷新数据</button></div>
-    <div className="quality-kpis"><article><span>待检批次</span><strong>{batches.length}</strong><small>来自整批收货</small></article><article><span>最近质检</span><strong>{inspections.length}</strong><small>最近200条</small></article><article><span>合格</span><strong>{inspections.filter(row => row.finalResult === "passed").length}</strong><small>已转入可用</small></article><article className="alert-card"><span>隔离</span><strong>{inspections.filter(row => row.finalResult === "failed").length}</strong><small>已转入隔离库存</small></article></div>
+    <div className="module-banner quality-banner"><div><span className="eyebrow">来料与成品整批质检</span><h2>待检批次整批合格放行或整批隔离</h2><p>待检批次由质检读模型按来源与阶段裁剪；刷新后结果保持一致。</p></div><button onClick={() => void load()}>刷新数据</button></div>
+    <div className="quality-kpis"><article><span>待检批次</span><strong>{pendingBatches.length}</strong><small>{pendingForbidden ? "当前角色无权查看" : "来自收货或生产完工"}</small></article><article><span>最近质检</span><strong>{inspections.length}</strong><small>最近200条</small></article><article><span>合格</span><strong>{inspections.filter(row => row.finalResult === "passed").length}</strong><small>已转入可用</small></article><article className="alert-card"><span>隔离</span><strong>{inspections.filter(row => row.finalResult === "failed").length}</strong><small>已转入隔离库存</small></article></div>
     <article className="panel quality-list">
-      <div className="quality-toolbar"><div><h3>待检库存批次</h3><p>{loading ? "正在读取数据库…" : "只有存在待检数量的批次可以整批判定"}</p></div></div>
-      {!loading && !batches.length ? <div className="empty-state">暂无待检库存批次。请先在采购管理完成整批收货。</div> : <div className="quality-table"><div className="quality-row quality-head"><span>批次</span><span>SKU / 仓库</span><span>待检数量</span><span>操作</span></div>{batches.map(batch => <div className="quality-row" key={batch.id}><span><strong>{batch.batchNo}</strong><small>批次 #{batch.id}</small></span><span><strong>{batch.sku}</strong><small>{warehouseName(batch.warehouseId)}</small></span><span><b>{batch.pendingInspectionQuantity.toLocaleString()} 件</b><small>必须整批判定</small></span><span><button className="compact-action" disabled={busy} onClick={() => void decide(batch, "passed")}>整批合格</button><button className="danger-btn" disabled={busy} onClick={() => setRejecting(batch)}>整批不合格</button></span></div>)}</div>}
+      <div className="quality-toolbar"><div><h3>待检库存批次</h3><p>{loading ? "正在读取数据库…" : "只有存在待检数量且来源唯一的批次可以整批判定"}</p></div></div>
+      {!loading && pendingForbidden ? <div className="empty-state">当前角色无权处理质检待检批次。</div> : null}
+      {!loading && !pendingForbidden && !pendingBatches.length ? <div className="empty-state">暂无待检批次。请先完成整批收货或生产完工入库。</div> : null}
+      {!loading && !pendingForbidden && pendingBatches.length > 0 ? <div className="quality-table"><div className="quality-row quality-head"><span>批次</span><span>SKU / 仓库 / 来源</span><span>待检数量</span><span>操作</span></div>{pendingBatches.map(batch => <div className="quality-row" key={batch.batchId}><span><strong>{batch.batchNo}</strong><small>批次 #{batch.batchId}</small></span><span><strong>{batch.sku}</strong><small>{batch.warehouseName} · {batch.stage === "incoming" ? "来料" : "成品完工"}</small></span><span><b>{batch.pendingInspectionQuantity.toLocaleString()} 件</b><small>必须整批判定</small></span><span>{canInspect ? <><button className="compact-action" disabled={busy} onClick={() => void decide(batch, "passed")}>整批合格</button><button className="danger-btn" disabled={busy} onClick={() => setRejecting(batch)}>整批不合格</button></> : <mark className="quality-status pending">无权操作</mark>}</span></div>)}</div> : null}
     </article>
     <article className="panel quality-list">
       <div className="quality-toolbar"><div><h3>最近质检记录</h3><p>数据来自数据库，刷新后保持一致</p></div></div>
@@ -100,4 +130,3 @@ export default function QualityWorkspace({ toast }: { toast: (message: string) =
     {rejecting && <div className="modal-backdrop" role="dialog" aria-modal="true"><div className="modal-card"><div className="modal-head"><div><span className="eyebrow dark">整批不合格</span><h3>{rejecting.batchNo}</h3></div><button aria-label="关闭" onClick={() => setRejecting(null)}>×</button></div><div className="form-grid"><label className="full-field">不合格原因<textarea value={defectReason} onChange={event => setDefectReason(event.target.value)} placeholder="例如：外观缺陷"/></label></div><div className="modal-actions"><button className="secondary-action" onClick={() => setRejecting(null)}>取消</button><button disabled={busy} onClick={() => void decide(rejecting, "failed", defectReason)}>确认整批隔离</button></div></div></div>}
   </section>;
 }
-

@@ -190,8 +190,13 @@ export {
 export {
   qualityInspectionsResponseSchema,
   qualityInspectionsSchemaId,
+  qualityPendingBatchesResponseSchema,
+  qualityPendingBatchesSchemaId,
   type QualityInspection,
   type QualityInspectionsResponse,
+  type QualityPendingBatch,
+  type QualityPendingBatchSource,
+  type QualityPendingBatchesResponse,
 } from "./quality-inspections.js";
 export {
   returnsResponseSchema,

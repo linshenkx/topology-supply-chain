@@ -105,6 +105,11 @@ export default function PurchaseWorkspace({ toast, openImport }: {
   const isFactory = Boolean(session?.user.roles.includes("factory") && session.user.factoryId);
   const canFinalize = Boolean(session?.user.roles.some(role => ["admin", "supply_chain"].includes(role)));
   const canReceive = Boolean(session?.user.roles.some(role => ["admin", "supply_chain", "factory"].includes(role)));
+  function receiptWarehouseId(item: PurchaseOrder["items"][number]): number | undefined {
+    if (!Array.isArray(item.planLinks) || item.planLinks.length !== 1) return undefined;
+    const warehouseId = item.planLinks[0]?.planItem?.warehouseId;
+    return typeof warehouseId === "number" && Number.isSafeInteger(warehouseId) && warehouseId > 0 ? warehouseId : undefined;
+  }
 
   async function finalizeOrdering(plan: Plan) {
     if (submitting) return;
@@ -148,8 +153,8 @@ export default function PurchaseWorkspace({ toast, openImport }: {
     if (!receiving || submitting) return;
     setSubmitting(true);
     try {
-      const warehouseId = receiving.planLinks?.[0]?.planItem?.warehouseId;
-      if (!warehouseId) throw new Error("该采购明细缺少收货仓库，无法整批收货");
+      const warehouseId = receiptWarehouseId(receiving);
+      if (warehouseId === undefined) throw new Error("该采购明细没有唯一有效的收货仓库，无法整批收货");
       await mutateJson("/api/v1/purchase-receipts", "POST", {
         purchaseOrderId: receiving.purchaseOrderId,
         orderItemId: receiving.id,
@@ -198,9 +203,11 @@ export default function PurchaseWorkspace({ toast, openImport }: {
             <span><strong>{order.orderNo}</strong><small>下单日期 {order.orderDate ?? "待补充"}</small></span><span><small>含税金额</small><b>¥ {(order.totalTaxIncludedMinor / 100).toLocaleString(undefined, { minimumFractionDigits: 2 })}</b></span><span><small>SKU / 数量</small><b>{order.items.length} / {order.items.reduce((sum, item) => sum + item.quantity, 0).toLocaleString()}</b></span><span><mark>{ORDER_STATUS[order.status] ?? order.status}</mark><small>已收货 {order.items.reduce((sum, item) => sum + (item.receivedQuantity || 0), 0).toLocaleString()} 件 · {order.confirmationDueAt && order.status === "factory_confirmation" ? `确认截止 ${new Date(order.confirmationDueAt).toLocaleString("zh-CN")}` : order.items[0]?.dueDate ? `最早交货 ${order.items.map(item => item.dueDate).filter(Boolean).sort()[0]}` : "待维护交货日期"}</small></span><i>→</i>
           </button>
           {expandedOrderId === order.id && <div className="po-card-detail">{order.items.map(item => {
-            const warehouseId = item.planLinks?.[0]?.planItem?.warehouseId;
+            const warehouseId = receiptWarehouseId(item);
             const fullyReceived = (item.receivedQuantity || 0) >= item.quantity;
-            return <div className="po-item-row" key={item.id}><span><strong>{item.sku}</strong><small>{item.productName}</small></span><span>{(item.receivedQuantity || 0).toLocaleString()} / {item.quantity.toLocaleString()} 件已收货</span><span>{warehouseId ? `收货仓库 #${warehouseId}` : "未关联收货仓库"}</span>{fullyReceived ? <mark className="plan-status">已收货</mark> : canReceive ? <button className="compact-action" disabled={submitting} onClick={() => setReceiving({ ...item, purchaseOrderId: order.id })}>整批收货</button> : null}</div>;
+            const canReceiveItem = canReceive && order.status === "confirmed" && warehouseId !== undefined;
+            const receiptState = fullyReceived ? "已收货" : order.status !== "confirmed" ? "采购单未确认" : warehouseId === undefined ? (Array.isArray(item.planLinks) && item.planLinks.length > 1 ? "多仓分配待配置" : "未关联收货仓库") : null;
+            return <div className="po-item-row" key={item.id}><span><strong>{item.sku}</strong><small>{item.productName}</small></span><span>{(item.receivedQuantity || 0).toLocaleString()} / {item.quantity.toLocaleString()} 件已收货</span><span>{warehouseId !== undefined ? `收货仓库 #${warehouseId}` : (Array.isArray(item.planLinks) && item.planLinks.length > 1 ? "多仓分配待配置" : "未关联收货仓库")}</span>{fullyReceived ? <mark className="plan-status">已收货</mark> : canReceiveItem ? <button className="compact-action" disabled={submitting} onClick={() => setReceiving({ ...item, purchaseOrderId: order.id })}>整批收货</button> : receiptState ? <mark className="plan-status">{receiptState}</mark> : null}</div>;
           })}</div>}
         </div>)}
       </div>}

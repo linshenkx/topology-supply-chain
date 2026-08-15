@@ -7756,6 +7756,13 @@
           "notNull": true,
           "autoincrement": false,
           "default": "CURRENT_TIMESTAMP(3)"
+        },
+        "batch_id": {
+          "name": "batch_id",
+          "type": "int",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
         }
       },
       "indexes": {},
@@ -7792,6 +7799,19 @@
           "tableTo": "users",
           "columnsFrom": [
             "reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "production_reports_batch_id_inventory_batches_id_fk": {
+          "name": "production_reports_batch_id_inventory_batches_id_fk",
+          "tableFrom": "production_reports",
+          "tableTo": "inventory_batches",
+          "columnsFrom": [
+            "batch_id"
           ],
           "columnsTo": [
             "id"

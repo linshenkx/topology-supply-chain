@@ -75,7 +75,7 @@ test("all 14 delegated command bodies cross the Fastify contract boundary", asyn
     ["POST", "/api/v1/production-orders", { orderItemId: 1, factoryId: 1, bomId: 1, plannedQuantity: 1, plannedStartDate: "2099-01-01", plannedFinishDate: "2099-01-02" }],
     ["PATCH", "/api/v1/production-orders", { id: 1, action: "start" }],
     ["POST", "/api/v1/purchase-receipts", { purchaseOrderId: 1, orderItemId: 1, warehouseId: 1 }],
-    ["POST", "/api/v1/quality-inspections", { executionOrderId: 1, stage: "finished", inspectionMethod: "sampling", batchQuantity: 1, inspectedQuantity: 1, passedQuantity: 1, failedQuantity: 0, inspectorType: "company_qc" }],
+    ["POST", "/api/v1/quality-inspections", { executionOrderId: 1, stage: "finished_goods", inspectionMethod: "sampling", batchQuantity: 1, inspectedQuantity: 1, passedQuantity: 1, failedQuantity: 0, inspectorType: "company_qc" }],
     ["POST", "/api/v1/stocktakes", { warehouseId: 1, scope: "full_warehouse", dueDate: "2099-01-01" }],
     ["PATCH", "/api/v1/stocktakes", { id: 1, action: "finish_round" }],
     ["POST", "/api/v1/shipments", { action: "create", executionOrderId: 1, batchNo: "B-1", quantity: 1, plannedShipAt: "2099-01-01", destination: "test" }],

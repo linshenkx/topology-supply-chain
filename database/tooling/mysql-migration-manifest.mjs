@@ -7,7 +7,7 @@ export const FROZEN_MYSQL_MIGRATIONS = Object.freeze([
   Object.freeze({ createdAt: 1786464478157, hash: "8d2878f9b5e2068343db0d12437b2d92a479cbcb23e0dc668d1395ba703a2a64", name: "0002_scope_a_write_platform.sql", snapshotHash: "7e17fac8a50cc7c8aeb3c361e26f61fd013d08514c27c01c06370ddd8fa1d81b" }),
   Object.freeze({ createdAt: 1786512000000, hash: "f7fb8dcf1ff6185cebd866a39836b0c5ef7b56a7e96ccc8fe438aa572b96df41", name: "0003_scope_a_write_hardening.sql", snapshotHash: "7ad77fc9b64e679828e21e07f5fb3a5b2e41ac9794aa19521d5b03722ce06555" }),
   Object.freeze({ createdAt: 1786521600000, hash: "974aefb885e265e082f4f1a6006b2cd77472cf63183ca1746d0fc83885bf9ecd", name: "0004_scope_a_domain_writes.sql", snapshotHash: "b8565a332aa8a6a7735c5ed9c1c39a29618838f4f770ba5ffc163557031da8a7" }),
-  Object.freeze({ createdAt: 1786737452225, hash: "35406f7f6e27f2cefff0184370d4668655b1dedf8d4479360ce055666e0fbb17", name: "0005_tricky_kabuki.sql", snapshotHash: "2d932a60b5a4aa18b0a279766d2fbd761931ba0ceb81773da3df5c21f69fbe89" }),
+  Object.freeze({ createdAt: 1786737452225, hash: "6b47a33b648a5f6a42335658032514aeff8ddcab74eb9fdc5f3166ed09a66eca", name: "0005_tricky_kabuki.sql", snapshotHash: "4ac0dda4d9e22724e20cbcef5d71d28f4ccfad6f30aa2d5e6c989350e9107373" }),
 ]);
 
 export const MYSQL_MIGRATION_DIRECTORY = new URL("../migrations/mysql/", import.meta.url);

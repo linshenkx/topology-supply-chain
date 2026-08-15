@@ -389,6 +389,7 @@ export const productionReports = sqliteTable("production_reports", {
   companyInventoryQuantity: integer("company_inventory_quantity").notNull().default(0),
   factoryOwnedQuantity: integer("factory_owned_quantity").notNull().default(0),
   reportedBy: integer("reported_by").notNull().references(() => users.id),
+  batchId: integer("batch_id").references(() => inventoryBatches.id),
   reviewedBy: integer("reviewed_by").references(() => users.id),
   reviewedAt: text("reviewed_at"),
   ...timestamps,

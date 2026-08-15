@@ -156,7 +156,7 @@ export const qualityInspectionSubmitSchema = object(
   {
     executionOrderId: id,
     batchId: id,
-    stage: { enum: ["incoming", "process", "finished", "finished_goods"] },
+    stage: { enum: ["incoming", "finished_goods"] },
     inspectionMethod: { enum: ["sampling", "full"] },
     batchQuantity: positiveQuantity,
     inspectedQuantity: positiveQuantity,

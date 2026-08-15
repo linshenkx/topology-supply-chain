@@ -9,6 +9,7 @@ import {
   audit,
   domainEvent,
   integer,
+  internal,
   jsonObject,
   lockVersion,
   optionalString,
@@ -30,7 +31,8 @@ export async function receivePurchase(
 
   const items = await command.transaction.query<Row>(
     `SELECT oi.id, oi.purchase_order_id AS purchaseOrderId, oi.sku, oi.item_type AS itemType,
-            oi.quantity, oi.received_quantity AS receivedQuantity, po.order_no AS orderNo
+            oi.quantity, oi.received_quantity AS receivedQuantity, po.order_no AS orderNo,
+            po.status AS orderStatus
      FROM order_items oi
      JOIN purchase_orders po ON po.id = oi.purchase_order_id
      WHERE oi.id = ? AND oi.purchase_order_id = ? LIMIT 1 FOR UPDATE`,
@@ -38,6 +40,9 @@ export async function receivePurchase(
   );
   const item = items[0];
   if (item === undefined) throw new PlatformError(404, "NOT_FOUND", "Purchase order item not found");
+  if (String(item.orderStatus) !== "confirmed") {
+    throw new PlatformError(409, "CONFLICT", "Purchase order is not in a receivable state");
+  }
   if (Number(item.receivedQuantity) < 0 || Number(item.receivedQuantity) > Number(item.quantity)) {
     throw new PlatformError(409, "CONFLICT", "Purchase order item receipt state is invalid");
   }
@@ -48,6 +53,35 @@ export async function receivePurchase(
     : integer(body.receivedQuantity, "receivedQuantity");
   if (receivedQuantity !== remaining) {
     throw new PlatformError(400, "BAD_REQUEST", "Only full-batch receipt is supported");
+  }
+
+  const allocationRows = await command.transaction.query<Row>(
+    `SELECT pi.factory_id AS factoryId, pi.warehouse_id AS warehouseId
+     FROM purchase_plan_order_links l
+     JOIN purchase_plan_items pi ON pi.id = l.purchase_plan_item_id
+     WHERE l.order_item_id = ?
+     ORDER BY pi.factory_id ASC, pi.warehouse_id ASC
+     FOR UPDATE`,
+    [orderItemId],
+  );
+  const allocationKeys = new Set(allocationRows.map((row) => `${Number(row.factoryId)}:${Number(row.warehouseId)}`));
+  if (allocationKeys.size === 0) {
+    throw new PlatformError(409, "CONFLICT", "Purchase order item has no authoritative purchase-plan allocation");
+  }
+  if (allocationKeys.size !== 1) {
+    throw new PlatformError(409, "CONFLICT", "Purchase order item has multiple factory/warehouse allocations");
+  }
+  const authoritativeRow = allocationRows[0];
+  if (authoritativeRow === undefined) {
+    throw new PlatformError(409, "CONFLICT", "Purchase order item has no authoritative purchase-plan allocation");
+  }
+  const authoritativeFactoryId = Number(authoritativeRow.factoryId);
+  const authoritativeWarehouseId = Number(authoritativeRow.warehouseId);
+  if (!internal(command.access) && (command.access.factoryId === null || command.access.factoryId !== authoritativeFactoryId)) {
+    throw new PlatformError(403, "FORBIDDEN", "Forbidden factory binding");
+  }
+  if (warehouseId !== authoritativeWarehouseId) {
+    throw new PlatformError(409, "CONFLICT", "Receiving warehouse is not the authoritative purchase-plan warehouse");
   }
 
   await lockWarehouseFreeze(command.transaction, warehouseId);

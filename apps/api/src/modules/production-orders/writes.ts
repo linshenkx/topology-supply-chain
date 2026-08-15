@@ -22,23 +22,74 @@ function deviationBps(actual: number, expected: number): number {
   return expected <= 0 ? (actual === expected ? 0 : 10_000) : Math.round(Math.abs(actual - expected) * 10_000 / expected);
 }
 
-async function consumeReservedInventory(
+async function readReservationPool(
   command: OperationsCommandContext,
   orderId: number,
-  componentSku: string,
-  quantity: number,
-): Promise<void> {
-  if (quantity <= 0) return;
-  const reservations = await command.transaction.query<Row>(
+  componentSku?: string,
+): Promise<readonly Row[]> {
+  const skuFilter = componentSku === undefined ? "" : " AND ib.sku = ?";
+  const params = componentSku === undefined ? [orderId] : [orderId, componentSku];
+  return command.transaction.query<Row>(
     `SELECT ir.id, ir.batch_id AS batchId, ir.reserved_quantity AS reservedQuantity,
             ib.warehouse_id AS warehouseId, ib.locked_quantity AS lockedQuantity, ib.sku
      FROM inventory_reservations ir
      JOIN inventory_batches ib ON ib.id = ir.batch_id
-     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active' AND ib.sku = ?
+     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active'${skuFilter}
+     ORDER BY ir.priority DESC, ir.id ASC`,
+    params,
+  );
+}
+
+async function lockFreezeForPool(
+  command: OperationsCommandContext,
+  pool: readonly Row[],
+): Promise<void> {
+  const byWarehouse = new Map<number, Set<string>>();
+  for (const row of pool) {
+    const warehouseId = Number(row.warehouseId);
+    if (!Number.isSafeInteger(warehouseId) || warehouseId <= 0) continue;
+    const sku = String(row.sku);
+    if (!byWarehouse.has(warehouseId)) byWarehouse.set(warehouseId, new Set());
+    byWarehouse.get(warehouseId)!.add(sku);
+  }
+  const warehouseIds = Array.from(byWarehouse.keys()).sort((a, b) => a - b);
+  for (const warehouseId of warehouseIds) {
+    const skus = Array.from(byWarehouse.get(warehouseId)!).sort();
+    for (const sku of skus) {
+      if (await freezeExists(command.transaction, warehouseId, sku)) {
+        throw new PlatformError(409, "CONFLICT", "Inventory is frozen by an active stocktake");
+      }
+    }
+  }
+}
+
+async function lockActiveReservations(
+  command: OperationsCommandContext,
+  orderId: number,
+  componentSku?: string,
+): Promise<readonly Row[]> {
+  const pool = await readReservationPool(command, orderId, componentSku);
+  await lockFreezeForPool(command, pool);
+  const skuFilter = componentSku === undefined ? "" : " AND ib.sku = ?";
+  const params = componentSku === undefined ? [orderId] : [orderId, componentSku];
+  return command.transaction.query<Row>(
+    `SELECT ir.id, ir.batch_id AS batchId, ir.reserved_quantity AS reservedQuantity,
+            ib.warehouse_id AS warehouseId, ib.locked_quantity AS lockedQuantity, ib.sku
+     FROM inventory_reservations ir
+     JOIN inventory_batches ib ON ib.id = ir.batch_id
+     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active'${skuFilter}
      ORDER BY ir.priority DESC, ir.id ASC
      FOR UPDATE`,
-    [orderId, componentSku],
+    params,
   );
+}
+
+async function consumeReservedInventory(
+  command: OperationsCommandContext,
+  reservations: readonly Row[],
+  quantity: number,
+): Promise<void> {
+  if (quantity <= 0) return;
   let remaining = quantity;
   for (const reservation of reservations) {
     if (remaining === 0) break;
@@ -74,16 +125,10 @@ async function releaseReservedMaterials(
   command: OperationsCommandContext,
   orderId: number,
 ): Promise<number> {
-  const reservations = await command.transaction.query<Row>(
-    `SELECT ir.id, ir.batch_id AS batchId, ir.reserved_quantity AS reservedQuantity,
-            ib.warehouse_id AS warehouseId, ib.locked_quantity AS lockedQuantity, ib.sku
-     FROM inventory_reservations ir
-     JOIN inventory_batches ib ON ib.id = ir.batch_id
-     WHERE ir.entity_type = 'production_order' AND ir.entity_id = ? AND ir.status = 'active'
-     ORDER BY ir.priority DESC, ir.id ASC
-     FOR UPDATE`,
-    [orderId],
-  );
+  const reservations = await lockActiveReservations(command, orderId);
+  if (reservations.length === 0) {
+    throw new PlatformError(409, "CONFLICT", "No active reservations to release");
+  }
   let released = 0;
   for (const reservation of reservations) {
     const remaining = Number(reservation.reservedQuantity);
@@ -246,7 +291,11 @@ async function updateMaterials(command: OperationsCommandContext, orderId: numbe
     if (deltaIssued < 0 || deltaConsumed < 0 || deltaLoss < 0) {
       throw new PlatformError(409, "CONFLICT", "Material quantities cannot be decreased");
     }
-    if (issued > Number(line.reservedQuantity)) throw new PlatformError(409, "CONFLICT", "Issued quantity exceeds the legacy production allocation");
+    const reservations = await lockActiveReservations(command, orderId, String(line.componentSku));
+    const activeReserved = reservations.reduce((sum, reservation) => sum + Number(reservation.reservedQuantity), 0);
+    if (issued > currentConsumed + currentLoss + activeReserved) {
+      throw new PlatformError(409, "CONFLICT", "Issued quantity exceeds real inventory reservations");
+    }
     const theoretical = Number(line.theoreticalQuantity);
     const exceeds = deviationBps(issued, theoretical) > Number(line.issueToleranceBps) ||
       deviationBps(consumed, theoretical) > Number(line.consumptionToleranceBps) ||
@@ -259,7 +308,7 @@ async function updateMaterials(command: OperationsCommandContext, orderId: numbe
       [issued, consumed, loss, exceeds ? "pending_approval" : "within_tolerance", id, orderId],
     );
     if (updated.affectedRows !== 1) throw new PlatformError(409, "VERSION_CONFLICT", "Material line changed concurrently");
-    await consumeReservedInventory(command, orderId, String(line.componentSku), deltaConsumed + deltaLoss);
+    await consumeReservedInventory(command, reservations, deltaConsumed + deltaLoss);
   }
   return deviation;
 }
@@ -284,6 +333,9 @@ export async function transitionProductionOrder(
   }
   const version = await lockVersion(command.transaction, "execution_order", id);
   if (action === "release_materials") {
+    if (!["planned", "in_production"].includes(String(order.status))) {
+      throw new PlatformError(409, "CONFLICT", "Production order cannot release materials from its current state");
+    }
     const releasedQuantity = await releaseReservedMaterials(command, id);
     const nextVersion = await bumpVersion(command.transaction, "execution_order", id, version);
     await audit(command.transaction, command.access, command.request, {
@@ -378,12 +430,16 @@ export async function transitionProductionOrder(
       throw new PlatformError(409, "CONFLICT", "Production warehouse is frozen by a stocktake");
     }
     const batchNo = `PROD-${order.execution_no}-${reportId}-C`;
-    await command.transaction.execute(
+    const completedBatch = await command.transaction.execute(
       `INSERT INTO inventory_batches (
          batch_no, warehouse_id, sku, production_date, inbound_date,
          pending_inspection_quantity, ownership, expiry_status, created_at, updated_at
        ) VALUES (?, ?, ?, CURRENT_DATE(), CURRENT_DATE(), ?, 'company', 'normal', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
       [batchNo, warehouseId, order.sku, actual],
+    );
+    await command.transaction.execute(
+      `UPDATE production_reports SET batch_id = ?, updated_at = CURRENT_TIMESTAMP(3) WHERE id = ?`,
+      [completedBatch.insertId!, reportId],
     );
     await command.transaction.execute(
       `INSERT INTO inventory_movements (warehouse_id, sku, type, quantity, source_key, occurred_at, created_by)

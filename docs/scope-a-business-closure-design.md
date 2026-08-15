@@ -1,6 +1,6 @@
 # Scope A 业务闭环最小设计（周末业务闭环阶段）
 
-> 基线：`cdfe87c563587f0b0b9a0eb268a03b60edd1d37d`（isolated worktree，detached HEAD，clean）。
+> 基线：`736f104e51c52b37459166085fdcf9bc7c18b5ae`（isolated worktree，detached HEAD，clean）。
 > 结果所有者：本阶段唯一写入者；来源主任务 threadId=`019ff47b-64cb-7233-9a73-c6728ef839bb`。
 
 ## 结论
@@ -46,11 +46,12 @@
 
 - pnpm typecheck、pnpm lint、pnpm lint:baseline（0 errors / 0 warnings）、pnpm build:all：通过。
 - pnpm test:non-mysql：395 pass / 0 fail / 0 skip。
-- pnpm test:mysql：22 pass / 0 fail / 0 skip（9 个 MySQL 集成文件；含新增 closure MySQL 集成测试）。
+- pnpm test:mysql：28 pass / 0 fail / 0 skip（9 个 MySQL 集成文件；含新增 closure MySQL 集成测试）。
 - pnpm test:e2e-foundation：1 pass / 0 fail / 0 skip。
 - pnpm test:e2e-scope-a：9 pass / 0 fail / 0 skip（新增业务闭环 E2E + 原 Scope A E2E 共 9 个 top-level 测试）。
 - pnpm audit:policy、pnpm architecture:check、pnpm docker:check-context、pnpm deploy:check-env-contract、pnpm db:verify-generation：通过。
 - 旧 migration 0000-0004 哈希不变；0005 append-only；git diff --check clean；本任务创建的 Docker 容器/进程/端口/运行时目录已清零；临时 MySQL 密码未进入仓库。
+- 受控浏览器交互：supply_chain 整批收货、company_qc 来料质检、factory 真实预留后领料/消耗/释放与重复释放反馈，已在 loopback 栈经 Chrome DevTools 执行；证据（工作树内、.gitignore 排除）：e2e-runtime/browser-evidence/e2e-t2-browser-1786756810398/evidence.md。
 
 证据（本机临时日志，仓库外 %TEMP%\scopea-mysql-gate\）：
 

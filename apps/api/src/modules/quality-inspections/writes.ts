@@ -35,7 +35,7 @@ export async function submitQualityInspection(
   if ((executionOrderId === null) === (batchId === null)) {
     throw new PlatformError(400, "BAD_REQUEST", "Exactly one of executionOrderId or batchId is required");
   }
-  const stage = oneOf(body.stage, ["incoming", "process", "finished", "finished_goods"] as const, "stage");
+  const stage = oneOf(body.stage, ["incoming", "finished_goods"] as const, "stage");
   const inspectionMethod = oneOf(body.inspectionMethod, ["sampling", "full"] as const, "inspectionMethod");
   const batchQuantity = integer(body.batchQuantity, "batchQuantity");
   const inspectedQuantity = integer(body.inspectedQuantity, "inspectedQuantity");
@@ -81,26 +81,69 @@ export async function submitQualityInspection(
           (passedQuantity === 0 && failedQuantity === pending))) {
       throw new PlatformError(400, "BAD_REQUEST", "Whole batch must be entirely passed or entirely failed");
     }
-    const sources = await command.transaction.query<Row>(
-      `SELECT oi.sku, oi.item_type AS itemType, oi.supplier_id AS supplierId
-       FROM purchase_receipts pr JOIN order_items oi ON oi.id = pr.order_item_id
-       WHERE pr.batch_id = ? LIMIT 1`,
-      [batchId],
+    const provenance = await command.transaction.query<Row>(
+      `SELECT
+         (SELECT COUNT(*) FROM purchase_receipts WHERE batch_id = ?) AS receiptCount,
+         (SELECT COUNT(*) FROM production_reports WHERE batch_id = ?) AS productionCount`,
+      [batchId, batchId],
     );
-    let itemType = sources[0]?.itemType == null ? null : String(sources[0].itemType);
-    if (itemType === null) {
-      const skuRows = await command.transaction.query<Row>(
-        `SELECT item_type AS itemType FROM skus WHERE code = ? LIMIT 1`,
-        [String(batch.sku)],
+    const receiptCount = Number(provenance[0]?.receiptCount ?? 0);
+    const productionCount = Number(provenance[0]?.productionCount ?? 0);
+    if (receiptCount === 1 && productionCount === 0) {
+      if (stage !== "incoming") {
+        throw new PlatformError(409, "CONFLICT", "Receipt batch must be inspected as incoming");
+      }
+      const sources = await command.transaction.query<Row>(
+        `SELECT oi.sku, oi.item_type AS itemType, oi.supplier_id AS supplierId
+         FROM purchase_receipts pr JOIN order_items oi ON oi.id = pr.order_item_id
+         WHERE pr.batch_id = ? LIMIT 1`,
+        [batchId],
       );
-      itemType = skuRows[0]?.itemType == null ? null : String(skuRows[0].itemType);
+      let itemType = sources[0]?.itemType == null ? null : String(sources[0].itemType);
+      if (itemType === null) {
+        const skuRows = await command.transaction.query<Row>(
+          `SELECT item_type AS itemType FROM skus WHERE code = ? LIMIT 1`,
+          [String(batch.sku)],
+        );
+        itemType = skuRows[0]?.itemType == null ? null : String(skuRows[0].itemType);
+      }
+      target = {
+        sku: String(batch.sku),
+        itemType,
+        supplierId: sources[0]?.supplierId == null ? null : Number(sources[0].supplierId),
+      };
+    } else if (receiptCount === 0 && productionCount === 1) {
+      if (stage !== "finished_goods") {
+        throw new PlatformError(409, "CONFLICT", "Production completion batch must be inspected as finished goods");
+      }
+      const sources = await command.transaction.query<Row>(
+        `SELECT oi.sku, oi.item_type AS itemType, oi.supplier_id AS supplierId
+         FROM production_reports pr
+         JOIN execution_orders eo ON eo.id = pr.execution_order_id
+         JOIN order_items oi ON oi.id = eo.order_item_id
+         WHERE pr.batch_id = ? LIMIT 1`,
+        [batchId],
+      );
+      let itemType = sources[0]?.itemType == null ? null : String(sources[0].itemType);
+      if (itemType === null) {
+        const skuRows = await command.transaction.query<Row>(
+          `SELECT item_type AS itemType FROM skus WHERE code = ? LIMIT 1`,
+          [String(batch.sku)],
+        );
+        itemType = skuRows[0]?.itemType == null ? null : String(skuRows[0].itemType);
+      }
+      target = {
+        sku: String(batch.sku),
+        itemType,
+        supplierId: sources[0]?.supplierId == null ? null : Number(sources[0].supplierId),
+      };
+    } else {
+      throw new PlatformError(409, "CONFLICT", "Inventory batch has ambiguous or missing inspection provenance");
     }
-    target = {
-      sku: String(batch.sku),
-      itemType,
-      supplierId: sources[0]?.supplierId == null ? null : Number(sources[0].supplierId),
-    };
   } else {
+    if (stage !== "finished_goods") {
+      throw new PlatformError(409, "CONFLICT", "Execution order inspection must use finished goods stage");
+    }
     const orders = await command.transaction.query<Row>(
       `SELECT eo.id, eo.factory_id AS factoryId, oi.sku, oi.item_type AS itemType, oi.supplier_id AS supplierId
        FROM execution_orders eo JOIN order_items oi ON oi.id = eo.order_item_id

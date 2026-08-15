@@ -34,6 +34,14 @@ test("Stage 11 T2 Scope A business closures: purchase receipt -> batch quality -
       [fixture.purchaseOrderId, fixture.sku],
     );
     const secondOrderItemId = secondInsert.insertId;
+    const [secondPlanItem] = await db.execute(
+      "INSERT INTO purchase_plan_items (purchase_plan_id, expected_arrival_date, factory_id, warehouse_id, sku, product_name, bom_id, planned_quantity) VALUES (?, '2026-02-02', ?, ?, ?, ?, ?, 4)",
+      [fixture.planId, fixture.factoryId, fixture.warehouseId, fixture.sku, 'E2E second finished item', fixture.bomId],
+    );
+    await db.execute(
+      "INSERT INTO purchase_plan_order_links (purchase_plan_item_id, order_item_id, allocated_quantity, match_method, confirmed_by) VALUES (?, ?, 4, 'manual', ?)",
+      [secondPlanItem.insertId, secondOrderItemId, runtime.fixture.accounts.supply_chain],
+    );
     const partialPayload = {
       purchaseOrderId: fixture.purchaseOrderId,
       orderItemId: secondOrderItemId,

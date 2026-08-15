@@ -397,6 +397,7 @@ export const productionReports = mysqlTable("production_reports", {
   companyInventoryQuantity: int("company_inventory_quantity").notNull().default(0),
   factoryOwnedQuantity: int("factory_owned_quantity").notNull().default(0),
   reportedBy: int("reported_by").notNull().references(() => users.id),
+  batchId: int("batch_id").references(() => inventoryBatches.id),
   reviewedBy: int("reviewed_by").references(() => users.id),
   reviewedAt: text("reviewed_at"),
   ...timestamps,

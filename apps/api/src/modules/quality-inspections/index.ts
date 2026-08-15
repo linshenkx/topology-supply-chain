@@ -2,8 +2,12 @@ import {
   apiErrorSchemaId,
   qualityInspectionsResponseSchema,
   qualityInspectionsSchemaId,
+  qualityPendingBatchesResponseSchema,
+  qualityPendingBatchesSchemaId,
   type QualityInspection,
   type QualityInspectionsResponse,
+  type QualityPendingBatch,
+  type QualityPendingBatchesResponse,
 } from "@topology/contracts";
 import type { FastifyInstance, FastifyRequest } from "fastify";
 
@@ -19,6 +23,8 @@ const ALLOWED_ROLES = new Set([
 ]);
 const INTERNAL_ROLES = new Set(["admin", "supply_chain", "company_qc"]);
 const INSPECTION_LIMIT = 200;
+const PENDING_BATCH_ROLES = new Set(["admin", "company_qc"]);
+const PENDING_BATCH_LIMIT = 200;
 
 const INSPECTION_COLUMNS = `SELECT
   inspections.id,
@@ -204,6 +210,51 @@ function inspection(row: DataRow): QualityInspection {
   };
 }
 
+function pendingBatch(row: DataRow): QualityPendingBatch {
+  return {
+    batchId: positiveInteger(row.batchId),
+    batchNo: string(row.batchNo),
+    warehouseId: positiveInteger(row.warehouseId),
+    warehouseName: string(row.warehouseName),
+    sku: string(row.sku),
+    pendingInspectionQuantity: positiveInteger(row.pendingInspectionQuantity),
+    source: enumeration(row.source, ["receipt", "production"] as const),
+    stage: enumeration(row.stage, ["incoming", "finished_goods"] as const),
+  };
+}
+
+const PENDING_BATCH_COLUMNS = `SELECT
+  b.id AS batchId,
+  b.batch_no AS batchNo,
+  b.warehouse_id AS warehouseId,
+  w.name AS warehouseName,
+  b.sku,
+  b.pending_inspection_quantity AS pendingInspectionQuantity,
+  CASE WHEN EXISTS (SELECT 1 FROM purchase_receipts pr WHERE pr.batch_id = b.id)
+       THEN 'receipt' ELSE 'production' END AS source,
+  CASE WHEN EXISTS (SELECT 1 FROM purchase_receipts pr WHERE pr.batch_id = b.id)
+       THEN 'incoming' ELSE 'finished_goods' END AS stage
+FROM inventory_batches b
+JOIN warehouses w ON w.id = b.warehouse_id
+WHERE b.pending_inspection_quantity > 0
+  AND (
+    (EXISTS (SELECT 1 FROM purchase_receipts pr WHERE pr.batch_id = b.id)
+     AND NOT EXISTS (SELECT 1 FROM production_reports prod WHERE prod.batch_id = b.id))
+    OR
+    (NOT EXISTS (SELECT 1 FROM purchase_receipts pr WHERE pr.batch_id = b.id)
+     AND EXISTS (SELECT 1 FROM production_reports prod WHERE prod.batch_id = b.id))
+  )
+ORDER BY b.created_at DESC, b.id DESC
+LIMIT ${PENDING_BATCH_LIMIT}`;
+
+async function readPendingBatches(
+  database: QueryExecutor,
+): Promise<QualityPendingBatch[]> {
+  const rows = await database.query<DataRow>(PENDING_BATCH_COLUMNS);
+  if (rows.length > PENDING_BATCH_LIMIT) return invalidData();
+  return rows.map(pendingBatch);
+}
+
 function organizationId(value: number | null): number {
   if (!Number.isSafeInteger(value) || value === null || value <= 0) {
     throw new QualityInspectionsForbiddenError();
@@ -291,6 +342,9 @@ export async function registerQualityInspectionsModule(
   if (!app.getSchema(qualityInspectionsSchemaId)) {
     app.addSchema(qualityInspectionsResponseSchema);
   }
+  if (!app.getSchema(qualityPendingBatchesSchemaId)) {
+    app.addSchema(qualityPendingBatchesResponseSchema);
+  }
 
   app.get<{ Reply: QualityInspectionsResponse }>(
     "/api/v1/quality-inspections",
@@ -321,6 +375,39 @@ export async function registerQualityInspectionsModule(
         throw new QualityInspectionsUnavailableError();
       }
       return { inspections: await readInspections(options.database, scope) };
+    },
+  );
+  app.get<{ Reply: QualityPendingBatchesResponse }>(
+    "/api/v1/quality-inspections/pending-batches",
+    {
+      onRequest: (_request, reply, done) => {
+        reply.header("cache-control", "private, no-store");
+        reply.header("pragma", "no-cache");
+        reply.header("vary", "Cookie");
+        done();
+      },
+      schema: {
+        tags: ["quality-inspections"],
+        summary: "Read quality pending batches for company QC",
+        response: {
+          200: { $ref: `${qualityPendingBatchesSchemaId}#` },
+          401: { $ref: `${apiErrorSchemaId}#` },
+          403: { $ref: `${apiErrorSchemaId}#` },
+          503: { $ref: `${apiErrorSchemaId}#` },
+          "5xx": { $ref: `${apiErrorSchemaId}#` },
+        },
+      },
+    },
+    async (request) => {
+      const access = await options.authenticate(request);
+      if (!access.roles.some((role) => PENDING_BATCH_ROLES.has(role))) {
+        throw new QualityInspectionsForbiddenError();
+      }
+      if (access.localPreview) return { pendingBatches: [], preview: true };
+      if (options.database === undefined) {
+        throw new QualityInspectionsUnavailableError();
+      }
+      return { pendingBatches: await readPendingBatches(options.database) };
     },
   );
 }

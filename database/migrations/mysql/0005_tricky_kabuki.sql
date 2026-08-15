@@ -30,3 +30,6 @@ INSERT INTO `writer_fences` (`resource`, `owner`, `enabled`, `generation`, `upda
 ON DUPLICATE KEY UPDATE
   `owner` = VALUES(`owner`), `enabled` = false,
   `generation` = VALUES(`generation`), `updated_at` = CURRENT_TIMESTAMP(3);
+--> statement-breakpoint
+ALTER TABLE `production_reports` ADD `batch_id` int;--> statement-breakpoint
+ALTER TABLE `production_reports` ADD CONSTRAINT `production_reports_batch_id_inventory_batches_id_fk` FOREIGN KEY (`batch_id`) REFERENCES `inventory_batches`(`id`) ON DELETE no action ON UPDATE no action;
