@@ -282,10 +282,6 @@ test("legacy writers are 410-only and frontend mutations use the v1 adapter/brid
     const source = await readFile(new URL(component, root), "utf8");
     assert.doesNotMatch(source, /fetch\([`"]\/api\/(?:master-data|suppliers|supplier-skus|supplier-prices|supplier-performance|purchase-plans|purchase-orders)/u, component);
   }
-  const bridge = await readFile(new URL("apps/web/app/api/v1/[...path]/route.ts", root), "utf8");
-  for (const path of new Set(Object.keys(SUPPLY_COMMAND_BY_MUTATION).map((entry) => entry.slice(entry.indexOf(" ") + 1)))) {
-    assert.match(bridge, new RegExp(path.replaceAll("/", "\\/"), "u"), path);
-  }
   const fenceSql = await readFile(new URL("database/migrations/mysql/0004_scope_a_domain_writes.sql", root), "utf8");
   assert.equal((fenceSql.match(/\('r2\./gu) ?? []).length, 12);
   assert.match(fenceSql, /0004_scope_a_domain_writes|r3_business_keys/u);

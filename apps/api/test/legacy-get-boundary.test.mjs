@@ -61,7 +61,6 @@ async function enumerateGetRoutes(directory = new URL("apps/web/app/api/", root)
 test("all 18 legacy business GETs are 410-only without independent DB or authorization logic", async () => {
   const allGets = await enumerateGetRoutes();
   const enumeratedLegacyBusinessGets = allGets.filter((path) =>
-    !path.startsWith("apps/web/app/api/v1/") &&
     ![
       "apps/web/app/api/files/route.ts", "apps/web/app/api/health/route.ts",
       "apps/web/app/api/notifications/route.ts", "apps/web/app/api/session/route.ts",
@@ -87,13 +86,11 @@ test("all 18 legacy business GETs are 410-only without independent DB or authori
   }
 });
 
-test("health, session, and the development v1 bridge remain outside the legacy business GET count", async () => {
-  const [health, session, bridge] = await Promise.all([
+test("health and session remain outside the legacy business GET count", async () => {
+  const [health, session] = await Promise.all([
     readFile(new URL("apps/web/app/api/health/route.ts", root), "utf8"),
     readFile(new URL("apps/web/app/api/session/route.ts", root), "utf8"),
-    readFile(new URL("apps/web/app/api/v1/[...path]/route.ts", root), "utf8"),
   ]);
   assert.match(health, /export async function GET/u);
   assert.match(session, /export async function GET/u);
-  assert.match(bridge, /proxyDevelopmentApiV1Get/u);
 });

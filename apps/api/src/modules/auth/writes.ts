@@ -274,6 +274,7 @@ function maskMobile(mobile: string): string {
 }
 
 function isPreview(options: AuthWriteOptions): boolean {
+  if (options.environment?.cookieSecure === false) return false;
   const environment = options.environment;
   return ![environment?.appEnv, environment?.deployTarget, environment?.nodeEnv]
     .some((value) => value?.trim().toLowerCase() === "production" || value?.trim().toLowerCase() === "aliyun");
@@ -509,7 +510,7 @@ async function registerLoginRoutes(
         );
       }
       if (result.authenticated === true) {
-        reply.header("set-cookie", sessionCookies(key, token));
+        reply.header("set-cookie", sessionCookies(key, token, 12 * 60 * 60, options.environment?.cookieSecure ?? true));
       }
       return reply.status(response.statusCode).send(response.body);
     },
@@ -603,7 +604,7 @@ async function registerLoginRoutes(
         throw new PlatformError(401, "UNAUTHORIZED", "Verification code is invalid");
       }
       if (response.body.result.authenticated === true) {
-        reply.header("set-cookie", sessionCookies(key, token));
+        reply.header("set-cookie", sessionCookies(key, token, 12 * 60 * 60, options.environment?.cookieSecure ?? true));
       }
       return reply.status(response.statusCode).send(response.body);
     },
@@ -646,7 +647,7 @@ async function registerSessionRoutes(
           return { success: true };
         },
       });
-      reply.header("set-cookie", clearSessionCookies());
+      reply.header("set-cookie", clearSessionCookies(options.environment?.cookieSecure ?? true));
       return reply.status(response.statusCode).send(response.body);
     },
   );

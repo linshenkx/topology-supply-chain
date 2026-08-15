@@ -67,6 +67,7 @@ services:
       APP_ENV: production
       DATABASE_URL: "${DATABASE_URL:-}"
       API_SESSION_SIGNING_KEY: "${API_SESSION_SIGNING_KEY:-}"
+      ALLOW_INSECURE_LOCAL_COOKIES: "${ALLOW_INSECURE_LOCAL_COOKIES:-false}"
       OTP_SEALING_KEY_ID: "${OTP_SEALING_KEY_ID:-}"
       OTP_SEALING_KEY: "${OTP_SEALING_KEY:-}"
       DOMAIN_REGISTRATION_MODULES: "../composition/supply-writes-manifest.js,../composition/operations-writes-manifest.js"

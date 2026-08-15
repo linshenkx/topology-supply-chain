@@ -10,6 +10,7 @@ export const ENVIRONMENT_CONTRACT = Object.freeze({
   ALIYUN_SMS_TEMPLATE_CODE: entry("web", ["web"], "config"),
   API_IMAGE_TAG: entry("release", ["compose"], "release"),
   API_SESSION_SIGNING_KEY: entry("identity", ["web", "api"], "secret", true),
+  ALLOW_INSECURE_LOCAL_COOKIES: entry("identity", ["api"], "config"),
   APP_BASE_URL: entry("web", ["web"], "config", true),
   APP_ENV: entry("repository", ["web", "api"], "config"),
   APP_IMAGE_TAG: entry("release", ["compose"], "release"),

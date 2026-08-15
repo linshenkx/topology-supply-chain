@@ -68,6 +68,5 @@ test("frontend routes the three closures through the shared mutation client", as
   assert.ok(client.includes('"/api/v1/purchase-receipts"'));
   assert.ok(client.includes('"/api/v1/purchase-receipts": "purchase.receive"'));
   assert.ok(client.includes('"/api/v1/production-orders": "manufacturing.order.create"'));
-  const bridge = await source("apps/web/app/api/v1/purchase-receipts/route.ts");
-  assert.ok(bridge.includes('operationsMutation("/api/v1/purchase-receipts")'));
+  assert.doesNotMatch(client, /apps\/web\/app\/api\/v1/u);
 });

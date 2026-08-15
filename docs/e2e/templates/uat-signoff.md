@@ -10,7 +10,7 @@
 | 功能代码锚点 | 254e3a0de1a3ef812c7487550f1ae7d8d0e7a61a（docs-only 后代链，不是实际执行 SHA） |
 | repositorySha | <git rev-parse HEAD>（必须等于 <e2e:status.repositorySha>） |
 | fenceProfile | t2-operations-scope-a-closures |
-| HTTPS origin | <e2e:status.origins.https> |
+| Browser origin | <e2e:status.origins.browser> |
 | fixtureManifestSha | <e2e:status.fixtureSha> |
 | 执行时间 | <ISO-8601 起止> |
 
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | RUN_ID | <S12-C1-RUN_ID> | <S12-C2-RUN_ID> |
 | repositorySha | <git rev-parse HEAD> | <git rev-parse HEAD> |
-| HTTPS origin | <e2e:status.origins.https> | <e2e:status.origins.https> |
+| Browser origin | <e2e:status.origins.browser> | <e2e:status.origins.browser> |
 | 证据路径 | .\delivery\agent-uat\<S12-C1-RUN_ID> | .\delivery\agent-uat\<S12-C2-RUN_ID> |
 | 清理状态 | complete/not-needed/blocked | complete/not-needed/blocked |
 

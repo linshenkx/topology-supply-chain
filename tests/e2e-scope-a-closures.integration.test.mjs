@@ -177,7 +177,7 @@ test("Stage 11 T2 Scope A business closures: purchase receipt -> batch quality -
     assert.equal(releaseReplay.status, 200);
     assert.equal(releaseReplay.body.command.replayed, true);
 
-    const home = await requestJson(runtime.origins.https, "/", { method: "GET" });
+    const home = await requestJson(runtime.origins.browser, "/", { method: "GET" });
     assert.equal(home.status, 200);
 
     const [[evidence]] = await db.query(

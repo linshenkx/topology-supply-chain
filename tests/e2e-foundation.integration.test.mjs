@@ -49,7 +49,7 @@ test("Tier 1 E2E foundation is isolated, fail-closed, HTTPS-cookie capable, and 
   const crossControl = await fetch(`${stub}/control?runId=${second}`, { method: "POST", headers: { "content-type": "application/json", "x-e2e-control-token": one.secrets.controlToken }, body: JSON.stringify({ provider: "sms", mode: "ok" }) }); assert.equal(crossControl.status, 403);
   const failed = await fetch(`${stub}/sms/deliver`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": one.secrets.stubKeys.sms }, body: "{}" }); assert.equal(failed.status, 503);
   const recovered = await fetch(`${stub}/sms/deliver`, { method: "POST", headers: { "content-type": "application/json", "x-api-key": one.secrets.stubKeys.sms }, body: "{}" }); assert.equal(recovered.status, 200);
-  const origin = one.origins.https;
+  const origin = one.origins.browser;
   const login = await requestJson(origin, "/api/v1/auth/login", { body: { account: `supply_chain.${first}@e2e.invalid`, password: one.password, deviceId: `${first}-device` }, headers: { origin, "idempotency-key": `${first}-login-0001` } });
   assert.equal(login.status, 200); assert.equal(login.body.result.authenticated, false); assert.match(login.body.result.challengeNo, /^OTP-/u);
   let otp; for (let attempt = 0; attempt < 20; attempt += 1) { const response = await fetch(`${stub}/otp?runId=${first}`, { headers: { "x-e2e-otp-token": one.secrets.otpToken } }); if (response.status === 200) { otp = (await response.json()).code; break; } await delay(500); }

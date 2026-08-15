@@ -116,7 +116,7 @@ $stubPort = $state.resources.ports.stub
 
 **第 2 步：真人先在浏览器提交登录并看到 challenge**
 
-浏览器打开 `e2e:status.origins.https`，用 `$account` 与 `$password`（仅显示在控制台，不复制）提交登录；看到 OTP challenge 页面后停下并保持页面打开。未看到 challenge 前不得读取 `/otp`。
+浏览器打开 `e2e:status.origins.browser`（默认 `transport=https`），用 `$account` 与 `$password`（仅显示在控制台，不复制）提交登录；看到 OTP challenge 页面后停下并保持页面打开。未看到 challenge 前不得读取 `/otp`。
 
 **第 3 步：challenge 出现后，有界轮询 loopback `/otp`（最多 80 次 × 250ms）**
 

@@ -101,6 +101,7 @@ function hasDatabaseConfiguration(environment: DatabaseEnvironment): boolean {
 
 function authEnvironment(
   environment: DatabaseEnvironment,
+  cookieSecure: boolean,
 ): AuthEnvironment {
   return {
     ...(environment.APP_ENV === undefined
@@ -112,7 +113,24 @@ function authEnvironment(
     ...(environment.NODE_ENV === undefined
       ? {}
       : { nodeEnv: environment.NODE_ENV }),
+    cookieSecure,
   };
+}
+
+function isLoopbackHost(value: string | undefined): boolean {
+  return new Set(["localhost", "127.0.0.1", "::1", "[::1]"]).has(value?.trim().toLowerCase() ?? "");
+}
+
+export function resolveCookieSecure(environment: DatabaseEnvironment): boolean {
+  const raw = environment.ALLOW_INSECURE_LOCAL_COOKIES?.trim().toLowerCase();
+  if (raw !== undefined && raw !== "true" && raw !== "false") {
+    throw new Error("ALLOW_INSECURE_LOCAL_COOKIES must be true or false");
+  }
+  if (raw !== "true") return true;
+  if (isProductionRuntime(environment) || !isLoopbackHost(environment.HOST)) {
+    throw new Error("ALLOW_INSECURE_LOCAL_COOKIES requires non-production loopback HOST");
+  }
+  return false;
 }
 
 async function closeAfterFailedStartup(
@@ -136,6 +154,7 @@ export async function buildRuntimeApp(
 ): Promise<FastifyInstance> {
   const environment = options.environment ?? process.env;
   const production = isProductionRuntime(environment);
+  const cookieSecure = resolveCookieSecure(environment);
   const sessionSigningKey = environment.API_SESSION_SIGNING_KEY?.trim();
   if (production && (sessionSigningKey?.length ?? 0) < 32) {
     throw new Error("API_SESSION_SIGNING_KEY must contain at least 32 characters");
@@ -157,8 +176,10 @@ export async function buildRuntimeApp(
       createDatabaseClient({ env })))(environment);
     ownsDatabase = true;
   }
-  if (production) {
+  if (production || cookieSecure === false) {
     otpSealing = readOtpSealingConfig(environment);
+  }
+  if (production) {
     workerInternalUrl = environment.WORKER_INTERNAL_URL?.trim();
     if (!workerInternalUrl && options.fileScannerReady === undefined) {
       throw new Error("WORKER_INTERNAL_URL is required in production");
@@ -172,7 +193,7 @@ export async function buildRuntimeApp(
     if (!response.ok) throw new Error("Worker providers unavailable");
   });
 
-  const resolvedAuthEnvironment = authEnvironment(environment);
+  const resolvedAuthEnvironment = authEnvironment(environment, cookieSecure);
   const readinessTimeoutMs =
     options.readinessTimeoutMs ??
     databasePingTimeoutMs + readinessTimeoutMarginMs;

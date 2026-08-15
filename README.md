@@ -8,7 +8,7 @@
 
 | 运行单元 | 源码/端口 | 生产责任 |
 | --- | --- | --- |
-| Web | `apps/web/app/`，`:3000` | 页面、同域 bridge、`/api/health` 与兼容入口 |
+| Web | `apps/web/app/`，内部 loopback 端口 | 页面与兼容入口；不拥有 `/api/v1` |
 | API | `apps/api`，`:3001` | `/api/v1/*`、鉴权/权限、同步读写事务 |
 | Worker | `apps/worker`，`:3002` | outbox/job、provider 副作用、独立 ready/fence |
 | Contracts | `packages/contracts` | API Schema、DTO 与持久化 command/resource identity 事实源 |
@@ -24,7 +24,7 @@ Web 已由 `apps/web` 独立 package 拥有；根 package 只负责编排 Web、
 
 - MySQL migration history、release manifest、writer fence、command/resource、outbox、approval、file 与 audit identity 都是冻结协议。
 - `topology_session`、`topology_csrf`、RBAC/data scope、CSRF/Origin、Step-up、事务/CAS/幂等和 unknown-outcome 语义不得被工程规整弱化。
-- 18 个 legacy 业务 GET 保持精确 `410 + WRITER_MOVED + successor Link`；`/api/health`、`/api/session` 和 `/api/v1` 开发 bridge 保留。
+- 18 个 legacy 业务 GET 保持精确 `410 + WRITER_MOVED + successor Link`；浏览器业务流统一经本地/测试 Gateway，生产继续经现有 Nginx。
 - Purchase Receipt、BOM 实际库存预留/领料/消耗、质检放行/隔离等属于 Scope B，不在工程规范化范围内。
 
 ## 环境与安装
@@ -79,6 +79,7 @@ MySQL 门禁使用以下环境变量：
 
 - `infrastructure/aliyun/docker-compose.yml`：Web/API/Worker 与一次性 migrator；
 - `infrastructure/aliyun/nginx-scm.conf`：公网只暴露 Nginx，`/api/v1/*` 归 API；
+- `tooling/e2e/gateway.mjs`：本地/测试唯一 loopback Gateway，`/api/v1`（含子路径）归 API，其余路径归 Web；HTTP/HTTPS 共用同一分流逻辑。
 - `infrastructure/aliyun/deploy.sh` / `rollback.sh`：manifest、migration 与 generation 兼容门禁；
 - `tooling/release/activate-writers.sh`：独立、显式 writer activation；普通 deploy 不隐式激活 writer。
 

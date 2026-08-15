@@ -92,24 +92,26 @@ export function csrfCookie(
   signingKey: string,
   sessionToken: string,
   maxAgeSeconds = 12 * 60 * 60,
+  secure = true,
 ): string {
-  return `${CSRF_COOKIE}=${deriveCsrfToken(signingKey, sessionToken)}; Path=/; Secure; SameSite=Strict; Max-Age=${maxAgeSeconds}`;
+  return `${CSRF_COOKIE}=${deriveCsrfToken(signingKey, sessionToken)}; Path=/${secure ? "; Secure" : ""}; SameSite=Strict; Max-Age=${maxAgeSeconds}`;
 }
 
 export function sessionCookies(
   signingKey: string,
   sessionToken: string,
   maxAgeSeconds = 12 * 60 * 60,
+  secure = true,
 ): string[] {
   return [
-    `${SESSION_COOKIE}=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=${maxAgeSeconds}`,
-    csrfCookie(signingKey, sessionToken, maxAgeSeconds),
+    `${SESSION_COOKIE}=${sessionToken}; Path=/; HttpOnly${secure ? "; Secure" : ""}; SameSite=Strict; Max-Age=${maxAgeSeconds}`,
+    csrfCookie(signingKey, sessionToken, maxAgeSeconds, secure),
   ];
 }
 
-export function clearSessionCookies(): string[] {
+export function clearSessionCookies(secure = true): string[] {
   return [
-    `${SESSION_COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`,
-    `${CSRF_COOKIE}=; Path=/; Secure; SameSite=Strict; Max-Age=0`,
+    `${SESSION_COOKIE}=; Path=/; HttpOnly${secure ? "; Secure" : ""}; SameSite=Strict; Max-Age=0`,
+    `${CSRF_COOKIE}=; Path=/${secure ? "; Secure" : ""}; SameSite=Strict; Max-Age=0`,
   ];
 }

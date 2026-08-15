@@ -53,6 +53,7 @@ export interface AuthEnvironment {
   appEnv?: string;
   deployTarget?: string;
   nodeEnv?: string;
+  cookieSecure?: boolean;
 }
 
 export interface AuthenticateOptions {
@@ -112,6 +113,7 @@ function resolveEnvironment(environment: AuthEnvironment | undefined): Required<
     appEnv: environment?.appEnv ?? process.env.APP_ENV ?? "",
     deployTarget: environment?.deployTarget ?? process.env.DEPLOY_TARGET ?? "",
     nodeEnv: environment?.nodeEnv ?? process.env.NODE_ENV ?? "",
+    cookieSecure: environment?.cookieSecure ?? true,
   };
 }
 
@@ -120,6 +122,10 @@ function isLocalPreviewRequest(
   environment: AuthEnvironment | undefined,
 ): boolean {
   const resolved = resolveEnvironment(environment);
+
+  // An explicit insecure loopback transport is the real-auth E2E mode. It
+  // must not silently fall back to the local preview identity or challenge.
+  if (resolved.cookieSecure === false) return false;
 
   if (
     normalized(resolved.appEnv) === "production" ||
@@ -451,7 +457,7 @@ export async function registerAuthModule(
       const context = requireAccessContext(request);
       const existing = readSessionCookie(request.headers.cookie);
       if (!context.localPreview && existing.kind === "valid" && options.sessionSigningKey !== undefined) {
-        reply.header("set-cookie", csrfCookie(options.sessionSigningKey, existing.token));
+        reply.header("set-cookie", csrfCookie(options.sessionSigningKey, existing.token, 12 * 60 * 60, resolveEnvironment(options.environment).cookieSecure));
       }
       return sessionResponse(context);
     },

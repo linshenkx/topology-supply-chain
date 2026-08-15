@@ -64,7 +64,7 @@ export async function stubControl(runtime, provider, mode) {
 }
 
 export async function signIn(runtime, account = "supply_chain") {
-  const origin = runtime.origins.https;
+  const origin = runtime.origins.browser;
   const login = await requestJson(origin, "/api/v1/auth/login", { body: {
     account: `${account}.${runtime.runId}@e2e.invalid`, password: runtime.password, deviceId: `${runtime.runId}-${account}`,
   }, headers: { origin, "idempotency-key": `${runtime.runId}-${account}-login-${randomUUID()}` } });

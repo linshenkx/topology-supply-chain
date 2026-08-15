@@ -14,7 +14,7 @@ test("Stage 11 T2 identity, HTTPS same-origin, CSRF and legacy retirement", { ti
       ["/api/approvals", "/api/v1/approvals"], ["/api/audit-logs", "/api/v1/audit-logs"], ["/api/finance", "/api/v1/finance"], ["/api/imports/diff", "/api/v1/imports/diff"], ["/api/inventory", "/api/v1/inventory"], ["/api/master-data", "/api/v1/master-data"], ["/api/production-orders", "/api/v1/production-orders"], ["/api/purchase-orders", "/api/v1/purchase-orders"], ["/api/purchase-plans", "/api/v1/purchase-plans"], ["/api/quality-inspections", "/api/v1/quality-inspections"], ["/api/returns", "/api/v1/returns"], ["/api/shipments", "/api/v1/shipments"], ["/api/stocktakes", "/api/v1/stocktakes"], ["/api/supplier-performance", "/api/v1/supplier-performance"], ["/api/supplier-prices", "/api/v1/supplier-prices"], ["/api/supplier-skus", "/api/v1/supplier-skus"], ["/api/suppliers", "/api/v1/suppliers"], ["/api/warehouses", "/api/v1/warehouses"],
     ];
     for (const [path, successor] of legacy) {
-      const response = await requestJson(runtime.origins.https, path, { method: "GET" });
+      const response = await requestJson(runtime.origins.browser, path, { method: "GET" });
       assert.equal(response.status, 410, path); assert.equal(response.body.code, "WRITER_MOVED", path);
       assert.equal(response.headers.link, `<${successor}>; rel="successor-version"`, path);
     }
