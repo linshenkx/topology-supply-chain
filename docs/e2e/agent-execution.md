@@ -9,7 +9,7 @@ RUN_ID=e2e-YYYYMMDD-HHMMSS-<short-random>
 HTTPS_ORIGIN=<e2e:status.origins.https>
 API_ORIGIN=<e2e:status.origins.api>
 WORKER_ORIGIN=<e2e:status.origins.worker>
-EVIDENCE_DIR=./evidence/<RUN_ID>
+EVIDENCE_DIR=/e2e-runtime/evidence/<RUN_ID>
 TEST_PREFIX=E2E-<RUN_ID>-
 ```
 
@@ -22,9 +22,9 @@ TEST_PREFIX=E2E-<RUN_ID>-
 
 1. 创建 `EVIDENCE_DIR/{http,db,ui,logs}`，写入 `manifest.json` 的初始字段；读取并记录 `git rev-parse HEAD`、`git status --short` 和所有运行进程/端口。
 2. 先以有限轮询检查 health；无法就绪时保留日志、标为 blocked/failed，停止后续写操作。
-3. 逐项执行[场景清单](./scope-a-scenarios.md)。每次请求保存：场景 ID、方法、路径、脱敏 header 名、body 的 SHA-256、状态、响应 body 的 SHA-256、command metadata 和时间。命令返回非期望状态不能被 shell `|| true`、空断言或替换 fixture 掩盖。
+3. 逐项执行[场景清单](./scope-a-scenarios.md)，三条业务闭环（S12-A/S12-B/S12-C）的逐页面必验步骤与角色以 [Stage 12 真人业务验收手册](./stage12-human-business-acceptance.md) 为准。每次请求保存：场景 ID、方法、路径、脱敏 header 名、body 的 SHA-256、状态、响应 body 的 SHA-256、command metadata 和时间。命令返回非期望状态不能被 shell `|| true`、空断言或替换 fixture 掩盖。
 4. 仅针对当前 `RUN_ID` 查询业务、audit、Outbox 证据。Worker 只能对测试消息或 stub 运行；失败重试与重复投递以已有消息/日志为证，不可手工伪造成功状态。
-5. 一旦遇到稳定 selector 缺失、数据夹具缺失、业务期望未定义、Scope B、真实 provider/部署/凭据需求或自动化失败：停止该场景，写入 `humanCheckpoint` 或 `blockedReason`，交由真人检查；不得猜测预期或将其计为 pass。
+5. 一旦遇到稳定 selector 缺失、数据夹具缺失、业务期望未定义、明确未实现/超范围能力、真实 provider/部署/凭据需求或自动化失败：停止该场景，写入 `humanCheckpoint` 或 `blockedReason`，交由真人检查；不得猜测预期或将其计为 pass。
 6. 停止本次进程，按[真人清理规则](./human-execution.md#清理与回滚)清理精确前缀资源；确认端口/PID/临时数据库状态并写入 manifest。
 
 ## 证据文件格式
@@ -35,7 +35,7 @@ TEST_PREFIX=E2E-<RUN_ID>-
 {
   "runId": "e2e-YYYYMMDD-HHMMSS-ab12",
   "gitSha": "<sha>",
-  "environment": { "web": "http://127.0.0.1:3000", "api": "http://127.0.0.1:3001", "worker": "http://127.0.0.1:3002" },
+  "environment": { "web": "https://127.0.0.1:<port>", "api": "https://127.0.0.1:<port>", "worker": "http://127.0.0.1:<port>" },
   "scenarios": [{ "id": "A1", "status": "pass|fail|blocked|human-checkpoint", "evidence": ["http/A1-01.json"], "humanCheckpoint": null }],
   "resources": { "pids": [], "ports": [], "testPrefix": "E2E-...-", "cleanup": "complete|not-needed|blocked" },
   "secretsRecorded": false

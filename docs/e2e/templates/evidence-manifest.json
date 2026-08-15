@@ -4,7 +4,7 @@
   "repositorySha": "<sha>",
   "tier": "tier0|tier1",
   "fixtureManifestSha": "<sha-or-null>",
-  "environment": { "webOrigin": "https://127.0.0.1:<port>", "apiOrigin": "https://127.0.0.1:<port>", "workerOrigin": "http://127.0.0.1:3002", "loopbackOnly": true },
+  "environment": { "webOrigin": "https://127.0.0.1:<port>", "apiOrigin": "https://127.0.0.1:<port>", "workerOrigin": "http://127.0.0.1:<port>", "loopbackOnly": true },
   "commands": [{ "name": "pnpm lint", "exitCode": null, "startedAt": "<ISO-8601>", "endedAt": null, "stdout": "logs/lint.out", "stderr": "logs/lint.err" }],
   "scenarios": [{ "id": "A1", "status": "pass|fail|blocked|human-checkpoint", "blockedReason": null, "httpEvidence": [], "dbEvidence": [], "uiEvidence": [], "logEvidence": [] }],
   "resources": { "pids": [], "ports": [], "testPrefix": "E2E-...-", "cleanup": "complete|not-needed|blocked" },

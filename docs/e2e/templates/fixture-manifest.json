@@ -10,9 +10,9 @@
   "blockedReasons": ["replace until every required scenario fixture is verified"],
   "accounts": [{ "role": "admin|supply_chain|factory|finance|approver|denied", "userRef": "<non-secret-ref>", "organizationId": "<id>", "factoryId": "<id-or-null>", "otpPath": "stub|test-device|human-checkpoint" }],
   "entities": {
-    "factories": [], "suppliers": [], "skus": [], "boms": [], "warehouses": [], "batches": [],
-    "supplierSkus": [], "priceEvidenceFiles": [], "approvals": [], "purchasePlans": [], "purchaseOrders": [],
-    "productionOrders": [], "qualityInspections": [], "stocktakes": [], "shipments": [], "returns": [], "financeObjects": []
+    "factories": [], "suppliers": [], "skus": [], "boms": [], "warehouses": [], "batches": [], "componentBatches": [],
+    "supplierSkus": [], "priceEvidenceFiles": [], "approvals": [], "purchasePlans": [], "purchaseOrders": [], "purchaseReceipts": [],
+    "productionOrders": [], "productionMaterialLines": [], "qualityRules": [], "qualityInspections": [], "pendingInspectionBatches": [], "stocktakes": [], "shipments": [], "returns": [], "financeObjects": []
   },
   "providers": { "sms": "local-stub", "email": "local-stub", "fileScan": "local-stub", "workerReady": false, "network": "loopback-only" },
   "database": { "loopbackOnly": true, "resourcePrefix": "E2E-...-", "cleanupOwner": "<owner>", "cleanupEvidence": null }

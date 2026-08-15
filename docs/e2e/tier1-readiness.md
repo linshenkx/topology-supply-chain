@@ -1,10 +1,10 @@
 # Tier 1：现场 E2E 环境与就绪门
 
-Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。Stage 11 T1 提供受控的本机 fixture、provider stub 与 HTTPS 底座；它不决定业务状态机、职责分离或 Scope B。
+Tier 1 是真人/Agent 现场验收，不是业务场景的开箱即跑断言。缺少任一适用前置条件，场景状态只能为 `BLOCKED` 或 `HUMAN-CHECKPOINT`。Stage 12 基线 `254e3a0` 沿用受控的本机 fixture、provider stub 与 HTTPS 底座，并新增整批收货/整批质检/生产真实预留三条闭环；它不决定业务状态机、职责分离或更复杂的业务扩展。
 
 ## 启动顺序（仅受控测试环境）
 
-1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID> --fence-profile foundation-auth-worker`。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。fence profile 仅接受测试代码中的冻结精确 resource 集合，绝不存在全量启用入口。
+1. 选择唯一小写 `RUN_ID`（例如 `e2e-20260813-ab12`），执行 `pnpm e2e:prepare -- --run <RUN_ID> --fence-profile <profile>`。基础用 `foundation-auth-worker`；三条业务闭环必须用 `t2-operations-scope-a-closures`（含 `r3.purchase-receipts.commands`、`r3.quality-inspections.commands`、`r3.inventory.commands`、`r3.production-orders.commands`）。它只创建 label 为 `topology.e2e.run_id=<RUN_ID>` 的 MySQL 8 临时容器/库，先复核 canonical migration，再 seed [版本化 Scope A pack](../../tests/e2e/fixtures/scope-a.fixture.json)。它不读取 `.env` 或生产凭据。fence profile 仅接受测试代码中的冻结精确 resource 集合，绝不存在全量启用入口。
 2. 冻结安装与构建：`pnpm install --frozen-lockfile`、`pnpm build:contracts`、`pnpm build:api`、`pnpm build:worker`、`pnpm build:web:preview`。构建失败停止，不改源码或依赖。
 3. 执行 `pnpm e2e:start -- --run <RUN_ID>`，再执行 `pnpm e2e:status -- --run <RUN_ID>`。运行时仅监听 `127.0.0.1`：stub、Worker、API、Web 和 HTTPS proxy 都采用各自随机端口。HTTPS 使用只在临时运行目录存在的一日自签名证书；浏览器必须在人工检查前显式信任或接受该测试证书。
 4. `status` 必须同时确认当前 repository SHA、实际 build/entry identity、fixture JSON 与 seed module SHA、声明 profile 与数据库 writer-fence 状态、HTTPS、API/Worker ready、三类 stub health、canonical migration、已记录服务监听项/进程 owner 及 Docker label owner。任一失败即 `BLOCKED`，不得进入场景。
@@ -24,8 +24,8 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 `tests/e2e/fixtures/scope-a.fixture.json` 是版本化逻辑 pack；`prepare` 使用现有 MySQL schema/handler 可见的字段生成每运行一份实际 ID manifest。账号密码、OTP、cookie、CSRF、DB URL、stub key 仅存在于仓库外运行状态，永不写入 manifest、日志或 Git。以[evidence manifest 模板](./templates/evidence-manifest.json)记录每次运行；其 `ready=true` 仅在以下内容全具备时成立：
 
 - 账号：内部管理员/供应链、工厂（含 factory binding）、审批人、财务、无权角色；账号 owner、测试 OTP 路径及过期/轮换时间。
-- 范围：组织、factory、tiered supplier、SKU、有效 BOM、warehouse、库存 batch、可用/锁定/待检数量、supplier-SKU 关系、有效价格与证据文件。
-- 单据：可决策 pending approval（含 version/effect）、采购计划/item、采购订单/item、生产/execution order、质量、库存 reservation/transfer、stocktake、shipment、return、invoice/payment/exception 等每个要执行场景所需 ID 与版本。
+- 范围：组织、factory、tiered supplier、SKU、有效 BOM、warehouse、库存 batch（含成品与组件 batch、可用/锁定/待检/隔离数量）、supplier-SKU 关系、有效价格与证据文件。
+- 单据：可决策 pending approval（含 version/effect）、采购计划/item、采购订单/item（含 received_quantity 与唯一权威 plan link）、生产/execution order（含 production_material_lines）、质量规则（incoming 与 finished_goods）、整批收货待检批次、库存 reservation/transfer、stocktake、shipment、return、invoice/payment/exception 等每个要执行场景所需 ID 与版本。
 - 支撑：测试上传文件/扫描结果、Outbox/Worker stub contract、数据库名/清理 owner、fixture SHA/生成时间/有效期。
 
 `database/tooling/bootstrap-admin.mjs` 不是 E2E seed；生命周期不会调用它。
@@ -34,4 +34,4 @@ Agent 以 HTTPS 同源 cookie jar（仅内存）调用 API。读取 login comman
 
 ## 生命周期与清理
 
-`prepare → start → status → evidence → stop → cleanup` 是唯一稳定顺序。`evidence` 可选 `--out <safe-json-path>`；其内容符合模板且不含秘密。`cleanup` 先完成 PID owner 校验与停止，再核对 Docker label 后销毁容器/临时库，并删除证书和运行时日志。它绝不删除未知容器、卷、端口、数据库或文件。stub 的 `/control`、`/events` 同时要求 control token 与 RUN_ID；`/events` 只含不可逆的非秘密结构元数据，绝不含 payload hash 或 OTP oracle。`pnpm test:e2e-foundation` 验证双 RUN_ID 并发启动/状态、重复调用、部分启动失败恢复、Secure cookie/CSRF、OTP/control/events 隔离、hostile env 不出网、fixture/build/fence identity 与端口/PID/容器/临时目录清理归零；该测试不执行业务场景。
+`prepare → start → status → evidence → stop → cleanup` 是唯一稳定顺序。`evidence` 可选 `--out <safe-json-path>`；其内容符合模板且不含秘密。`cleanup` 先完成 PID owner 校验与停止，再核对 Docker label 后销毁容器/临时库，并删除证书和运行时日志。它绝不删除未知容器、卷、端口、数据库或文件。stub 的 `/control`、`/events` 同时要求 control token 与 RUN_ID；`/events` 只含不可逆的非秘密结构元数据，绝不含 payload hash 或 OTP oracle。`pnpm test:e2e-foundation` 验证双 RUN_ID 并发启动/状态、重复调用、部分启动失败恢复、Secure cookie/CSRF、OTP/control/events 隔离、hostile env 不出网、fixture/build/fence identity 与端口/PID/容器/临时目录清理归零；该测试不执行业务场景。`pnpm test:e2e-scope-a` 现在同时运行原 Scope A 场景与 [Stage 12 三条闭环 E2E](../../tests/e2e-scope-a-closures.integration.test.mjs)，覆盖整批收货、整批质检放行/隔离、生产真实预留/领料消耗/释放与对应负路径。

@@ -1,13 +1,15 @@
 # 文档索引
 
-README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。当前 accepted 基线为 `main@aa327330` 的 Stage 11 Scope A 受控本机技术验收 GO；真实部署、生产凭据与真人业务签字不在该结论范围内。
+README 是当前工程的唯一入口；本索引只负责把材料按证据属性路由，不能把某次验收、实施记录或历史快照当成当前运行状态。当前基线为 `254e3a0` 的 Stage 12 业务闭环（detached HEAD）；真实部署、生产凭据与真人业务签字不在该结论范围内，真人浏览器/UAT 以 [Stage 12 真人业务验收手册](./e2e/stage12-human-business-acceptance.md) 为执行入口。
 
 ## 当前规范与能力
 
 | 文档 | 用途 |
 | --- | --- |
 | [仓库 README](../README.md) | 当前运行拓扑、工程边界、支持矩阵、脚本与部署入口。 |
-| [基础业务能力—测试覆盖矩阵](./business-capability-test-matrix.md) | 基于当前 Contracts、API manifests/handlers 和已命名测试形成的 Scope A 测试证据、缺口与下一阶段清单。不是业务已完整验收的声明。 |
+| [Stage 12 真人业务验收手册](./e2e/stage12-human-business-acceptance.md) | 当前真人浏览器/UAT 执行入口：页面清单、三条业务闭环、证据与签字。 |
+| [Stage 12 UAT 签字模板](./e2e/templates/uat-signoff.md) | 可填写的结果与签字表。 |
+| [基础业务能力—测试覆盖矩阵](./business-capability-test-matrix.md) | Stage 11 基线（main@aa327330）的测试证据与缺口；Stage 12 三条闭环现状以 [业务闭环设计](./scope-a-business-closure-design.md) 为准。 |
 | [协作开发指南](../CONTRIBUTING.md) | 环境、门禁、兼容与安全审查规则。 |
 | [安全说明](../SECURITY.md) | 凭据、漏洞披露和发布审批要求。 |
 
@@ -15,7 +17,8 @@ README 是当前工程的唯一入口；本索引只负责把材料按证据属�
 
 | 文档 | 状态与边界 |
 | --- | --- |
-| [Stage 11 真人与 Agent 联合 E2E 最终验收](./refactor/stage11-t3-final-e2e-acceptance.md) | 当前最近一次 Scope A 验收；结论为受控本机技术验收 GO，明确保留真人 UI/UAT、真实 provider 和部署检查点。 |
+| [Stage 12 业务闭环设计](./scope-a-business-closure-design.md) | 当前业务闭环阶段的设计与自动化验收证据；真人验收走 [Stage 12 真人业务验收手册](./e2e/stage12-human-business-acceptance.md)。 |
+| [Stage 11 真人与 Agent 联合 E2E 最终验收](./refactor/stage11-t3-final-e2e-acceptance.md) | 历史时点证据（Stage 11 Scope A 受控本机技术验收 GO）；保留真人 UI/UAT、真实 provider 和部署检查点，不替代当前 Stage 12 状态。 |
 | [Stage 11 Scope A 自动化 E2E 报告](./refactor/stage11-t2-scope-a-e2e-report.md) | 8 个 Scope A 场景与 Tier 1 foundation 的实际运行证据、边界和未覆盖项。 |
 | [Stage 10 E2E 最终验收](./refactor/stage10-e2e-final-acceptance.md) | Stage 10 的文档与基础门禁验收；其 Tier 1 待办已由 Stage 11 部分实现，保留作时点证据。 |
 | [Stage 9 物理分离最终验收](./refactor/stage9-physical-separation-final-acceptance.md) | 物理分离与质量安全阶段验收；保留作早期时点证据。 |
