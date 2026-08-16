@@ -48,38 +48,11 @@ async function json(path, { method = "GET", body, headers = {} } = {}) {
   return { response, payload };
 }
 
-async function stubControl(path) {
-  const { stdout } = await exec("docker", [
-    ...composeArgs, "exec", "-T", "stub",
-    "wget", "-qO-", "--header=x-local-control-token:local-only-control-token", `http://127.0.0.1:3003${path}`,
-  ], { windowsHide: true });
-  return JSON.parse(stdout);
-}
-
-async function smsDeliveries() {
-  const payload = await stubControl("/events");
-  return payload.events.filter((event) => event.provider === "sms" && event.operation === "deliver").length;
-}
-
-async function otp(previousSmsDeliveries) {
-  for (let attempt = 0; attempt < 80; attempt += 1) {
-    try {
-      if (await smsDeliveries() > previousSmsDeliveries) {
-        const code = (await stubControl("/otp")).code;
-        if (/^\d{6}$/u.test(code)) return code;
-      }
-    } catch {}
-    await new Promise((resolvePromise) => setTimeout(resolvePromise, 250));
-  }
-  throw new Error("OTP did not reach the local provider stub");
-}
-
 const page = await fetch(origin);
 if (!page.ok) throw new Error(`Nginx/Web smoke failed: ${page.status}`);
 const health = await json("/api/v1/health/ready");
 if (!health.response.ok) throw new Error(`Nginx/API readiness failed: ${health.response.status}`);
 const deviceId = `local-compose-${randomUUID()}`;
-const beforeSmsDeliveries = await smsDeliveries();
 
 const login = await json("/api/v1/auth/login", {
   method: "POST",
@@ -92,7 +65,7 @@ const login = await json("/api/v1/auth/login", {
   },
 });
 if (!login.response.ok) throw new Error(`Local login failed: ${login.response.status} ${JSON.stringify(login.payload)}`);
-const code = await otp(beforeSmsDeliveries);
+const code = "123456";
 const verified = await json("/api/v1/auth/verify", {
   method: "POST",
   headers: { origin, "idempotency-key": `local-verify-${randomUUID()}` },
@@ -109,6 +82,24 @@ if (!csrf) throw new Error("Local login did not issue a CSRF cookie");
 
 const session = await json("/api/v1/session", { headers: { origin, cookie } });
 if (!session.response.ok) throw new Error(`Local session failed: ${session.response.status}`);
+const stepUp = await json("/api/v1/auth/step-up/request", {
+  method: "POST",
+  headers: { origin, cookie, "x-csrf-token": csrf, "idempotency-key": `local-step-up-${randomUUID()}` },
+  body: {
+    action: "local_smoke",
+    objectType: "local_smoke",
+    objectId: "1",
+    objectVersion: 1,
+    requestDigest: "a".repeat(64),
+  },
+});
+if (stepUp.response.status !== 201) throw new Error(`Local step-up request failed: ${stepUp.response.status} ${JSON.stringify(stepUp.payload)}`);
+const stepUpVerify = await json("/api/v1/auth/step-up/verify", {
+  method: "POST",
+  headers: { origin, cookie, "x-csrf-token": csrf, "idempotency-key": `local-step-up-verify-${randomUUID()}` },
+  body: { challengeNo: stepUp.payload?.result?.challengeNo, code: "123456" },
+});
+if (!stepUpVerify.response.ok) throw new Error(`Local step-up verify failed: ${stepUpVerify.response.status} ${JSON.stringify(stepUpVerify.payload)}`);
 
 const db = await mysql.createConnection(`mysql://topology:topology-local-only@127.0.0.1:${mysqlPort}/topology_local`);
 try {
@@ -191,6 +182,8 @@ try {
     login: login.response.status,
     verify: verified.response.status,
     session: session.response.status,
+    stepUpRequest: stepUp.response.status,
+    stepUpVerify: stepUpVerify.response.status,
     businessWrite: created.response.status,
     skuRows: Number(sku.total),
     auditRows: Number(audit.total),

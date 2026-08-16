@@ -89,6 +89,7 @@ interface LogoutSessionRow extends Record<string, unknown> {
 export interface AuthWriteOptions extends AuthenticateOptions {
   authenticate: (request: FastifyRequest) => Promise<AccessContext>;
   database?: DatabaseClient;
+  fixedOtpCode?: string;
   sessionSigningKey?: string;
   otpSealing?: OtpSealingConfig;
 }
@@ -258,6 +259,16 @@ export function deriveOtpCode(key: string, command: string, principal: string, i
     code += String((digest[index] ?? 0) % 10);
   }
   return code;
+}
+
+function otpCode(
+  options: AuthWriteOptions,
+  key: string,
+  command: string,
+  principal: string,
+  idempotencyKey: string,
+): string {
+  return options.fixedOtpCode ?? deriveOtpCode(key, command, principal, idempotencyKey);
 }
 
 export function deriveChallengeNumber(prefix: string, key: string, principal: string, idempotencyKey: string): string {
@@ -471,7 +482,7 @@ async function registerLoginRoutes(
           }
           const idempotencyKey = readIdempotencyKey(request);
           const principal = `user:${current.userId}`;
-          const code = deriveOtpCode(key, "auth.login", principal, idempotencyKey);
+          const code = otpCode(options, key, "auth.login", principal, idempotencyKey);
           const challengeNo = deriveChallengeNumber("OTP", key, principal, idempotencyKey);
           const expiresAt = new Date(at.getTime() + OTP_SECONDS * 1000).toISOString();
           await transaction.execute(
@@ -682,7 +693,7 @@ async function registerStepUpRoutes(
       const at = now(options);
       const idempotencyKey = readIdempotencyKey(request);
       const principal = `user:${access.userId}:session:${access.sessionId}`;
-      const code = deriveOtpCode(key, "step-up.request", principal, idempotencyKey);
+      const code = otpCode(options, key, "step-up.request", principal, idempotencyKey);
       const challengeNo = deriveChallengeNumber("HR", key, principal, idempotencyKey);
       if (request.body.requestDigest === undefined) {
         throw new PlatformError(400, "BAD_REQUEST", "Final request digest is required");

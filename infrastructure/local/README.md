@@ -15,9 +15,9 @@ pnpm local:smoke
 - `supply_chain.local@e2e.invalid`
 - `factory.local@e2e.invalid`
 
-默认密码为 `LocalTest!2026`。这些账号、密码、数据库口令和 provider key 都是仅绑定本机的测试值，不得复制到生产环境。
+默认密码为 `LocalTest!2026`，登录及高风险操作的本地验证码统一为 `123456`。这些账号、密码、验证码、数据库口令和 provider key 都是仅绑定本机的测试值，不得复制到生产环境。
 
-登录触发短信后读取验证码：
+如需核对本地 Stub 当前收到的验证码，也可以执行：
 
 ```powershell
 pnpm local:otp

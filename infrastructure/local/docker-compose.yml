@@ -147,6 +147,7 @@ services:
       HOST: 0.0.0.0
       PORT: "3001"
       ALLOW_INSECURE_LOCAL_COOKIES: "true"
+      LOCAL_FIXED_OTP_CODE: "123456"
       DATABASE_URL: mysql://topology:topology-local-only@mysql:3306/topology_local
       DB_SSL: disabled
       DB_SSL_REJECT_UNAUTHORIZED: "false"

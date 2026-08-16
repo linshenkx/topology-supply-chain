@@ -147,6 +147,17 @@ function isLocalContainerRuntime(environment: DatabaseEnvironment): boolean {
     normalized(environment.HOST) === "0.0.0.0";
 }
 
+function resolveLocalFixedOtpCode(
+  environment: DatabaseEnvironment,
+): string | undefined {
+  const code = environment.LOCAL_FIXED_OTP_CODE?.trim();
+  if (code === undefined || code.length === 0) return undefined;
+  if (!isLocalContainerRuntime(environment) || !/^\d{6}$/u.test(code)) {
+    throw new Error("LOCAL_FIXED_OTP_CODE requires the explicit local container runtime and six digits");
+  }
+  return code;
+}
+
 export function resolveCookieSecure(environment: DatabaseEnvironment): boolean {
   const raw = environment.ALLOW_INSECURE_LOCAL_COOKIES?.trim().toLowerCase();
   if (raw !== undefined && raw !== "true" && raw !== "false") {
@@ -184,6 +195,7 @@ export async function buildRuntimeApp(
   const environment = options.environment ?? process.env;
   const production = isProductionRuntime(environment);
   const cookieSecure = resolveCookieSecure(environment);
+  const fixedOtpCode = resolveLocalFixedOtpCode(environment);
   const sessionSigningKey = environment.API_SESSION_SIGNING_KEY?.trim();
   if (production && (sessionSigningKey?.length ?? 0) < 32) {
     throw new Error("API_SESSION_SIGNING_KEY must contain at least 32 characters");
@@ -257,6 +269,7 @@ export async function buildRuntimeApp(
       ...(options.now === undefined ? {} : { now: options.now }),
       ...(sessionSigningKey === undefined ? {} : { sessionSigningKey }),
       ...(otpSealing === undefined ? {} : { otpSealing }),
+      ...(fixedOtpCode === undefined ? {} : { fixedOtpCode }),
     };
     const authenticate = (request: Parameters<typeof authenticateRequest>[1]) =>
       authenticateRequest(database, request, authOptions);

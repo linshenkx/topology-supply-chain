@@ -51,7 +51,8 @@ test("local insecure cookies and provider stub stay out of the Aliyun Compose", 
   assert.match(service("api"), /APP_ENV: local/u);
   assert.match(service("api"), /DEPLOY_TARGET: local/u);
   assert.match(service("api"), /ALLOW_INSECURE_LOCAL_COOKIES: "true"/u);
-  assert.doesNotMatch(aliyunCompose, /DEPLOY_TARGET: local|ALLOW_INSECURE_LOCAL_COOKIES: "true"|LOCAL_FILE_STORAGE_ROOT|local-stub/u);
+  assert.match(service("api"), /LOCAL_FIXED_OTP_CODE: "123456"/u);
+  assert.doesNotMatch(aliyunCompose, /DEPLOY_TARGET: local|ALLOW_INSECURE_LOCAL_COOKIES: "true"|LOCAL_FIXED_OTP_CODE|LOCAL_FILE_STORAGE_ROOT|local-stub/u);
   assert.match(stub, /mode: "local-only"/u);
   assert.doesNotMatch(stub, /E2E_RUN_ID|E2E_STUB_/u);
 });

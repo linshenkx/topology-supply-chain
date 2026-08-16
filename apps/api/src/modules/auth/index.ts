@@ -63,6 +63,7 @@ export interface AuthenticateOptions {
 
 export interface AuthModuleOptions extends AuthenticateOptions {
   database?: DatabaseClient;
+  fixedOtpCode?: string;
   sessionSigningKey?: string;
   otpSealing?: OtpSealingConfig;
 }
@@ -472,5 +473,6 @@ export async function registerAuthModule(
       ? {}
       : { sessionSigningKey: options.sessionSigningKey }),
     ...(options.otpSealing === undefined ? {} : { otpSealing: options.otpSealing }),
+    ...(options.fixedOtpCode === undefined ? {} : { fixedOtpCode: options.fixedOtpCode }),
   });
 }
