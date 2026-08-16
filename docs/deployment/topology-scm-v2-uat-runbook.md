@@ -8,8 +8,8 @@
 
 - 服务器：`8.138.82.131`；
 - 根目录：`/opt/topology-scm-v2`；
-- 入口：仅监听服务器回环地址 `127.0.0.1:18080`；
-- 访问：本机 SSH 隧道 + HTTP；
+- 容器入口：仅监听服务器回环地址 `127.0.0.1:18080`；
+- 公网访问：宿主机 Nginx 在 <https://scm.topologygz.com> 终止 TLS，再转发到回环入口；
 - 验证码：`123456`；
 - 数据：最新迁移与合成 UAT fixture 为准；旧演示库只备份，不做历史兼容扩展；
 - 容器：统一以 root 运行，权限边界由容器网络、只读根文件系统和专用挂载目录提供。
@@ -18,7 +18,7 @@
 
 | 服务 | 镜像 | 作用 |
 | --- | --- | --- |
-| `nginx` | 官方 `nginx:1.27-alpine` 的 ACR 镜像标签 | 唯一 HTTP 入口，路由 Web 与 `/api/v1/*`；镜像内容未定制，仅规避 ECS 访问 Docker Hub 超时 |
+| `nginx` | 官方 `nginx:1.27-alpine` 的 ACR 镜像标签 | 容器内 HTTP 网关，路由 Web 与 `/api/v1/*` 并保留宿主机传入的 HTTPS 元数据 |
 | `app` | `topology-scm-web-<git-sha>` | 前端 |
 | `backend` | `topology-scm-backend-<git-sha>` | API 与后台任务循环 |
 | `stub` | Backend 同镜像 | UAT 短信、邮件、文件扫描替身 |
@@ -105,13 +105,15 @@ chmod 700 deploy.sh rollback.sh
 
 ## 6. 访问与测试账号
 
-本机建立隧道：
+直接访问 <https://scm.topologygz.com>。证书由宿主机 Certbot 管理，路径为 `/etc/letsencrypt/live/scm.topologygz.com/`，自动续期时保留 80 端口的 `/.well-known/acme-challenge/` 路由。
+
+仅在排障时可建立回环隧道：
 
 ```powershell
 ssh -N -L 18080:127.0.0.1:18080 topology-supply-chain
 ```
 
-访问 <http://127.0.0.1:18080>。默认 `LOCAL_FIXTURE_RUN_ID=uat` 时账号包括：
+默认 `LOCAL_FIXTURE_RUN_ID=uat` 时账号包括：
 
 - `admin.uat@e2e.invalid`
 - `supply_chain.uat@e2e.invalid`
@@ -129,6 +131,7 @@ docker compose --env-file .env.production logs --tail=200 backend
 docker compose --env-file .env.production logs --tail=200 app nginx
 curl -fsS http://127.0.0.1:18080/healthz
 curl -fsS http://127.0.0.1:18080/api/v1/health/ready
+curl -fsS https://scm.topologygz.com/healthz
 ```
 
 数据库、审计与 Outbox 只做最小只读核对；不要用直接删库/删表代替业务清理。
@@ -163,12 +166,13 @@ curl -fsS http://127.0.0.1:18080/api/v1/health/ready
 - 登录失败：确认 fixture 初始化成功、密码来源正确、验证码为 `123456`；
 - 文件上传失败：确认 `/opt/topology-scm-v2/data/files` 可写且 stub 健康；
 - 页面正常但 API 404：检查 `nginx-uat.conf` 的 `/api/v1/` 路由；
+- HTTP 页面报 `crypto.randomUUID is not a function`：必须使用公网 HTTPS 地址；公网 HTTP 只允许重定向，不能作为浏览器验收入口；
 - 镜像拉取失败：确认服务器 ACR 登录状态和镜像标签，不要改用 `latest`；
 - 端口冲突：仅调整 `.env.production` 的 `HTTP_PORT`，不要动旧服务的 80/3000。
 
 ## 11. 本阶段不包含
 
-- 公网域名、HTTPS 证书和正式安全组开放；
+- 正式生产证书治理、WAF/CDN 与安全组收紧；
 - 真实短信、邮件、OSS、AI provider；
 - 旧 demo 数据迁移和兼容层；
 - 完整生产监控、灾备演练或高可用；

@@ -85,7 +85,8 @@ test("UAT Nginx owns API routing and clears identity assertions", () => {
   assert.match(nginx, /location \^~ \/api\/v1\//u);
   assert.match(nginx, /proxy_pass http:\/\/backend:3001/u);
   assert.match(nginx, /proxy_pass http:\/\/app:3000/u);
-  assert.match(nginx, /proxy_set_header X-Forwarded-Proto http/u);
+  assert.match(nginx, /proxy_set_header X-Forwarded-Proto \$topology_forwarded_proto/u);
+  assert.match(nginx, /"" \$scheme/u);
   assert.match(nginx, /proxy_set_header X-Forwarded-Host \$http_host/u);
   assert.doesNotMatch(nginx, /proxy_set_header X-Forwarded-Host \$host;/u);
   assert.match(nginx, /proxy_set_header oai-authenticated-user-email ""/u);

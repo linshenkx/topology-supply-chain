@@ -59,7 +59,7 @@ services:
       NODE_ENV: test
       HOST: 0.0.0.0
       PORT: "3001"
-      ALLOW_INSECURE_LOCAL_COOKIES: "true"
+      ALLOW_INSECURE_LOCAL_COOKIES: "false"
       LOCAL_FIXED_OTP_CODE: "123456"
       DATABASE_URL: "${DATABASE_URL:?DATABASE_URL is required}"
       DB_SSL: "${DB_SSL:-disabled}"
@@ -109,7 +109,7 @@ services:
     user: "0:0"
     restart: unless-stopped
     environment:
-      APP_BASE_URL: "http://127.0.0.1:${HTTP_PORT:-18080}"
+      APP_BASE_URL: "https://scm.topologygz.com"
       APP_ENV: local
       DEPLOY_TARGET: local
       NODE_ENV: test

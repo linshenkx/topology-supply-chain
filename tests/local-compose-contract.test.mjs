@@ -47,14 +47,14 @@ test("local Nginx is the HTTP owner and routes API and Web without TLS or a test
   assert.doesNotMatch(compose, /tooling\/e2e\/gateway|v1-development-bridge/u);
 });
 
-test("local and Aliyun UAT Compose both make the test-only HTTP boundary explicit", () => {
+test("local Compose allows HTTP while public Aliyun UAT keeps Secure cookies", () => {
   assert.match(service("backend"), /APP_ENV: local/u);
   assert.match(service("backend"), /DEPLOY_TARGET: local/u);
   assert.match(service("backend"), /ALLOW_INSECURE_LOCAL_COOKIES: "true"/u);
   assert.match(service("backend"), /LOCAL_FIXED_OTP_CODE: "123456"/u);
   assert.match(service("backend"), /OTP_SEALING_KEYS_JSON/u);
   assert.match(aliyunCompose, /DEPLOY_TARGET: local/u);
-  assert.match(aliyunCompose, /ALLOW_INSECURE_LOCAL_COOKIES: "true"/u);
+  assert.match(aliyunCompose, /ALLOW_INSECURE_LOCAL_COOKIES: "false"/u);
   assert.match(aliyunCompose, /LOCAL_FIXED_OTP_CODE: "123456"/u);
   assert.match(aliyunCompose, /LOCAL_FILE_STORAGE_ROOT: \/var\/lib\/topology-files/u);
   assert.match(aliyunCompose, /127\.0\.0\.1:\$\{HTTP_PORT:-18080\}:80/u);

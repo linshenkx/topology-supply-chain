@@ -13,7 +13,7 @@
 
 ## 测试环境固定值
 
-Backend 以显式 `APP_ENV=local`、`DEPLOY_TARGET=local`、`NODE_ENV=test` 运行，允许 HTTP Cookie并使用固定验证码 `123456`。Provider URL/key 指向 Compose 内部 stub；文件写入 `/opt/topology-scm-v2/data/files`。这些值不得直接用于正式生产。
+Backend 以显式 `APP_ENV=local`、`DEPLOY_TARGET=local`、`NODE_ENV=test` 运行并使用固定验证码 `123456`，但公网链路仍要求 HTTPS 和 Secure Cookie。Provider URL/key 指向 Compose 内部 stub；文件写入 `/opt/topology-scm-v2/data/files`。这些值不得直接用于正式生产。
 
 `.env.production` 虽沿用历史文件名，但只代表服务器私有部署参数。它不得包含 `SSH_PASSWORD`，不得提交 Git，也不得整文件注入 Web 或 Nginx。
 

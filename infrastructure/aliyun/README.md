@@ -20,10 +20,12 @@ curl -fsS http://127.0.0.1:18080/healthz
 curl -fsS http://127.0.0.1:18080/api/v1/health/ready
 ```
 
-UAT 通过 SSH 隧道访问：
+UAT 公网验收地址：<https://scm.topologygz.com>。宿主机 Nginx 负责 TLS，容器 Nginx 继续只监听服务器回环地址。
+
+排障时可通过 SSH 隧道直达容器 HTTP 网关：
 
 ```powershell
 ssh -N -L 18080:127.0.0.1:18080 topology-supply-chain
 ```
 
-然后浏览器打开 <http://127.0.0.1:18080>。测试账号由 `LOCAL_FIXTURE_RUN_ID` 决定，默认 `uat`；验证码固定为 `123456`。该配置仅用于测试验收，不是正式生产配置。
+测试账号由 `LOCAL_FIXTURE_RUN_ID` 决定，默认 `uat`；验证码固定为 `123456`。公网浏览器必须使用 HTTPS，以满足 Web Crypto 和 Secure Cookie 约束。
