@@ -1,6 +1,6 @@
 # 本地完整 Docker 启动
 
-本目录提供与生产部署分离的本地自包含运行链：MySQL、迁移、测试数据、Web、API、Worker、本地文件存储、本地 provider stub 与 Nginx。浏览器只访问 Nginx 的 HTTP 入口；本地不需要证书，也不使用 Web 内部 bridge 或 E2E gateway。
+本目录提供与生产部署分离的本地自包含运行链：MySQL、迁移、测试数据、Web、Backend（API 与后台任务）、本地文件存储、本地 provider stub 与 Nginx。浏览器只访问 Nginx 的 HTTP 入口；本地不需要证书，也不使用 Web 内部 bridge 或 E2E gateway。
 
 ## 启动
 
@@ -44,7 +44,7 @@ pnpm local:down
 pnpm local:reset
 ```
 
-默认只向 `127.0.0.1` 暴露 Nginx `8080` 和 MySQL 调试端口 `3307`。Web、API、Worker 和 stub 只在 Compose 网络内可见。端口和 fixture 标识可以复制 `.env.example` 后覆盖。
+默认只向 `127.0.0.1` 暴露 Nginx `8080` 和 MySQL 调试端口 `3307`。Web、Backend 和 stub 只在 Compose 网络内可见。端口和 fixture 标识可以复制 `.env.example` 后覆盖。
 
 ## 与生产的边界
 

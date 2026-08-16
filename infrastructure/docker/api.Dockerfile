@@ -7,41 +7,50 @@ RUN corepack enable \
 
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 COPY apps/api/package.json ./apps/api/package.json
+COPY apps/worker/package.json ./apps/worker/package.json
 COPY packages/contracts/package.json ./packages/contracts/package.json
 
-RUN pnpm install --frozen-lockfile --ignore-scripts --no-optional --prod=false \
+RUN pnpm install --frozen-lockfile --ignore-scripts --prod=false \
+    --filter . \
     --filter @topology/api \
+    --filter @topology/worker \
     --filter @topology/contracts
 
 COPY apps/api/tsconfig.json ./apps/api/tsconfig.json
 COPY apps/api/src ./apps/api/src
+COPY apps/worker/tsconfig.json ./apps/worker/tsconfig.json
+COPY apps/worker/src ./apps/worker/src
 COPY packages/contracts/tsconfig.json ./packages/contracts/tsconfig.json
 COPY packages/contracts/src ./packages/contracts/src
+COPY database ./database
+COPY tooling ./tooling
+COPY infrastructure/local ./infrastructure/local
 
-RUN pnpm --filter @topology/api build
+RUN pnpm --filter @topology/worker build \
+    && pnpm --filter @topology/api build
 RUN pnpm --filter @topology/api deploy --prod --no-optional /prod/apps/api
 
 FROM node:22-alpine AS runner
 
 WORKDIR /app
 
-ENV NODE_ENV=production
-ENV APP_ENV=production
-ENV DEPLOY_TARGET=aliyun
 ENV HOST=0.0.0.0
 ENV PORT=3001
 ENV HOME=/tmp
 
-RUN addgroup --system --gid 1001 nodejs \
-    && adduser --system --uid 1001 --ingroup nodejs api
+RUN corepack enable \
+    && corepack prepare pnpm@11.9.0 --activate
 
-COPY --from=builder --chown=api:nodejs /prod/apps/api ./apps/api
-
-USER api
+COPY --from=builder /prod/apps/api ./apps/api
+COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/database ./database
+COPY --from=builder /app/tooling ./tooling
+COPY --from=builder /app/infrastructure/local ./infrastructure/local
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 
 EXPOSE 3001
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3001/api/v1/health/live >/dev/null || exit 1
 
-CMD ["node", "apps/api/dist/server.js"]
+CMD ["node", "apps/api/dist/backend-server.js"]

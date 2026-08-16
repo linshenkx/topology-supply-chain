@@ -1,6 +1,6 @@
 # 拓扑供应链进销存管理系统
 
-广州拓扑睡眠科技有限公司的供应链协同系统。本仓库是一个多运行时 monorepo：Web、Fastify API 与后台 Worker 分别构建和运行，但共享 Git、pnpm lockfile、契约、MySQL migration history 与发布清单。
+广州拓扑睡眠科技有限公司的供应链协同系统。本仓库是一个 monorepo：Web 单独构建，Backend 在同一 Node 进程中运行 Fastify API 与后台任务循环；两者共享 Git、pnpm lockfile、契约、MySQL migration history 与发布清单。
 
 本文是当前工程入口。文档按当前规范/能力、阶段验收、实施记录、逐提交审查和历史快照分类，统一从 [docs 文档索引](./docs/README.md) 路由。Scope A 最近一次已接受验收是 [Stage 11 真人与 Agent 联合 E2E 最终验收](./docs/refactor/stage11-t3-final-e2e-acceptance.md)（受控本机技术验收 GO）；2026-08-04 的生产与业务状态保留在 [PROJECT_STATUS 历史快照](./docs/history/PROJECT_STATUS.md)，不代表当前实时生产状态。
 
@@ -9,23 +9,22 @@
 | 运行单元 | 源码/端口 | 生产责任 |
 | --- | --- | --- |
 | Web | `apps/web/app/`，内部 loopback 端口 | 页面与兼容入口；不拥有 `/api/v1` |
-| API | `apps/api`，`:3001` | `/api/v1/*`、鉴权/权限、同步读写事务 |
-| Worker | `apps/worker`，`:3002` | outbox/job、provider 副作用、独立 ready/fence |
+| Backend | `apps/api` + `apps/worker`，`:3001` | `/api/v1/*`、鉴权/权限、同步事务、outbox/job 与 provider 副作用 |
 | Contracts | `packages/contracts` | API Schema、DTO 与持久化 command/resource identity 事实源 |
 
 | 平台 | 支持等级 | 边界 |
 | --- | --- | --- |
-| 阿里云 ECS + RDS MySQL + OSS | 生产主运行链 | Nginx → Web/API，Worker 独立运行；Compose/manifest 协同发布 |
+| 阿里云 ECS + RDS MySQL | 当前 UAT 运行链 | 官方 Nginx → Web/Backend；Backend 同进程承载后台任务 |
 | D1 + Vinext + Sites + Cloudflare adapter | 开发预览与兼容 | 仅保留本地预览、构建与 Gateway 接入；不得作为生产 MySQL/OSS 语义的替代 |
 
-Web 已由 `apps/web` 独立 package 拥有；根 package 只负责编排 Web、API、Worker、contracts、database tooling 与仓库门禁。
+Web 已由 `apps/web` 独立 package 拥有；`apps/worker` 保留后台任务领域代码与独立测试入口，但当前部署不再维护独立 Worker 镜像。根 package 只负责编排 Web、Backend、contracts、database tooling 与仓库门禁。
 
 ## 工程边界
 
 - MySQL migration history、release manifest、writer fence、command/resource、outbox、approval、file 与 audit identity 都是冻结协议。
 - `topology_session`、`topology_csrf`、RBAC/data scope、CSRF/Origin、Step-up、事务/CAS/幂等和 unknown-outcome 语义不得被工程规整弱化。
 - 18 个 legacy 业务 GET 保持精确 `410 + WRITER_MOVED + successor Link`；浏览器业务流统一经本地/测试 Gateway，生产继续经现有 Nginx。
-- Purchase Receipt、BOM 实际库存预留/领料/消耗、质检放行/隔离等属于 Scope B，不在工程规范化范围内。
+- 已完成采购整批收货、待检批次、整批质检以及生产预留/领料/消耗/释放三条受限闭环；部分收货、冲销、拆批、完整 MRP/WIP 等复杂能力仍不在本阶段范围内。
 
 ## 环境与安装
 
@@ -44,7 +43,7 @@ pnpm install --frozen-lockfile
 pnpm dev
 pnpm build:web:preview
 
-# 生产 Web 与独立运行时
+# Web、Backend 与测试用独立 Worker 构建
 pnpm build:web:production
 pnpm build:api
 pnpm build:worker
@@ -75,14 +74,14 @@ MySQL 门禁使用以下环境变量：
 
 ## 部署入口
 
-本地完整 Docker 启动见 [infrastructure/local/README.md](./infrastructure/local/README.md)。该入口包含 MySQL、迁移、Web、API、Worker、本地 provider stub 与 HTTP Nginx，适合交付前人工验证；不复用生产证书，也不使用应用内 bridge。
+本地完整 Docker 启动见 [infrastructure/local/README.md](./infrastructure/local/README.md)。该入口包含 MySQL、迁移、Web、Backend、本地 provider stub 与 HTTP Nginx，适合交付前人工验证；不复用生产证书，也不使用应用内 bridge。
 
-阿里云生产路径的事实源位于 [infrastructure/aliyun/README.md](./infrastructure/aliyun/README.md)：
+阿里云 UAT 路径的事实源位于 [infrastructure/aliyun/README.md](./infrastructure/aliyun/README.md)，完整过程见 [UAT 部署与运维手册](./docs/deployment/topology-scm-v2-uat-runbook.md)：
 
-- `infrastructure/aliyun/docker-compose.yml`：Web/API/Worker 与一次性 migrator；
-- `infrastructure/aliyun/nginx-scm.conf`：公网只暴露 Nginx，`/api/v1/*` 归 API；
+- `infrastructure/aliyun/docker-compose.yml`：Web/Backend、复用 Backend 镜像的一次性 migrator/bootstrap/stub，以及官方 Nginx；
+- `infrastructure/aliyun/nginx-uat.conf`：回环 HTTP 入口，`/api/v1/*` 归 Backend；
 - `tooling/e2e/gateway.mjs`：本地/测试唯一 loopback Gateway，`/api/v1`（含子路径）归 API，其余路径归 Web；HTTP/HTTPS 共用同一分流逻辑。
-- `infrastructure/aliyun/deploy.sh` / `rollback.sh`：manifest、migration 与 generation 兼容门禁；
+- `infrastructure/aliyun/deploy.sh` / `rollback.sh`：拉取 SHA 镜像、append-only migration、UAT fixture、健康检查与镜像切换；
 - `tooling/release/activate-writers.sh`：独立、显式 writer activation；普通 deploy 不隐式激活 writer。
 
 本地 workflow 已编码 frozen install、工程门禁与真实 MySQL suite。未 push 前只能说明 workflow 和本地验证就绪，不能声称 GitHub Actions 已绿色。
@@ -91,8 +90,8 @@ MySQL 门禁使用以下环境变量：
 
 ```text
 apps/web/               独立 Web package、页面与兼容边界；不拥有 /api/v1
-apps/api/               canonical Fastify API
-apps/worker/            canonical 后台 Worker
+apps/api/               canonical Backend/API 入口
+apps/worker/            后台任务模块与独立测试入口；部署时嵌入 Backend
 apps/web/platform/      D1/Vinext/Sites 开发预览与兼容 adapter
 packages/contracts/     跨边界协议与稳定 identity
 database/               运行时 schema、MySQL/D1 migration 与数据库工具

@@ -4,63 +4,46 @@ set -euo pipefail
 DEPLOY_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "${DEPLOY_DIR}"
 
-if [[ ! -f ".env.production" ]]; then
-  echo "缺少 infrastructure/aliyun/.env.production，请先从模板复制并安全填写。"
+if [[ ! -f .env.production ]]; then
+  echo "缺少 ${DEPLOY_DIR}/.env.production"
   exit 1
 fi
 
-export COMPOSE_ENV_FILES="${DEPLOY_DIR}/.env.production"
-export RELEASE_TAG="${RELEASE_TAG:-${APP_IMAGE_TAG:-$(date -u +%Y%m%d%H%M%S)}}"
-export APP_IMAGE_TAG="${RELEASE_TAG}"
-export API_IMAGE_TAG="${RELEASE_TAG}"
-export WORKER_IMAGE_TAG="${RELEASE_TAG}"
-echo "准备发布镜像版本：${RELEASE_TAG}（Web/API/Worker 同版本）"
-
-MANIFEST_TEMP="$(mktemp "${DEPLOY_DIR}/.release-manifest.XXXXXX")"
-cleanup() {
-  rm -f "${MANIFEST_TEMP}"
-}
-trap cleanup EXIT
-
-wait_for_service_health() {
-  local display_name="$1"
-  local service_name="$2"
-  local health_url="$3"
-
-  for attempt in {1..30}; do
-    if curl -fsS --connect-timeout 2 --max-time 5 "${health_url}" >/dev/null; then
-      echo "${display_name} 健康检查通过。"
-      return 0
-    fi
-    sleep 2
-  done
-
-  echo "${display_name} 健康检查失败，请执行 docker compose logs --tail=200 ${service_name} 查看原因。"
-  return 1
+read_env() {
+  local name="$1"
+  sed -n "s/^${name}=//p" .env.production | tail -n 1
 }
 
-docker compose build app api worker migrator
-docker run --rm "topology-scm-migrator:${RELEASE_TAG}" node tooling/release/release-manifest.mjs print > "${MANIFEST_TEMP}"
-docker compose --profile migration run --rm preflight
-docker compose --profile migration run --rm migrator node tooling/release/check-mysql-migration-history.mjs
-docker compose stop app api worker
-docker compose --profile migration run --rm migrator node tooling/release/check-write-drain.mjs
-docker compose --profile migration run --rm migrator
-docker compose up -d app api worker
+PROJECT_ROOT="$(read_env PROJECT_ROOT)"
+HTTP_PORT="$(read_env HTTP_PORT)"
+WEB_IMAGE="$(read_env WEB_IMAGE)"
+BACKEND_IMAGE="$(read_env BACKEND_IMAGE)"
+: "${PROJECT_ROOT:=/opt/topology-scm-v2}"
+: "${HTTP_PORT:=18080}"
+: "${WEB_IMAGE:?WEB_IMAGE is required}"
+: "${BACKEND_IMAGE:?BACKEND_IMAGE is required}"
 
-if ! wait_for_service_health "Web" "app" "http://127.0.0.1:3000/api/health"; then
-  exit 1
-fi
+mkdir -p "${PROJECT_ROOT}/data/files" "${PROJECT_ROOT}/backups" "${PROJECT_ROOT}/source"
+chmod 700 "${PROJECT_ROOT}" "${PROJECT_ROOT}/data" "${PROJECT_ROOT}/data/files" "${PROJECT_ROOT}/backups"
 
-if ! wait_for_service_health "API" "api" "http://127.0.0.1:3001/api/v1/health/ready"; then
-  exit 1
-fi
+docker compose --env-file .env.production config --quiet
+docker pull "${WEB_IMAGE}"
+docker pull "${BACKEND_IMAGE}"
+docker compose --env-file .env.production --profile tools run --rm migrator
+docker compose --env-file .env.production --profile tools run --rm bootstrap
+docker compose --env-file .env.production up -d --remove-orphans stub backend app nginx
 
-if ! wait_for_service_health "Worker" "worker" "http://127.0.0.1:3002/health/ready"; then
-  exit 1
-fi
+for attempt in {1..40}; do
+  if curl -fsS --connect-timeout 2 --max-time 5 "http://127.0.0.1:${HTTP_PORT}/healthz" >/dev/null \
+    && curl -fsS --connect-timeout 2 --max-time 5 "http://127.0.0.1:${HTTP_PORT}/api/v1/health/ready" >/dev/null; then
+    printf '%s\n%s\n' "${WEB_IMAGE}" "${BACKEND_IMAGE}" > .active-release
+    echo "topology-scm-v2 UAT 已就绪：http://127.0.0.1:${HTTP_PORT}"
+    exit 0
+  fi
+  sleep 3
+done
 
-printf '%s\n' "${RELEASE_TAG}" > .active-release
-mv "${MANIFEST_TEMP}" .active-release-manifest.json
-docker image prune -f --filter "until=168h" >/dev/null
-echo "Web、API 与 Worker 均已发布到版本 ${RELEASE_TAG}；普通发布未改变 writer fence。"
+docker compose --env-file .env.production ps
+docker compose --env-file .env.production logs --tail=120 backend app nginx
+echo "UAT 健康检查失败。"
+exit 1

@@ -1,5 +1,6 @@
 import { createServer } from "node:http";
 import { createHash, randomUUID } from "node:crypto";
+import { pathToFileURL } from "node:url";
 
 import mysql, {
   type Pool,
@@ -414,7 +415,11 @@ async function dispatchNotification(
   }
 }
 
-async function processMessage(pool: Pool, row: OutboxRow): Promise<boolean> {
+async function processMessage(
+  pool: Pool,
+  providers: ReturnType<typeof readWorkerProviders>,
+  row: OutboxRow,
+): Promise<boolean> {
   const payload = parsePayload(row.payloadJson);
   switch (row.topic) {
     case "email.deliver":
@@ -656,87 +661,139 @@ async function sweepReminder(pool: Pool): Promise<boolean> {
   }
 }
 
-const providers = readWorkerProviders();
-const pool = databasePool();
-let ready = false;
-let stopping = false;
-let lastReminderSweep = 0;
+export interface WorkerRuntime {
+  checkReady(): Promise<void>;
+  close(): Promise<void>;
+}
 
-const health = createServer(async (request, response) => {
-  if (request.url === "/health/live") {
-    response.writeHead(200, { "content-type": "application/json" });
-    response.end(JSON.stringify({ status: "ok", service: "topology-worker" }));
-    return;
+export interface StartWorkerRuntimeOptions {
+  onFatal?: (error: unknown) => void;
+}
+
+export async function startWorkerRuntime(
+  options: StartWorkerRuntimeOptions = {},
+): Promise<WorkerRuntime> {
+  const providers = readWorkerProviders();
+  const pool = databasePool();
+  let ready = false;
+  let stopping = false;
+  let fatalError: unknown;
+  let lastReminderSweep = 0;
+
+  async function checkReady(): Promise<void> {
+    if (fatalError !== undefined) throw fatalError;
+    if (!ready) throw new Error("Background worker is not ready");
+    await pool.query("SELECT 1");
+    await checkProviders(providers);
+    await requireWorkerFenceIdentities(pool);
   }
-  if (request.url === "/health/ready") {
-    try {
-      await pool.query("SELECT 1");
-      await checkProviders(providers);
-      await requireWorkerFenceIdentities(pool);
-      response.writeHead(ready ? 200 : 503, { "content-type": "application/json" });
-      response.end(JSON.stringify({ status: ready ? "ok" : "not_ready" }));
-    } catch {
-      response.writeHead(503, { "content-type": "application/json" });
-      response.end(JSON.stringify({ status: "not_ready" }));
+
+  async function loop(): Promise<void> {
+    while (!stopping) {
+      let worked = false;
+      if (Date.now() - lastReminderSweep >= reminderSweepMs) {
+        lastReminderSweep = Date.now();
+        try {
+          for (let index = 0; index < maxBatch && await sweepReminder(pool); index += 1) {
+            worked = true;
+          }
+        } catch (error) {
+          if (!(error instanceof FencePaused)) throw error;
+        }
+      }
+      for (let index = 0; index < maxBatch; index += 1) {
+        let row: OutboxRow | undefined;
+        try {
+          row = await claim(pool);
+        } catch (error) {
+          if (error instanceof FencePaused) break;
+          throw error;
+        }
+        if (row === undefined) break;
+        worked = true;
+        try {
+          const completedInDispatch = await processMessage(pool, providers, row);
+          if (!completedInDispatch) await complete(pool, row);
+        } catch (error) {
+          if (error instanceof FencePaused) await pause(pool, row);
+          else await fail(pool, row, error);
+        }
+      }
+      if (!worked) await new Promise((resolve) => setTimeout(resolve, pollMs));
     }
-    return;
   }
-  response.writeHead(404).end();
-});
 
-health.listen(Number(process.env.PORT ?? 3002), process.env.HOST ?? "0.0.0.0");
-
-async function loop(): Promise<void> {
   await pool.query("SELECT 1");
   await checkProviders(providers);
+  await requireWorkerFenceIdentities(pool);
   ready = true;
-  while (!stopping) {
-    let worked = false;
-    if (Date.now() - lastReminderSweep >= reminderSweepMs) {
-      lastReminderSweep = Date.now();
-      try {
-        for (let index = 0; index < maxBatch && await sweepReminder(pool); index += 1) {
-          worked = true;
+  const loopPromise = loop().catch((error: unknown) => {
+    fatalError = error;
+    ready = false;
+    if (!stopping) options.onFatal?.(error);
+  });
+
+  return {
+    checkReady,
+    async close() {
+      if (stopping) return;
+      stopping = true;
+      ready = false;
+      await loopPromise;
+      await pool.end();
+    },
+  };
+}
+
+async function runStandalone(): Promise<void> {
+  let runtime: WorkerRuntime | undefined;
+  let health: ReturnType<typeof createServer> | undefined;
+  let stopping = false;
+
+  async function shutdown(): Promise<void> {
+    if (stopping) return;
+    stopping = true;
+    health?.close();
+    await runtime?.close();
+  }
+
+  try {
+    runtime = await startWorkerRuntime({
+      onFatal() {
+        process.exitCode = 1;
+        void shutdown();
+      },
+    });
+    health = createServer(async (request, response) => {
+      if (request.url === "/health/live") {
+        response.writeHead(200, { "content-type": "application/json" });
+        response.end(JSON.stringify({ status: "ok", service: "topology-worker" }));
+        return;
+      }
+      if (request.url === "/health/ready") {
+        try {
+          await runtime?.checkReady();
+          response.writeHead(200, { "content-type": "application/json" });
+          response.end(JSON.stringify({ status: "ok" }));
+        } catch {
+          response.writeHead(503, { "content-type": "application/json" });
+          response.end(JSON.stringify({ status: "not_ready" }));
         }
-      } catch (error) {
-        if (!(error instanceof FencePaused)) throw error;
+        return;
       }
+      response.writeHead(404).end();
+    });
+    health.listen(Number(process.env.PORT ?? 3002), process.env.HOST ?? "0.0.0.0");
+    for (const signal of ["SIGINT", "SIGTERM"] as const) {
+      process.once(signal, () => void shutdown());
     }
-    for (let index = 0; index < maxBatch; index += 1) {
-      let row: OutboxRow | undefined;
-      try {
-        row = await claim(pool);
-      } catch (error) {
-        if (error instanceof FencePaused) break;
-        throw error;
-      }
-      if (row === undefined) break;
-      worked = true;
-      try {
-        const completedInDispatch = await processMessage(pool, row);
-        if (!completedInDispatch) await complete(pool, row);
-      } catch (error) {
-        if (error instanceof FencePaused) await pause(pool, row);
-        else await fail(pool, row, error);
-      }
-    }
-    if (!worked) await new Promise((resolve) => setTimeout(resolve, pollMs));
+  } catch {
+    process.exitCode = 1;
+    await shutdown();
   }
 }
 
-async function shutdown(): Promise<void> {
-  if (stopping) return;
-  stopping = true;
-  ready = false;
-  health.close();
-  await pool.end();
+const entryPath = process.argv[1];
+if (entryPath !== undefined && import.meta.url === pathToFileURL(entryPath).href) {
+  void runStandalone();
 }
-
-for (const signal of ["SIGINT", "SIGTERM"] as const) {
-  process.once(signal, () => void shutdown());
-}
-
-loop().catch(async () => {
-  process.exitCode = 1;
-  await shutdown();
-});

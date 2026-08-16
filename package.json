@@ -13,7 +13,7 @@
     "build:web:preview": "pnpm --filter @topology/web build:preview",
     "build:web:production": "pnpm --filter @topology/web build:production",
     "build:contracts": "pnpm --filter @topology/contracts build",
-    "build:api": "pnpm --filter @topology/contracts build && pnpm --filter @topology/api build:code",
+    "build:api": "pnpm --filter @topology/contracts build && pnpm --filter @topology/worker build && pnpm --filter @topology/api build:code",
     "build:worker": "pnpm --filter @topology/worker build",
     "build:all": "pnpm build:web:production && pnpm build:api && pnpm build:worker",
     "build:aliyun": "pnpm build:web:production",

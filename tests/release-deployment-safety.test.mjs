@@ -60,7 +60,7 @@ test("release manifest is complete, canonical, and deterministic", async () => {
   assert.equal(RELEASE_MANIFEST.writer.legacyWriterCompatible, false);
   assert.equal(RELEASE_MANIFEST.writer.commands.length, 36);
   assert.equal(RELEASE_MANIFEST.writer.resources.length, 30);
-  assert.deepEqual(RELEASE_MANIFEST.runtimeServices, ["app", "api", "worker"]);
+  assert.deepEqual(RELEASE_MANIFEST.runtimeServices, ["app", "backend"]);
   assert.equal(new Set(RELEASE_MANIFEST.writer.commands.map(({ command }) => command)).size, 36);
   assert.equal(new Set(RELEASE_MANIFEST.writer.resources.map(({ resource }) => resource)).size, 30);
 });
@@ -93,12 +93,10 @@ test("release manifest identities match the frozen platform, supply, operations,
 
 test("ordinary deploy has zero writer activation path", () => {
   assert.doesNotMatch(deploy, /set-writer-fences|activate-writers|WRITER_ACTIVATION/u);
-  assert.match(deploy, /docker compose build app api worker migrator/u);
-  assert.match(deploy, /node tooling\/release\/release-manifest\.mjs print/u);
-  assert.match(deploy, /node tooling\/release\/check-mysql-migration-history\.mjs/u);
-  assert.match(deploy, /node tooling\/release\/check-write-drain\.mjs/u);
-  assert.match(deploy, /docker compose --profile migration run --rm migrator\s*$/mu);
-  assert.match(deploy, /docker compose up -d app api worker/u);
+  assert.match(deploy, /docker compose --env-file \.env\.production --profile tools run --rm migrator/u);
+  assert.match(deploy, /docker compose --env-file \.env\.production --profile tools run --rm bootstrap/u);
+  assert.match(deploy, /docker compose --env-file \.env\.production up -d --remove-orphans stub backend app nginx/u);
+  assert.doesNotMatch(deploy, /docker compose build|docker image prune/u);
 });
 
 test("writer activation is independent, explicit, and defaults to an empty fail-closed allowlist", () => {
@@ -109,13 +107,11 @@ test("writer activation is independent, explicit, and defaults to an empty fail-
   assert.doesNotMatch(deploy, /WRITER_ACTIVATION_RESOURCES/u);
 });
 
-test("rollback requires manifests and never guesses compatibility or accepts a legacy override", () => {
-  assert.match(rollback, /\.active-release-manifest\.json/u);
-  assert.match(rollback, /check-release-compatibility\.mjs/u);
-  assert.match(rollback, /check-legacy-rollback-safety\.mjs/u);
-  assert.match(rollback, /topology-scm-worker:\$\{WORKER_IMAGE_TAG\}/u);
-  assert.doesNotMatch(rollback, /if docker image inspect "topology-scm-worker/u);
-  assert.doesNotMatch(rollback, /LEGACY_ROLLBACK_RECONCILED_GENERATION|override/u);
+test("UAT rollback switches only known Web and Backend images without touching schema", () => {
+  assert.match(rollback, /export WEB_IMAGE="\$1"/u);
+  assert.match(rollback, /export BACKEND_IMAGE="\$2"/u);
+  assert.match(rollback, /up -d --no-build stub backend app nginx/u);
+  assert.doesNotMatch(rollback, /db:migrate|drizzle|\.sql|LEGACY_ROLLBACK_RECONCILED_GENERATION|override/iu);
   assert.doesNotMatch(rollbackSafety, /command_name IN\s*\(/u);
   assert.doesNotMatch(rollbackSafety, /LEGACY_ROLLBACK_RECONCILED_GENERATION|override/u);
   assert.match(rollbackSafety, /SELECT DISTINCT command_name AS commandName FROM command_idempotency/u);

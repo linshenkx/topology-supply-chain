@@ -58,6 +58,9 @@ importers:
       '@topology/contracts':
         specifier: workspace:*
         version: link:../../packages/contracts
+      '@topology/worker':
+        specifier: workspace:*
+        version: link:../worker
       ali-oss:
         specifier: 6.23.0
         version: 6.23.0

@@ -77,7 +77,7 @@ export const RELEASE_MANIFEST = Object.freeze({
     releaseFamily: "topology-scm.scope-a",
   }),
   manifestVersion: 1,
-  runtimeServices: Object.freeze(["app", "api", "worker"]),
+  runtimeServices: Object.freeze(["app", "backend"]),
   schema: Object.freeze({
     contract: "mysql.scope-a.0000-0005",
     migrations,

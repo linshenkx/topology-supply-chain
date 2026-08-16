@@ -14,6 +14,7 @@ README 是当前工程唯一入口；本索引只按证据属性路由材料，�
 | [基础业务能力—测试覆盖矩阵](./business-capability-test-matrix.md) | Stage 11 基线测试证据与缺口；Stage 12 三条闭环现状以业务闭环设计为准。 |
 | [协作开发指南](../CONTRIBUTING.md) | 环境、门禁、兼容与安全审查规则。 |
 | [安全说明](../SECURITY.md) | 凭据、漏洞披露和发布审批要求。 |
+| [topology-scm-v2 UAT 部署与运维手册](./deployment/topology-scm-v2-uat-runbook.md) | 两镜像 UAT 拓扑、备份、部署、更新、回滚和故障处理。 |
 
 ## 阶段验收
 

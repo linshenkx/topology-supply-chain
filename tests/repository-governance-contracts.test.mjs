@@ -127,7 +127,9 @@ test("CI prepares its ignored environment file and keeps explicit E2E suites out
   assert.match(suiteRunner, /const mysqlIntegration = .*&& !e2eIntegration\(name\)/u);
   assert.match(suiteRunner, /suite === "mysql" \? mysqlIntegration\(entry\.name\)/u);
   assert.match(suiteRunner, /"--experimental-strip-types",\s+"--test"/u);
-  assert.match(environmentCheck, /const preflightBlock = preflightStart >= 0/u);
-  assert.match(environmentCheck, /preflightEnvFiles\[0\] !== "\.env\.production"/u);
-  assert.doesNotMatch(environmentCheck, /composeConfig\.services\.preflight\?\.env_file/u);
+  assert.match(environmentCheck, /"--env-file", fileURLToPath\(templateUrl\)/u);
+  assert.match(environmentCheck, /backend: "backend"/u);
+  assert.match(environmentCheck, /migrator: "migrator"/u);
+  assert.match(environmentCheck, /must use an explicit environment allowlist/u);
+  assert.doesNotMatch(environmentCheck, /services\.preflight/u);
 });

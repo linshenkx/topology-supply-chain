@@ -1,43 +1,20 @@
-# 环境变量责任合同
+# UAT 环境变量责任
 
-阿里云/RDS MySQL/OSS 是生产主链；D1/Vinext/Sites 只用于开发预览与兼容。变量所有权以 `tooling/checks/environment-contract.mjs` 为机器可校验事实源，`pnpm deploy:check-env-contract` 同时解析模板、Compose 插值、硬编码 environment 和标准化 `docker compose config`，拒绝未登记变量、未声明消费者或模板中的真实 secret 值。
+当前阿里云目录用于并行测试环境，不是最终生产配置。变量事实源是 `tooling/checks/environment-contract.mjs`，执行 `pnpm deploy:check-env-contract` 会解析模板和标准化 Compose，确认 Web、Backend、迁移与 fixture 工具只收到各自所需变量。
 
-## 生产必需与条件必需
+## 必需变量
 
-| 变量 | Owner / 消费者 | 责任 |
-| --- | --- | --- |
-| `APP_BASE_URL` | Web / Web | 生产必须为 `https://scm.topologygz.com` |
-| `SESSION_SECRET`, `JOB_TOKEN` | Web / Web | 独立随机 secret，不复用 |
-| `API_SESSION_SIGNING_KEY` | Identity / Web+API | 独立于 Web session secret |
-| `OTP_SEALING_KEY_ID`, `OTP_SEALING_KEY` | Identity / API | API 当前 key id 与单 key |
-| `OTP_SEALING_KEYS_JSON` | Identity / Worker | Worker keyring 必须包含 API 当前 key id 对应的 key |
-| `DATABASE_URL` | Database / Web+API+Worker+Migrator | 内网 MySQL URL；生命周期仍由各 runtime 独立拥有 |
-| `OSS_REGION`, `OSS_BUCKET` | Files / Web+API | 私有 OSS 定位 |
-| `OSS_ECS_RAM_ROLE` 或 `OSS_ACCESS_KEY_ID`+`OSS_ACCESS_KEY_SECRET` | Files / Web+API | 优先 RAM role；静态 key 只作为成对兼容配置 |
-| `SMS_WEBHOOK_URL`, `SMS_WEBHOOK_API_KEY` | Notifications / Web+Worker | Web SMS 兼容发送与 Worker 异步发送共享 endpoint 凭据 |
-| `SMS_WEBHOOK_HEALTH_URL`, `EMAIL_*_WEBHOOK_*`, `FILE_SCAN_*_WEBHOOK_*` | Worker / Worker | Worker provider 的 URL、API key、health URL 按 provider 成组配置 |
+- `WEB_IMAGE`、`BACKEND_IMAGE`：带完整 Git SHA 的 ACR 镜像；
+- `DATABASE_URL`：优先连接独立 `topology_scm_v2` 库；
+- `API_SESSION_SIGNING_KEY`：至少 32 字符；
+- `OTP_SEALING_KEY`：64 位十六进制；
+- `LOCAL_FIXTURE_PASSWORD`：至少 12 字符；
+- `PROJECT_ROOT=/opt/topology-scm-v2`、`HTTP_PORT=18080`。
 
-## 有界默认值
+## 测试环境固定值
 
-| 变量 | Owner / 消费者 | 默认来源 |
-| --- | --- | --- |
-| `DB_POOL_SIZE` | Database / Web+API | 模板与 Compose：`10` |
-| `DB_CONNECT_TIMEOUT_MS`, `DB_PING_TIMEOUT_MS`, `DB_QUERY_TIMEOUT_MS` | API / API | Compose：`5000` / `2000` / `5000` |
-| `DB_TRANSACTION_TIMEOUT_MS` | API / API | Compose：`30000` |
-| `WORKER_DB_POOL_SIZE` | Worker / Worker | Compose：`5` |
-| `DB_SSL`, `DB_SSL_REJECT_UNAUTHORIZED` | Database / all MySQL consumers | 生产 `enabled` / `true`；本地测试显式 `disabled` |
-| `OSS_INTERNAL_ENDPOINT` | Files / Web+API | 生产同地域默认 `true`，本地示例 `false` |
-| `APP_ENV` | Repository / Web+API | Compose 固定 production；不得用于隐式 writer activation |
-| `DEPLOY_TARGET` | Repository / Web+API | Compose 固定 aliyun；不得用于隐式 writer activation |
-| `DOMAIN_REGISTRATION_MODULES` | API / API | Compose 固定 supply+operations 组合入口 manifest（冻结 ID `r2.master-procurement` / `r3.fulfillment-writes`）；不是可随意删减的 operator 开关 |
-| `NODE_ENV`, `HOST`, `PORT`, `WORKER_INTERNAL_URL` | Runtime/API / 对应进程 | Compose 中的硬编码 runtime 边界同样受机器合同覆盖，不再漏检 |
+Backend 以显式 `APP_ENV=local`、`DEPLOY_TARGET=local`、`NODE_ENV=test` 运行，允许 HTTP Cookie并使用固定验证码 `123456`。Provider URL/key 指向 Compose 内部 stub；文件写入 `/opt/topology-scm-v2/data/files`。这些值不得直接用于正式生产。
 
-## 发布参数与 secret 边界
+`.env.production` 虽沿用历史文件名，但只代表服务器私有部署参数。它不得包含 `SSH_PASSWORD`，不得提交 Git，也不得整文件注入 Web 或 Nginx。
 
-`APP_IMAGE_TAG`、`API_IMAGE_TAG`、`WORKER_IMAGE_TAG` 由 `deploy.sh`/`rollback.sh` 从同一 `RELEASE_TAG` 派生，不进入长期 env 模板。`CURRENT_RELEASE_MANIFEST_JSON`、`TARGET_RELEASE_MANIFEST_JSON`、`WRITER_ACTIVATION_RESOURCES` 与 `WRITER_ACTIVATION_EVIDENCE_SHA256` 是单次命令证据，不属于 runtime 环境。
-
-Web、API、Worker 三个长期进程均使用 Compose 显式 allowlist。Web 不再加载整份 `.env.production`，因此不会获得 Email、File-scan、Worker OTP keyring 或 Worker pool 配置；它仍显式获得自身 DB/OSS/session/SMS 兼容路径所需变量。在长期 runtime 中，Worker 独占 Email/File-scan/OTP keyring secret；SMS endpoint/API key 因 Web 兼容发送路径而由 Web 与 Worker 共同消费。
-
-`PRODUCTION_PREFLIGHT_ENV_BOUNDARY`：短生命周期 `preflight` 服务单独加载 `.env.production`，只运行全量生产配置检查，不执行 migration、history 或 drain。`migrator` 不再使用 `env_file`，仅显式接收 `DATABASE_URL`、`DB_SSL`、`DB_SSL_REJECT_UNAUTHORIZED`；发布仍按 preflight → history → stop → drain → migration → runtime readiness 的原顺序执行，不改变 release、rollback 或 writer fence 行为。
-
-普通 deploy 不设置 writer activation allowlist，也不改变 `writer_fences`。生产值只放在服务器的 ignored `.env.production` 或批准的外部 secret 管理中。
+完整操作见 [UAT 部署与运维手册](../../docs/deployment/topology-scm-v2-uat-runbook.md)。
