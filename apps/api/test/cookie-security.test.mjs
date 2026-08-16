@@ -8,8 +8,11 @@ const production = { APP_ENV: "production", DEPLOY_TARGET: "e2e", HOST: "127.0.0
 
 test("Cookie policy is Secure by default and rejects insecure production or non-loopback configuration", () => {
   assert.equal(resolveCookieSecure({ HOST: "127.0.0.1" }), true);
-  assert.throws(() => resolveCookieSecure({ ...production, ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /requires non-production/u);
-  assert.throws(() => resolveCookieSecure({ APP_ENV: "development", HOST: "0.0.0.0", ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /loopback HOST/u);
+  assert.throws(() => resolveCookieSecure({ ...production, ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /requires a non-production/u);
+  assert.throws(() => resolveCookieSecure({ APP_ENV: "development", HOST: "0.0.0.0", ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /explicit local container runtime/u);
+  assert.equal(resolveCookieSecure({ APP_ENV: "local", DEPLOY_TARGET: "local", NODE_ENV: "test", HOST: "0.0.0.0", ALLOW_INSECURE_LOCAL_COOKIES: "true" }), false);
+  assert.throws(() => resolveCookieSecure({ APP_ENV: "local", DEPLOY_TARGET: "aliyun", NODE_ENV: "test", HOST: "0.0.0.0", ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /explicit local container runtime/u);
+  assert.throws(() => resolveCookieSecure({ APP_ENV: "local", DEPLOY_TARGET: "local", NODE_ENV: "production", HOST: "0.0.0.0", ALLOW_INSECURE_LOCAL_COOKIES: "true" }), /requires a non-production/u);
   assert.throws(() => resolveCookieSecure({ HOST: "127.0.0.1", ALLOW_INSECURE_LOCAL_COOKIES: "maybe" }), /must be true or false/u);
 });
 

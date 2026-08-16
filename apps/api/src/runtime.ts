@@ -8,6 +8,7 @@ import {
 } from "./infrastructure/database.js";
 import { createAuditWriter } from "./infrastructure/audit.js";
 import { createAuditXlsxExporter } from "./infrastructure/audit-xlsx.js";
+import { createLocalFileStorage } from "./infrastructure/local-file-storage.js";
 import { createOssFileStorage } from "./infrastructure/oss-storage.js";
 import { createSupplierPerformanceXlsxExporter } from "./infrastructure/supplier-performance-xlsx.js";
 import { registerApprovalsModule } from "./modules/approvals/index.js";
@@ -99,6 +100,24 @@ function hasDatabaseConfiguration(environment: DatabaseEnvironment): boolean {
   return (environment.DATABASE_URL?.trim().length ?? 0) > 0;
 }
 
+function createRuntimeFileStorage(environment: DatabaseEnvironment): FileStoragePort {
+  const localRoot = environment.LOCAL_FILE_STORAGE_ROOT?.trim();
+  const localRuntime =
+    normalized(environment.APP_ENV) === "local" &&
+    normalized(environment.DEPLOY_TARGET) === "local" &&
+    normalized(environment.NODE_ENV) !== "production";
+  if (localRoot !== undefined && localRoot.length > 0) {
+    if (!localRuntime) {
+      throw new Error("Local file storage is restricted to the explicit local runtime");
+    }
+    return createLocalFileStorage({ root: localRoot });
+  }
+  if (localRuntime) {
+    throw new Error("LOCAL_FILE_STORAGE_ROOT is required for the local runtime");
+  }
+  return createOssFileStorage({ env: environment });
+}
+
 function authEnvironment(
   environment: DatabaseEnvironment,
   cookieSecure: boolean,
@@ -121,14 +140,24 @@ function isLoopbackHost(value: string | undefined): boolean {
   return new Set(["localhost", "127.0.0.1", "::1", "[::1]"]).has(value?.trim().toLowerCase() ?? "");
 }
 
+function isLocalContainerRuntime(environment: DatabaseEnvironment): boolean {
+  return normalized(environment.APP_ENV) === "local" &&
+    normalized(environment.DEPLOY_TARGET) === "local" &&
+    normalized(environment.NODE_ENV) !== "production" &&
+    normalized(environment.HOST) === "0.0.0.0";
+}
+
 export function resolveCookieSecure(environment: DatabaseEnvironment): boolean {
   const raw = environment.ALLOW_INSECURE_LOCAL_COOKIES?.trim().toLowerCase();
   if (raw !== undefined && raw !== "true" && raw !== "false") {
     throw new Error("ALLOW_INSECURE_LOCAL_COOKIES must be true or false");
   }
   if (raw !== "true") return true;
-  if (isProductionRuntime(environment) || !isLoopbackHost(environment.HOST)) {
-    throw new Error("ALLOW_INSECURE_LOCAL_COOKIES requires non-production loopback HOST");
+  if (
+    isProductionRuntime(environment) ||
+    (!isLoopbackHost(environment.HOST) && !isLocalContainerRuntime(environment))
+  ) {
+    throw new Error("ALLOW_INSECURE_LOCAL_COOKIES requires a non-production loopback or explicit local container runtime");
   }
   return false;
 }
@@ -160,7 +189,6 @@ export async function buildRuntimeApp(
     throw new Error("API_SESSION_SIGNING_KEY must contain at least 32 characters");
   }
   let otpSealing: ReturnType<typeof readOtpSealingConfig> | undefined;
-  let workerInternalUrl: string | undefined;
   let database = options.database;
   let ownsDatabase = false;
   let databasePingTimeoutMs =
@@ -179,11 +207,9 @@ export async function buildRuntimeApp(
   if (production || cookieSecure === false) {
     otpSealing = readOtpSealingConfig(environment);
   }
-  if (production) {
-    workerInternalUrl = environment.WORKER_INTERNAL_URL?.trim();
-    if (!workerInternalUrl && options.fileScannerReady === undefined) {
-      throw new Error("WORKER_INTERNAL_URL is required in production");
-    }
+  const workerInternalUrl = environment.WORKER_INTERNAL_URL?.trim();
+  if (production && !workerInternalUrl && options.fileScannerReady === undefined) {
+    throw new Error("WORKER_INTERNAL_URL is required in production");
   }
   const providerReadiness = options.fileScannerReady ?? (async () => {
     if (!workerInternalUrl) throw new Error("WORKER_INTERNAL_URL is required");
@@ -240,7 +266,7 @@ export async function buildRuntimeApp(
     });
     const auditExporter = options.auditExporter ?? createAuditXlsxExporter();
     const fileStorage =
-      options.fileStorage ?? createOssFileStorage({ env: environment });
+      options.fileStorage ?? createRuntimeFileStorage(environment);
     const supplierPerformanceExporter =
       options.supplierPerformanceExporter ??
       createSupplierPerformanceXlsxExporter();

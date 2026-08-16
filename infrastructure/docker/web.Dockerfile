@@ -3,12 +3,22 @@ WORKDIR /app
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN corepack enable && corepack prepare pnpm@11.9.0 --activate
 
-FROM base AS builder
+FROM base AS dependencies
 ENV NODE_ENV=production
 ENV APP_ENV=production
 ENV DEPLOY_TARGET=aliyun
-COPY . .
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY apps/api/package.json ./apps/api/package.json
+COPY apps/web/package.json ./apps/web/package.json
+COPY apps/worker/package.json ./apps/worker/package.json
+COPY packages/contracts/package.json ./packages/contracts/package.json
+COPY packages/shared-config/package.json ./packages/shared-config/package.json
+COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz
 RUN pnpm install --frozen-lockfile --ignore-scripts
+
+FROM dependencies AS builder
+COPY . .
+RUN pnpm install --offline --frozen-lockfile --ignore-scripts
 RUN pnpm build:aliyun
 
 FROM base AS migrator
@@ -21,6 +31,7 @@ ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV APP_ENV=production
 ENV DEPLOY_TARGET=aliyun
+ENV HOSTNAME=0.0.0.0
 ENV PORT=3000
 RUN addgroup --system --gid 1001 nodejs \
     && adduser --system --uid 1001 nextjs

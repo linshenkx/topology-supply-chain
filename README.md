@@ -75,6 +75,8 @@ MySQL 门禁使用以下环境变量：
 
 ## 部署入口
 
+本地完整 Docker 启动见 [infrastructure/local/README.md](./infrastructure/local/README.md)。该入口包含 MySQL、迁移、Web、API、Worker、本地 provider stub 与 HTTP Nginx，适合交付前人工验证；不复用生产证书，也不使用应用内 bridge。
+
 阿里云生产路径的事实源位于 [infrastructure/aliyun/README.md](./infrastructure/aliyun/README.md)：
 
 - `infrastructure/aliyun/docker-compose.yml`：Web/API/Worker 与一次性 migrator；

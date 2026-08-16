@@ -1,0 +1,240 @@
+name: topology-scm-local
+
+services:
+  mysql:
+    image: mysql:8.0.46
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: topology_local
+      MYSQL_USER: topology
+      MYSQL_PASSWORD: topology-local-only
+      MYSQL_ROOT_PASSWORD: topology-root-local-only
+      TZ: Asia/Shanghai
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+    ports:
+      - "127.0.0.1:${LOCAL_MYSQL_PORT:-3307}:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD --silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+
+  migrator:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/web.Dockerfile
+      target: migrator
+    image: topology-scm-local-tools:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    environment:
+      DATABASE_URL: mysql://topology:topology-local-only@mysql:3306/topology_local
+      DB_SSL: disabled
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+    command: ["pnpm", "db:migrate:mysql"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  bootstrap:
+    image: topology-scm-local-tools:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    environment:
+      DATABASE_URL: mysql://topology:topology-local-only@mysql:3306/topology_local
+      DB_SSL: disabled
+      LOCAL_FIXTURE_RUN_ID: ${LOCAL_FIXTURE_RUN_ID:-local}
+      LOCAL_FIXTURE_PASSWORD: ${LOCAL_FIXTURE_PASSWORD:-LocalTest!2026}
+    command: ["node", "infrastructure/local/bootstrap.mjs"]
+    depends_on:
+      migrator:
+        condition: service_completed_successfully
+    restart: "no"
+    security_opt:
+      - no-new-privileges:true
+
+  stub:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/local-stub.Dockerfile
+    image: topology-scm-local-stub:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    restart: unless-stopped
+    environment:
+      HOST: 0.0.0.0
+      PORT: "3003"
+      LOCAL_STUB_KEYS_JSON: '{"email":"local-email-key","sms":"local-sms-key","scan":"local-scan-key"}'
+      LOCAL_STUB_CONTROL_TOKEN: local-only-control-token
+    expose:
+      - "3003"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3003/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/worker.Dockerfile
+      target: runner
+    image: topology-scm-local-worker:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    restart: unless-stopped
+    init: true
+    environment:
+      DATABASE_URL: mysql://topology:topology-local-only@mysql:3306/topology_local
+      DB_SSL: disabled
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+      HOST: 0.0.0.0
+      PORT: "3002"
+      OTP_SEALING_KEYS_JSON: '{"v1":"0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}'
+      SMS_WEBHOOK_URL: http://stub:3003/sms/deliver
+      SMS_WEBHOOK_HEALTH_URL: http://stub:3003/sms/health
+      SMS_WEBHOOK_API_KEY: local-sms-key
+      EMAIL_WEBHOOK_URL: http://stub:3003/email/deliver
+      EMAIL_WEBHOOK_HEALTH_URL: http://stub:3003/email/health
+      EMAIL_WEBHOOK_API_KEY: local-email-key
+      FILE_SCAN_WEBHOOK_URL: http://stub:3003/scan/deliver
+      FILE_SCAN_WEBHOOK_HEALTH_URL: http://stub:3003/scan/health
+      FILE_SCAN_WEBHOOK_API_KEY: local-scan-key
+    expose:
+      - "3002"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      stub:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3002/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+
+  api:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/api.Dockerfile
+      target: runner
+    image: topology-scm-local-api:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    restart: unless-stopped
+    init: true
+    environment:
+      APP_ENV: local
+      DEPLOY_TARGET: local
+      NODE_ENV: test
+      HOST: 0.0.0.0
+      PORT: "3001"
+      ALLOW_INSECURE_LOCAL_COOKIES: "true"
+      DATABASE_URL: mysql://topology:topology-local-only@mysql:3306/topology_local
+      DB_SSL: disabled
+      DB_SSL_REJECT_UNAUTHORIZED: "false"
+      API_SESSION_SIGNING_KEY: local-only-signing-key-that-is-at-least-32-characters
+      OTP_SEALING_KEY_ID: v1
+      OTP_SEALING_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      WORKER_INTERNAL_URL: http://worker:3002
+      DOMAIN_REGISTRATION_MODULES: ../composition/supply-writes-manifest.js,../composition/operations-writes-manifest.js
+      LOCAL_FILE_STORAGE_ROOT: /var/lib/topology-files
+    expose:
+      - "3001"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+      worker:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3001/api/v1/health/ready"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    volumes:
+      - file-data:/var/lib/topology-files
+
+  app:
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/web.Dockerfile
+      target: runner
+    image: topology-scm-local-web:${LOCAL_IMAGE_TAG:-dev}
+    user: "0:0"
+    restart: unless-stopped
+    environment:
+      APP_BASE_URL: http://127.0.0.1:${LOCAL_HTTP_PORT:-8080}
+      APP_ENV: local
+      DEPLOY_TARGET: local
+      HOSTNAME: 0.0.0.0
+      PORT: "3000"
+    expose:
+      - "3000"
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp:size=128m,mode=1777
+
+  nginx:
+    image: nginx:1.27-alpine
+    user: "0:0"
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${LOCAL_HTTP_PORT:-8080}:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 3s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:size=32m,mode=0755
+      - /var/run:size=1m,mode=0755
+      - /tmp:size=16m,mode=1777
+
+volumes:
+  mysql-data:
+  file-data:

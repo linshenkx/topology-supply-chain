@@ -175,15 +175,20 @@ test("workspace dependency policy excludes vulnerable XLSX and fast-uri releases
 });
 
 test("Web production image stages the vendored SheetJS tarball before install", () => {
-  const vendorCopy = Math.max(
-    aliyunDockerfile.indexOf("COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz"),
-    aliyunDockerfile.indexOf("COPY . ."),
+  const vendorCopy = aliyunDockerfile.indexOf(
+    "COPY vendor/xlsx-0.20.3.tgz ./vendor/xlsx-0.20.3.tgz",
   );
   const install = aliyunDockerfile.indexOf(
     "RUN pnpm install --frozen-lockfile --ignore-scripts",
   );
+  const sourceCopy = aliyunDockerfile.indexOf("COPY . .");
+  const offlineRelink = aliyunDockerfile.indexOf(
+    "RUN pnpm install --offline --frozen-lockfile --ignore-scripts",
+  );
   assert.notEqual(vendorCopy, -1);
   assert.ok(vendorCopy < install);
+  assert.ok(install < sourceCopy);
+  assert.ok(sourceCopy < offlineRelink);
 });
 
 test("compose publishes Web, API, and Worker on separate loopback-only ports", () => {
