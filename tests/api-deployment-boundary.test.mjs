@@ -66,6 +66,7 @@ test("UAT Compose has two custom images and no standalone Worker or Migrator ima
   }
   assert.match(service("migrator"), /node_modules\/drizzle-kit\/bin\.cjs.+migrate/u);
   assert.match(service("backend"), /backend-server\.js|image:/u);
+  assert.match(service("nginx"), /topology-scm-nginx-1\.27-alpine/u);
   assert.doesNotMatch(compose, /worker\.Dockerfile|topology-scm-worker-|topology-scm-migrator-/u);
 });
 
@@ -85,6 +86,8 @@ test("UAT Nginx owns API routing and clears identity assertions", () => {
   assert.match(nginx, /proxy_pass http:\/\/backend:3001/u);
   assert.match(nginx, /proxy_pass http:\/\/app:3000/u);
   assert.match(nginx, /proxy_set_header X-Forwarded-Proto http/u);
+  assert.match(nginx, /proxy_set_header X-Forwarded-Host \$http_host/u);
+  assert.doesNotMatch(nginx, /proxy_set_header X-Forwarded-Host \$host;/u);
   assert.match(nginx, /proxy_set_header oai-authenticated-user-email ""/u);
   assert.doesNotMatch(nginx, /listen 443|ssl_certificate/u);
 });

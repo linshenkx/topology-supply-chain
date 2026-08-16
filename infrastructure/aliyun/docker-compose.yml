@@ -135,7 +135,8 @@ services:
         max-file: "5"
 
   nginx:
-    image: nginx:1.27-alpine
+    # Official nginx:1.27-alpine mirrored to ACR because this ECS cannot reliably reach Docker Hub.
+    image: registry.cn-guangzhou.aliyuncs.com/bigdata200/my-opc-workbench:topology-scm-nginx-1.27-alpine
     user: "0:0"
     restart: unless-stopped
     ports:

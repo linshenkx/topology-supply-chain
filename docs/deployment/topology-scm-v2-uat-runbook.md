@@ -18,7 +18,7 @@
 
 | 服务 | 镜像 | 作用 |
 | --- | --- | --- |
-| `nginx` | `nginx:1.27-alpine` | 唯一 HTTP 入口，路由 Web 与 `/api/v1/*` |
+| `nginx` | 官方 `nginx:1.27-alpine` 的 ACR 镜像标签 | 唯一 HTTP 入口，路由 Web 与 `/api/v1/*`；镜像内容未定制，仅规避 ECS 访问 Docker Hub 超时 |
 | `app` | `topology-scm-web-<git-sha>` | 前端 |
 | `backend` | `topology-scm-backend-<git-sha>` | API 与后台任务循环 |
 | `stub` | Backend 同镜像 | UAT 短信、邮件、文件扫描替身 |
