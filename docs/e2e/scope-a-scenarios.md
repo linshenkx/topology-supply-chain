@@ -16,7 +16,7 @@
 | R3-4 | `POST /api/v1/finance`：只以安全的现有测试夹具检查 create/verify/invalidate/link 等当前合同；需 Step-up 的动作分别检查有/无/错误 challenge。 | 高风险动作需要 server-consumed Step-up；记录账本/审计/Outbox 关联和 fail-closed 响应。 | 禁止真实支付；发票覆盖、税务、月结、退款/更正规则以及并发金额守恒仍待业务裁决和 MySQL 参数化验证。 |
 | P1 | 对任一已完成 R2/R3 命令发送完全相同请求两次；随后以相同 key 改 body/digest；在受控测试夹具触发 fence 和 unknown outcome。 | 首次 `replayed:false`，等同重放 `replayed:true` 且不增加业务副作用；key/digest 冲突拒绝；fence/unknown 返回稳定 fail-closed code（如 `WRITER_FENCE_REJECTED`、`COMMAND_OUTCOME_UNKNOWN`）。 | 不可通过拔网络或修改生产配置伪造 unknown outcome；没有受控夹具时只复核已有自动化证据，标为未现场执行。 |
 | P2 | 用 stub/测试消息观察 Worker 对 Outbox 的 lease、完成、失败重试或重复投递边界；关联同一 `RUN_ID` 的 audit/Outbox。 | 记录消息 ID、状态变化、attempt/可用时间（若存在）和 Worker 日志；重复消息不能被当作新业务写入。 | poison-event/真实 provider 的业务语义未形成完整合同；禁止真实通知、支付、OSS 调用，也不可手工更新 outbox 状态。 |
-| C1 | 对 18 个旧业务 GET 发 GET 请求，逐一保存响应和 `Link`。 | 全部精确为 `410`，body code `WRITER_MOVED`，`Link: <successor>; rel="successor-version"`；successor 必须是对应 `/api/v1/*`。 | `/api/health`、`/api/session`、开发 bridge 不在这 18 个之内；不要以 404 或任一单一示例替代全数核对。 |
+| C1 | 通过唯一 Gateway 对 18 个旧业务 GET 发 GET 请求，逐一保存响应和 `Link`。 | 全部精确为 `410`，body code `WRITER_MOVED`，`Link: <successor>; rel="successor-version"`；successor 必须是对应 `/api/v1/*`。 | `/api/health`、`/api/session` 不在这 18 个之内；不要以 404 或任一单一示例替代全数核对。 |
 | C2 | 仅在受控 aliyun-runtime 本地测试配置中故意不提供可用 OSS，访问 Web `GET /api/health`。 | `503`，body 为受控 `status: degraded`，`checks.objectStorage: failed`，不含密钥、endpoint 细节或堆栈。保存脱敏响应和 Web 日志。 | 不访问真实 OSS；普通 preview runtime 的健康 `200` 不验证此项。若无法构造受控环境，标为未执行，不影响已记录的基础自动化门禁。 |
 
 ### Stage 12 三条业务闭环（逐页面必验）

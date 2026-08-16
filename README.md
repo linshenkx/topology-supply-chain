@@ -16,7 +16,7 @@
 | 平台 | 支持等级 | 边界 |
 | --- | --- | --- |
 | 阿里云 ECS + RDS MySQL + OSS | 生产主运行链 | Nginx → Web/API，Worker 独立运行；Compose/manifest 协同发布 |
-| D1 + Vinext + Sites + Cloudflare adapter | 开发预览与兼容 | 保留本地预览、构建与 bridge；不得作为生产 MySQL/OSS 语义的替代 |
+| D1 + Vinext + Sites + Cloudflare adapter | 开发预览与兼容 | 仅保留本地预览、构建与 Gateway 接入；不得作为生产 MySQL/OSS 语义的替代 |
 
 Web 已由 `apps/web` 独立 package 拥有；根 package 只负责编排 Web、API、Worker、contracts、database tooling 与仓库门禁。
 
@@ -88,7 +88,7 @@ MySQL 门禁使用以下环境变量：
 ## 目录所有权
 
 ```text
-apps/web/               独立 Web package、bridge 与兼容边界
+apps/web/               独立 Web package、页面与兼容边界；不拥有 /api/v1
 apps/api/               canonical Fastify API
 apps/worker/            canonical 后台 Worker
 apps/web/platform/      D1/Vinext/Sites 开发预览与兼容 adapter

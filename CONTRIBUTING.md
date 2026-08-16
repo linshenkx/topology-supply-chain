@@ -65,7 +65,7 @@ pnpm test:e2e-scope-a
 - session/RBAC/data scope、CSRF/Origin、Step-up 绑定；
 - MySQL transaction/lock/CAS/idempotency/deadline/unknown-outcome；
 - writer fence、事务内 audit/outbox、文件 quarantine/ACL；
-- legacy 业务 GET 的精确 410 合同，以及 `/api/health`、`/api/session`、`/api/v1` bridge；
+- legacy 业务 GET 的精确 410 合同，以及 `/api/health`、`/api/session`；浏览器业务请求统一经 Gateway，Web 不拥有 `/api/v1`；
 - migration frozen history、release manifest 和所有持久化 identity。
 
 涉及价格、付款、BOM、供应商、权限或审批时，除正向行为外还要验证职责分离、负向 data scope 与审计证据。

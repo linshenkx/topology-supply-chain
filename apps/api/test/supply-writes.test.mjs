@@ -259,7 +259,7 @@ test("import evidence is bound to the authenticated upload owner", async () => {
   );
 });
 
-test("legacy writers are 410-only and frontend mutations use the v1 adapter/bridge", async () => {
+test("legacy writers are 410-only and frontend mutations use the v1 adapter", async () => {
   const root = new URL("../../..", import.meta.url);
   const routes = [
     "apps/web/app/api/imports/preview/route.ts", "apps/web/app/api/imports/stage/route.ts", "apps/web/app/api/imports/commit/route.ts",

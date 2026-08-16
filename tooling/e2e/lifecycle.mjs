@@ -1,5 +1,6 @@
 import { execFile, spawn } from "node:child_process";
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import http from "node:http";
 import { createServer } from "node:net";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
@@ -67,7 +68,23 @@ async function capture(file, commandName, args, options = {}) {
 async function reservePort() { const server = createServer(); await new Promise((resolvePromise, reject) => server.once("error", reject).listen(0, "127.0.0.1", resolvePromise)); const address = server.address(); await new Promise((resolvePromise) => server.close(resolvePromise)); return address.port; }
 async function waitFor(label, action, timeoutMs = 30_000) { const until = Date.now() + timeoutMs; let last; while (Date.now() < until) { try { const result = await action(); if (result) return result; } catch (error) { last = error; } await new Promise((resolvePromise) => setTimeout(resolvePromise, 500)); } fail(`${label} did not become ready${last ? `: ${last.message}` : ""}`); }
 function isLoopback(value) { const url = new URL(value); return (url.hostname === "127.0.0.1" || url.hostname === "localhost") && !url.username && !url.password; }
-async function json(url, options = {}) { const response = await fetch(url, { signal: AbortSignal.timeout(3_000), ...options }); let body; try { body = await response.json(); } catch { body = undefined; } return { response, body }; }
+function directRequest(url, options = {}) {
+  const target = new URL(url);
+  if (target.hostname !== "127.0.0.1" && target.hostname !== "localhost" && target.hostname !== "::1") fail("E2E readiness probes must target loopback");
+  const transport = target.protocol === "https:" ? https : http;
+  return new Promise((resolve, reject) => {
+    const request = transport.request(target, { method: options.method ?? "GET", headers: options.headers, timeout: 3_000, rejectUnauthorized: false }, (response) => {
+      let raw = "";
+      response.setEncoding("utf8");
+      response.on("data", (chunk) => { raw += chunk; });
+      response.on("end", () => resolve({ status: response.statusCode ?? 0, ok: (response.statusCode ?? 0) >= 200 && (response.statusCode ?? 0) < 300, headers: response.headers, raw }));
+    });
+    request.once("error", reject).once("timeout", () => request.destroy(new Error("E2E readiness probe timeout")));
+    if (options.body !== undefined) request.write(options.body);
+    request.end();
+  });
+}
+async function json(url, options = {}) { const result = await directRequest(url, options); let body; try { body = JSON.parse(result.raw); } catch { body = undefined; } return { response: result, body }; }
 function httpsJson(url, headers = {}) { return new Promise((resolvePromise, reject) => { const request = https.get(url, { rejectUnauthorized: false, headers, timeout: 3_000 }, (response) => { let raw = ""; response.setEncoding("utf8"); response.on("data", (chunk) => raw += chunk); response.on("end", () => resolvePromise({ status: response.statusCode, body: raw })); }); request.once("error", reject).once("timeout", () => request.destroy(new Error("HTTPS timeout"))); }); }
 function portOpen(port) { return new Promise((resolvePromise) => { const socket = createServer(); socket.once("error", (error) => resolvePromise(error.code === "EADDRINUSE")); socket.listen(port, "127.0.0.1", () => socket.close(() => resolvePromise(false))); }); }
 function childProcess(state, name, entry, args, env, logPath, cwd = root) {
@@ -180,9 +197,14 @@ async function start() {
   const api = childProcess(state, "api", join(root, "apps/api/dist/server.js"), [], { ...common, APP_ENV: state.transport === "https" ? "production" : "e2e", DEPLOY_TARGET: "e2e", NODE_ENV: state.transport === "https" ? "production" : "test", ALLOW_INSECURE_LOCAL_COOKIES: state.transport === "http" ? "true" : "false", DATABASE_URL: state.databaseUrl, DB_SSL: "disabled", HOST: "127.0.0.1", PORT: String(ports.api), API_SESSION_SIGNING_KEY: state.secrets.signingKey, OTP_SEALING_KEY_ID: "v1", OTP_SEALING_KEY: state.secrets.otpKey, WORKER_INTERNAL_URL: state.origins.worker, DOMAIN_REGISTRATION_MODULES: "../composition/supply-writes-manifest.js,../composition/operations-writes-manifest.js" }, join(logs, "api.log"));
   state.resources.pids.api = api; await saveState(state); await waitFor("API", async () => (await json(`${state.origins.api}/api/v1/health/ready`)).response.ok);
   const web = childProcess(state, "web", join(root, "apps/web/node_modules/vinext/dist/cli.js"), ["dev", "--port", String(ports.web), "--host", "127.0.0.1"], common, join(logs, "web.log"), join(root, "apps/web"));
-  state.resources.pids.web = web; await saveState(state); await waitFor("Web", async () => (await fetch(`http://127.0.0.1:${ports.web}`, { signal: AbortSignal.timeout(3_000) })).ok, 120_000);
-  const cert = join(folder, "cert.pem"), key = join(folder, "key.pem");
-  await capture("logs/cert.log", "openssl", ["req", "-config", await openSslConfig(), "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", cert, "-days", "1", "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"], { cwd: folder });
+  state.resources.pids.web = web; await saveState(state); await waitFor("Web", async () => (await directRequest(`http://127.0.0.1:${ports.web}`)).ok, 120_000);
+  let cert;
+  let key;
+  if (state.transport === "https") {
+    cert = join(folder, "cert.pem");
+    key = join(folder, "key.pem");
+    await capture("logs/cert.log", "openssl", ["req", "-config", await openSslConfig(), "-x509", "-newkey", "rsa:2048", "-nodes", "-keyout", key, "-out", cert, "-days", "1", "-subj", "/CN=127.0.0.1", "-addext", "subjectAltName=IP:127.0.0.1,DNS:localhost"], { cwd: folder });
+  }
   const gateway = childProcess(state, "gateway", join(root, "tooling/e2e/gateway.mjs"), [], { ...common, E2E_GATEWAY_TRANSPORT: state.transport, E2E_GATEWAY_PORT: String(ports.gateway), E2E_API_PORT: String(ports.api), E2E_WEB_PORT: String(ports.web), ...(state.transport === "https" ? { E2E_CERT_PATH: cert, E2E_KEY_PATH: key } : {}) }, join(logs, "gateway.log"));
   state.resources.pids.gateway = gateway; state.startedAt = now(); await saveState(state);
   await waitFor("Gateway", async () => (state.transport === "https" ? (await httpsJson(`${state.origins.browser}/_e2e/health`)).status : (await json(`${state.origins.browser}/_e2e/health`)).response.status) === 200);
@@ -202,7 +224,7 @@ async function status() {
   checks.worker = (await json(`${state.origins.worker}/health/ready`).catch(() => ({ response: { ok: false } }))).response.ok;
   checks.api = (await json(`${state.origins.api}/api/v1/health/ready`).catch(() => ({ response: { ok: false } }))).response.ok;
   checks.gateway = (state.transport === "https" ? (await httpsJson(`${state.origins.browser}/_e2e/health`).catch(() => ({ status: 0 }))).status : (await json(`${state.origins.browser}/_e2e/health`).catch(() => ({ response: { status: 0 } }))).response.status) === 200;
-  checks.web = (await fetch(`http://127.0.0.1:${state.resources.ports.web}`, { signal: AbortSignal.timeout(3_000) }).catch(() => ({ ok: false }))).ok;
+  checks.web = (await directRequest(`http://127.0.0.1:${state.resources.ports.web}`).catch(() => ({ ok: false }))).ok;
   checks.migration = await (async () => { const { stdout } = await run(process.execPath, ["tooling/release/check-mysql-migration-history.mjs"], { env: { DATABASE_URL: state.databaseUrl } }); return /6\/6 canonical entries applied/u.test(stdout); })().catch(() => false);
   const ready = Object.values(checks).every(Boolean); print({ status: ready ? "ready" : "blocked", ready, checks, ...safe(state) }); if (!ready) process.exitCode = 2;
 }

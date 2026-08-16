@@ -292,6 +292,7 @@ test("compose applies a read-only, least-privilege API runtime boundary", () => 
 
   assert.doesNotMatch(api, /^\s+(?:env_file|secrets|extends):/m);
   assert.doesNotMatch(api, /^\s+<<:/m);
+  assert.match(api, /^\s+ALLOW_INSECURE_LOCAL_COOKIES: "false"$/m);
   assert.deepEqual(composeMappingKeys(api, "environment"), [
     "ALLOW_INSECURE_LOCAL_COOKIES",
     "API_SESSION_SIGNING_KEY",
