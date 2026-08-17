@@ -8,6 +8,7 @@
 | --- | --- |
 | implemented | 当前实现及受控测试基础足以执行 |
 | demo-shell | 演示/空壳，只做可见性观察，不判通过 |
+| unconfigured | 未接入业务读模型或操作路径，只显示准确未配置状态 |
 | out-of-scope | 明确超范围，不执行也不判通过 |
 | no-fence-profile | 功能已实现，但当前自动化无冻结写入 profile；转人工检查或记录 NOT_RUN |
 | missing-fixture-role | 缺 fixture 角色；需环境管理员授权，否则 HUMAN_CHECKPOINT/BLOCKED |
@@ -40,7 +41,7 @@
 | S12-C1-PROD | 执行单 | factory | supply_chain, denied | t2-operations-scope-a-closures | implemented（独立 RUN_ID） |
 | S12-C2-PROD | 执行单 | factory | supply_chain, denied | t2-operations-scope-a-closures | implemented（独立 RUN_ID，不先 release） |
 | SYS-1-SYS | 系统管理 | admin | denied | （无） | no-fence-profile |
-| DASH-VISIBILITY | 工作台/工厂协同/AI助手 | admin | — | — | demo-shell |
+| DASH-VISIBILITY | 工作台/工厂协同 | admin | — | — | unconfigured |
 
 ## 当前不自动执行（no-fence-profile）
 
@@ -72,4 +73,4 @@
 
 - 声称“已通过”必须能定位到具体覆盖项、操作者角色和证据；自动化 profile 只描述当前测试能力，不是产品功能状态。
 - `no-fence-profile` 表示当前不自动执行，不等于产品未实现或业务失败。
-- demo-shell 与 out-of-scope 永远不进入 PASS；missing-fixture-role 不进入 PASS 直到角色授权补齐。
+- demo-shell、unconfigured 与 out-of-scope 永远不进入 PASS；missing-fixture-role 不进入 PASS 直到角色授权补齐。

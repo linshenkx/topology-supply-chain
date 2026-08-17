@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import "./shipping.css";
 import "./audit.css";
 import "./performance.css";
@@ -15,11 +15,6 @@ import FinanceWorkspace from "./components/FinanceWorkspace";
 import AuditWorkspace from "./components/AuditWorkspace";
 import { finalRequestDigest, mutateJson, uploadPlatformFile } from "./lib/mutation-client";
 import { supplyImports } from "./lib/supply-mutation-client";
-
-type Order = {
-  id: string; factory: string; product: string; sku: string; qty: number;
-  done: number; due: string; status: string; risk: "正常" | "注意" | "异常";
-};
 
 type ImportPreview = {
   canCommit: boolean;
@@ -36,37 +31,14 @@ type ImportStage = { batch: { id: number; importNo: string; status: string } };
 type ImportCommit = { awaitingMapping?: boolean; message?: string; success: boolean };
 type UploadedImport = { file: { id: number }; usable: boolean };
 
-const orders: Order[] = [
-  { id: "EX-260728-01", factory: "组装工厂 A", product: "RestRidge 颈椎枕", sku: "RR-NP-01", qty: 2400, done: 1680, due: "07-31", status: "生产中", risk: "正常" },
-  { id: "EX-260726-03", factory: "组装工厂 B", product: "CloudAir 乳胶枕", sku: "CA-LP-02", qty: 1200, done: 600, due: "07-30", status: "待补料", risk: "异常" },
-  { id: "EX-260724-02", factory: "组装工厂 A", product: "Cooling Wave 枕套", sku: "CW-PC-04", qty: 3200, done: 3040, due: "07-29", status: "待发货", risk: "注意" },
-  { id: "EX-260721-01", factory: "组装工厂 B", product: "DreamRest 护颈枕", sku: "DR-NP-03", qty: 1800, done: 1800, due: "07-28", status: "已完成", risk: "正常" },
-];
-
-const nav = ["工作台", "采购管理", "供应商管理", "执行单", "物料与补料", "生产质检", "发货管理", "库存管理", "工厂协同", "财务结算", "审批中心", "系统管理", "AI助手"];
+const nav = ["工作台", "采购管理", "供应商管理", "执行单", "物料与补料", "生产质检", "发货管理", "库存管理", "工厂协同", "财务结算", "审批中心", "系统管理"];
 
 function InventoryPanel({ toast }: { toast: (message: string) => void }) {
   return <InventoryWorkspace toast={toast} />;
 }
 
-function CollaborationPanel({ toast }: { toast: (message: string) => void }) {
-  return <section className="collab-page">
-    <div className="module-banner collab-banner"><div><span className="eyebrow">三级供应网络协同</span><h2>直接管理第一层，穿透监督第二层，知悉第三层</h2><p>下级异常不影响第一层交付时由组装工厂自行处理；可能影响公司交付时立即强预警。</p></div><button onClick={() => toast("已打开外部协同账号管理")}>管理协同账号</button></div>
-    <div className="network-columns">
-      <article className="network-card tier-one"><header><i>1</i><span><strong>第一层 · 组装工厂</strong><small>供应链直接管理</small></span><b>5家</b></header><div className="network-score"><strong>91.6</strong><span>综合绩效<small>含内部满意度</small></span></div><ul><li>采购计划与采购单履约</li><li>管理下属二、三层供应商</li><li>不能按期交货时进入供应链审批</li></ul><button onClick={() => toast("已进入第一层组装工厂列表")}>查看组装工厂 →</button></article>
-      <article className="network-card tier-two"><header><i>2</i><span><strong>第二层 · 核心供应商</strong><small>组装工厂管理，供应链监督</small></span><b>12家</b></header><div className="network-score"><strong>88.2</strong><span>综合绩效<small>备料风险2项</small></span></div><ul><li>自行确认系统生成的采购任务</li><li>供应链查看完整执行和质检明细</li><li>供应链原则上不直接下达指令</li></ul><button onClick={() => toast("已进入核心供应商风险看板")}>查看核心风险 →</button></article>
-      <article className="network-card tier-three"><header><i>3</i><span><strong>第三层 · 非核心/辅料</strong><small>组装工厂自行管理</small></span><b>12家</b></header><div className="network-score"><strong>86.9</strong><span>综合绩效<small>异常知悉3项</small></span></div><ul><li>供应链查看企业资料与采购价格</li><li>不查看日常订单执行明细</li><li>风险预警后由组装工厂决定暂停</li></ul><button onClick={() => toast("已进入第三层异常概览")}>查看异常概览 →</button></article>
-    </div>
-    <div className="collab-layout">
-      <article className="panel risk-timeline"><div className="panel-head"><div><h3>可能影响公司交付</h3><p>系统预测和第一层主动报告均可触发强预警</p></div><b>2项</b></div>
-        {[
-          ["CR260729-003","乳胶芯延期可能影响MO260729-009","第一层须在24小时内提交方案","剩余18小时","强预警"],
-          ["CR260728-007","包装纸箱来料质检不合格","第一层已提交替代备料方案","待供应链审核","处理中"],
-        ].map(row=><button className="risk-item" key={row[0]} onClick={() => toast(`已打开风险 ${row[0]}`)}><i>!</i><span><strong>{row[1]}</strong><small>{row[0]} · {row[2]}</small></span><b>{row[3]}</b><mark>{row[4]}</mark></button>)}
-      </article>
-      <aside className="panel performance-panel"><div className="panel-head"><div><h3>季度评价</h3><p>排名隐藏企业名称，仅显示本企业位置</p></div><button onClick={() => toast("已打开绩效权重设置")}>配置权重</button></div><div className="performance-bars">{[["准时交付率",92],["质检合格率",96],["异常处理及时率",84],["备料按期完成率",88],["打样配合度",90],["内部满意度",93]].map(row=><div key={row[0]}><span>{row[0]}<b>{row[1]}</b></span><i><em style={{width:`${row[1]}%`}}/></i></div>)}</div></aside>
-    </div>
-  </section>;
+function UnconfiguredPanel({ title, description }: { title: string; description: string }) {
+  return <section className="panel empty-state"><h2>{title}</h2><p>{description}</p></section>;
 }
 
 type ManagedUser = {
@@ -282,33 +254,6 @@ function ApprovalCenterPanel({ toast }: { toast: (message: string) => void }) {
   </section>;
 }
 
-function BackofficePanel({ module, toast }: { module: string; toast: (message: string) => void }) {
-  const configs: Record<string, { title: string; subtitle: string; metrics: string[][] }> = {
-    财务结算: { title: "发票、请款与付款", subtitle: "按实际发货批次生成请款；供应链与财务双重核验发票后才能付款。", metrics: [["待发票","6","¥238,400"],["待双重核验","4","供应链2 · 财务3"],["计划付款","¥486,750","未来30天"],["部分付款","3","剩余¥92,600"]] },
-    审批中心: { title: "双人审批与职责分离", subtitle: "发起人不得审核本人事项；高风险操作继续要求手机验证码。", metrics: [["我的待审批","12","其中4项高风险"],["我发起的","5","2项待处理"],["今日完成","18","平均3.2小时"],["逾期事项","2","每日提醒"]] },
-    系统管理: { title: "账号、权限与审计", subtitle: "多角色、临时权限和五年日志；敏感查看与导出同样留痕。", metrics: [["启用账号","86","内部24 · 外部62"],["临时权限","7","最长90天"],["锁定账号","2","连续失败5次"],["今日敏感访问","38","全部记录"]] },
-    AI助手: { title: "供应链AI业务助手", subtitle: "只查询、解释和生成待确认草稿；不能直接修改业务数据。", metrics: [["今日问答","42","引用业务单据96条"],["操作草稿","8","待人工确认"],["咨询工单","3","统一交供应链分派"],["改进建议","5","仅内部可转开发"]] },
-  };
-  const cfg = configs[module];
-  const rows: Record<string, string[][]> = {
-    财务结算: [["PR260729-006","广东鸿基羽绒制品","PO260729-006 · 本批1,200件","¥81,600","待发票","2026-08-25"],["PR260728-011","南通组装工厂","PO260728-014 · 本批900件","¥92,750","待财务核验","2026-09-25"],["PR260727-009","温州组装工厂","PO260725-008 · 本批600件","¥68,400","部分付款","剩余¥18,400"],["PR260725-004","广东鸿基羽绒制品","PO260724-012 · 本批2,000件","¥136,000","待付款","2026-08-25"]],
-    审批中心: [["AP260729-018","核心配件价格变更","乳胶芯 ¥18.60 → ¥19.20","高风险","待我审批","同事A发起"],["AP260729-015","采购单超计划","TP-PIL-011 超出安全范围4.0%","普通","待我审批","同事A发起"],["AP260729-012","BOM V4发布","TP-PIL-001 · 09-01生效","普通","待我审批","同事C发起"],["AP260728-009","付款记录冲正","流水号关联错误","高风险","待财务B审批","财务A发起"]],
-    系统管理: [["陈文超","供应链经办人、质检","内部员工","正常","常用设备剩余72天","今天16:42"],["周敏","财务经办人","内部员工","正常","新设备已验证","今天15:18"],["广东鸿基-王工","工厂管理员","第一层工厂","正常","常用设备剩余48天","今天14:06"],["南通优库-李工","第三层供应商","外部供应商","已停用","历史记录保留","06-30 09:20"]],
-    AI助手: [["库存问答","TP-PIL-001还有多少可发库存？","已引用3个批次和1张发货计划","已完成","AI-Q260729-042","供应链"],["付款草稿","生成PR260728-011付款登记草稿","等待财务确认及手机验证码","待确认","AI-Q260729-039","财务"],["数据冲突","采购单与发票金额不一致","已生成咨询工单","无法确认","AI-Q260729-035","供应链"],["改进建议","工厂建议增加批量上传物流凭证","已提交供应链评估","待分派","AI-Q260729-028","工厂"]],
-  };
-  return <section className="backoffice-page">
-    <div className={`module-banner backoffice-banner ${module}`}><div><span className="eyebrow">{module}</span><h2>{cfg.title}</h2><p>{cfg.subtitle}</p></div><button onClick={() => toast(`${module}已创建一条新草稿`)}>＋ 新建</button></div>
-    <div className="backoffice-kpis">{cfg.metrics.map(item=><article key={item[0]}><span>{item[0]}</span><strong>{item[1]}</strong><small>{item[2]}</small></article>)}</div>
-    <article className="panel backoffice-list"><div className="backoffice-toolbar"><div><h3>{module === "系统管理" ? "用户与权限" : module === "AI助手" ? "最近对话与草稿" : "待处理事项"}</h3><p>{module === "财务结算" ? "请款单按组装工厂和计划付款日合并，保留关联采购单明细" : module === "审批中心" ? "审批通过、拒绝和更正均完整留痕" : module === "系统管理" ? "账号停用后历史业务记录继续保留" : "回答必须附业务单号和可点击数据来源"}</p></div><div><button onClick={() => toast("已导出带导出人和时间水印的文件")}>带水印导出</button><input placeholder="搜索单号、人员或内容"/></div></div>
-      <div className="backoffice-table"><div className="backoffice-row backoffice-head">{["业务标识","事项 / 主体","说明","风险 / 状态","当前状态","责任人 / 日期"].map(x=><span key={x}>{x}</span>)}</div>{rows[module].map(row=><button className="backoffice-row" key={row[4]} onClick={() => toast(`已打开 ${row[0]}`)}>{row.map((cell,j)=><span key={j}><b>{cell}</b>{j===0&&<small>完整操作轨迹</small>}</span>)}</button>)}</div>
-    </article>
-    <div className="governance-grid">
-      <article className="panel"><div className="panel-head"><div><h3>关键控制</h3><p>系统自动执行，不依赖人工记忆</p></div></div><div className="control-list">{(module==="财务结算"?["发票必须供应链和财务双方核验","发票金额不符禁止核验","部分付款逐笔记录银行流水","更正保留原记录并新增冲正"]:module==="审批中心"?["发起人与审核人强制分离","高风险审批前重新验证手机","拒绝后必须重新提交","审批前后值永久关联业务单"]:module==="系统管理"?["新设备、异地及高风险操作验证手机","失败5次由管理员解锁","临时权限90天到期自动收回","日志5年后归档，由管理员决定删除"]:["数据权限继承当前用户","无法确认时生成咨询工单","附件识别结果逐项人工确认","代码发布需管理员和供应链负责人共同审批"]).map(x=><span key={x}>✓ {x}</span>)}</div></article>
-      <article className="panel"><div className="panel-head"><div><h3>操作日志</h3><p>查看、修改、审批和导出均记录</p></div><b>实时</b></div><div className="audit-stream">{[["16:42","陈文超","查看核心配件价格"],["16:35","周敏","核验发票INV-260729-08"],["16:20","系统","生成请款单PR260729-006"],["16:08","AI助手","生成库存调拨草稿"]].map(x=><div key={x[0]}><b>{x[0]}</b><span><strong>{x[1]}</strong><small>{x[2]}</small></span></div>)}</div></article>
-    </div>
-  </section>;
-}
-
 function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
   const [account, setAccount] = useState("");
   const [password, setPassword] = useState("");
@@ -344,18 +289,14 @@ function LoginScreen({ onAuthenticated }: { onAuthenticated: () => void }) {
 export default function Home() {
   const [sessionState, setSessionState] = useState<"loading" | "ready" | "login">("loading");
   const [active, setActive] = useState("工作台");
-  const [filter, setFilter] = useState("全部");
   const [notice, setNotice] = useState("");
-  const [approvalCount, setApprovalCount] = useState(5);
   const [importOpen, setImportOpen] = useState(false);
   const [importKind, setImportKind] = useState<"plan" | "order">("order");
   const [importResult, setImportResult] = useState("");
-  const [qualityOpen, setQualityOpen] = useState(false);
   const [sessionName, setSessionName] = useState("陈文超");
   const [sessionUserId, setSessionUserId] = useState(0);
   const [sessionRole, setSessionRole] = useState("供应链管理员");
   const [sessionRoles, setSessionRoles] = useState<string[]>([]);
-  const visible = useMemo(() => filter === "全部" ? orders : orders.filter(o => o.status === filter), [filter]);
   const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2400); };
   useEffect(() => {
     fetch("/api/v1/session")
@@ -424,64 +365,14 @@ export default function Home() {
     <main className="shell">
       <aside className="sidebar">
         <div className="brand"><span className="brandmark">拓</span><div><strong>拓扑供应链</strong><small>进销存协同系统</small></div></div>
-        <nav>{nav.map((item, i) => <button key={item} className={active === item ? "active" : ""} onClick={() => { setActive(item); }}><span>{["⌂","▤","♙","◫","◇","◎","↗","▦","♧","¥","✓","⚙","✦"][i]}</span>{item}{item === "物料与补料" && <b>3</b>}</button>)}</nav>
-        <div className="factory-entry"><span>外部协同端 · 权限隔离</span><strong>工厂看本厂任务；供应商只看自己物料的质检与异常</strong><button onClick={() => toast("外部账号按工厂或供应商自动隔离数据")}>预览协同端 →</button></div>
+        <nav>{nav.map((item, i) => <button key={item} className={active === item ? "active" : ""} onClick={() => { setActive(item); }}><span>{["⌂","▤","♙","◫","◇","◎","↗","▦","♧","¥","✓","⚙"][i]}</span>{item}</button>)}</nav>
         <div className="profile"><i>{sessionName.slice(0,1)}</i><div><strong>{sessionName}</strong><small>{sessionRole}</small></div><span>•••</span></div>
       </aside>
 
       <section className="content">
-        <header><div><p>2026 年 7 月 29 日 · 周三</p><h1>{active === "工作台" ? `早上好，${sessionName}` : active}</h1></div><div className="header-actions"><button aria-label="通知" className="icon">♢<em>5</em></button><button className="primary" onClick={() => { setImportKind("order"); setImportResult(""); setImportOpen(true); }}>＋ 导入领星采购单</button></div></header>
+        <header><div><h1>{active === "工作台" ? `早上好，${sessionName}` : active}</h1></div><div className="header-actions"><button className="primary" onClick={() => { setImportKind("order"); setImportResult(""); setImportOpen(true); }}>＋ 导入领星采购单</button></div></header>
 
-        <section className="permission-bar">
-          <span><i>✓</i> 当前身份：供应链管理员</span>
-          <span>审批权限：来料/成品质检改判 · 超产 · 盘点差异 · 偏离计划发货 · 跨仓调拨</span>
-          <b>{approvalCount} 项待审批</b>
-        </section>
-
-        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityWorkspace toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} roles={sessionRoles} /> : active === "工厂协同" ? <CollaborationPanel toast={toast} /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : active === "AI助手" ? <BackofficePanel module={active} toast={toast} /> : <>
-        <section className="focus">
-          <div><span className="eyebrow">三级供应网络 · 今日概况</span><h2>订单正在有序推进，<b>3 项供应风险</b>需要处理</h2><p>组装工厂负责下属供应商交付；供应链部门制定政策、查看备料并监控断供风险。</p></div>
-          <div className="focus-number"><strong>87<small>%</small></strong><span>本月准时交付率</span><i>↑ 4.2%</i></div>
-        </section>
-
-        <section className="metrics">
-          {[
-            ["采购执行中","12","张","¥ 638,420","本月采购金额"],
-            ["待生产交付","8,640","件","3 类","成品 · 辅料 · 配件"],
-            ["物料待处理","3","项","2 项紧急","缺料 / 质检异常"],
-            ["待发货","5","批","3,820 件","可用成品"],
-          ].map((m, i) => <article key={m[0]}><div className={`metric-icon c${i}`}>{["▤","◫","◇","↗"][i]}</div><span>{m[0]}</span><h3>{m[1]} <small>{m[2]}</small></h3><footer><b>{m[3]}</b><small>{m[4]}</small></footer></article>)}
-        </section>
-
-        <section className="grid">
-          <article className="panel execution">
-            <div className="panel-head"><div><h3>工厂执行进度</h3><p>按交期优先，实时查看生产与发货状态</p></div><button onClick={() => toast("已进入全部执行单")}>查看全部 →</button></div>
-            <div className="filters">{["全部","生产中","待补料","待发货"].map(f => <button className={filter === f ? "selected" : ""} onClick={() => setFilter(f)} key={f}>{f}</button>)}</div>
-            <div className="table">
-              <div className="tr th"><span>执行单 / 产品</span><span>工厂</span><span>交期</span><span>进度</span><span>状态</span></div>
-              {visible.map((o, index) => <div className="tr" key={o.id}><span><strong>{o.product}</strong><small>{o.id} · {o.sku}</small></span><span>{o.factory}<small>{index < 3 ? `分批交付 ${index + 1}/${index + 2}` : "已全部交付"}</small></span><span><b className={o.risk === "异常" ? "danger" : ""}>{o.due}</b><small>{o.risk === "异常" ? "仅剩 2 天" : "计划交付"}</small></span><span><div className="progress"><i style={{width:`${o.done/o.qty*100}%`}} /></div><small>{o.done.toLocaleString()} / {o.qty.toLocaleString()}</small></span><span><mark className={o.status === "待补料" ? "status-shortage" : o.status === "待发货" ? "status-shipping" : o.status === "已完成" ? "status-complete" : ""}>{o.status}</mark></span></div>)}
-            </div>
-          </article>
-
-          <aside className="panel todos">
-            <div className="panel-head"><div><h3>待办与异常</h3><p>按影响程度排序</p></div><button onClick={() => toast("已打开全部待办")}>全部 8 项</button></div>
-            {[
-              ["urgent","供应商全检进行中","CloudAir 乳胶枕整批 1,200 件已隔离，已全检 680 件","塌边 26 件 · 污渍 12 件 · 642 件合格可发","查看全检"],
-              ["warn","SKU 默认组装工厂变更","RR-NP-01：工厂 A → 工厂 B · 原因已填写","同事 A 发起 · 等待另一位同事审核","供应链审批"],
-              ["info","偏离计划发货待审批","顺丰 SF1438… · 比约定时间提前 2 天 · 凭证 2 张","工厂 A 提交 · 15 分钟前","供应链审批"],
-              ["neutral","核心配件延期待终审","乳胶芯 2,400 件 · 含税 ¥18.60 / 未税 ¥16.46 · 税率 13%","组装工厂已确认 08-05 · 等待供应链审核","供应链审批"],
-              ["warn","核心配件调价待审批","乳胶芯含税价 ¥18.60 → ¥19.20 · 08-15 生效","同事 A 提交 · 等待同事 B 审核","供应链审批"],
-              ["info","分批请款 · 待发票","工厂 A 本批发出 1,200 件 · 请款 ¥81,600","07-25 后发货 → 09-25 付款 · 等待整单或本批发票","查看请款"],
-              ["warn","新 SKU 暂用类型标准","SL-CM-09 暂用“配件”默认合格率 95.0%","系统提醒 · 需要补充专属标准","设置标准"],
-            ].map(t => <div className="todo" key={t[1]}><i className={t[0]}>!</i><div><strong>{t[1]}</strong><p>{t[2]}</p><small>{t[3]}</small></div><button onClick={() => { if (t[4] === "设置标准") { setQualityOpen(true); return; } if (t[4] === "查看全检") { toast("已进入全检任务，仅合格数量可转入可发库存"); return; } toast(`已打开审批单：${t[1]}`); if (t[4] === "供应链审批") setApprovalCount(v => Math.max(0, v - 1)); }}>{t[4]}</button></div>)}
-          </aside>
-        </section>
-
-        <section className="lower">
-          <article className="panel flow"><div className="panel-head"><div><h3>本月订单流转</h3><p>从采购导入到交付完成</p></div><b>7 月</b></div><div className="flowline">{[["采购导入","18"],["工厂确认","16"],["生产中","12"],["待发货","5"],["已完成","9"]].map((x,i)=><div key={x[0]}><span>{x[1]}</span><small>{x[0]}</small>{i < 4 && <i />}</div>)}</div></article>
-          <article className="panel stock"><div className="panel-head"><div><h3>多仓库存健康度</h3><p>调出发货时扣减 · 调入确认收货时增加</p></div><button onClick={() => toast("已进入按仓库查看的库存明细")}>按仓库查看 →</button></div><div className="stockbar"><i /><i /><i /></div><div className="legend"><span><i className="green"/>可用库存 <b>18,420</b></span><span><i className="amber"/>生产锁定 <b>6,780</b></span><span><i className="red"/>在途调拨 <b>320</b></span></div></article>
-        </section>
-        </>}
+        {active === "供应商管理" ? <SupplierWorkspace toast={toast} /> : active === "采购管理" ? <PurchaseWorkspace toast={toast} openImport={kind => { setImportKind(kind); setImportResult(""); setImportOpen(true); }} /> : active === "物料与补料" ? <MasterDataWorkspace toast={toast} /> : active === "执行单" ? <ProductionWorkspace toast={toast} /> : active === "生产质检" ? <QualityWorkspace toast={toast} /> : active === "库存管理" ? <InventoryPanel toast={toast} /> : active === "发货管理" ? <ShippingWorkspace toast={toast} roles={sessionRoles} /> : active === "工厂协同" ? <UnconfiguredPanel title="工厂协同尚未配置" description="尚未接入可显示的协同任务、风险或绩效数据。" /> : active === "审批中心" ? <ApprovalCenterPanel toast={toast} /> : active === "系统管理" ? <SystemManagementPanel toast={toast} /> : active === "财务结算" ? <FinanceWorkspace toast={toast} /> : <UnconfiguredPanel title="工作台尚未配置" description="尚未接入可显示的订单、任务、风险、趋势或库存汇总数据。" />}
       </section>
       {importOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setImportOpen(false)}>
         <section className="import-modal" role="dialog" aria-modal="true" aria-labelledby="import-title" onMouseDown={e => e.stopPropagation()}>
@@ -496,21 +387,6 @@ export default function Home() {
           </label>
           <div className="import-rules">{importKind === "plan" ? <><span>✓ 期望到货时间为空时禁止导入</span><span>✓ 相同汇总键自动合并数量</span><span>✓ 组合产品锁定有效BOM版本</span><span>✓ 新版本双人审批并保留历史</span></> : <><span>✓ 自动匹配最近的未完成采购计划</span><span>✓ 同一SKU允许拆分多个供应商</span><span>✓ 采购偏差按SKU安全范围判断</span><span>✓ 重复单号先展示新旧差异</span></>}</div>
           {importResult && <div className={importResult.startsWith("校验通过") ? "import-result success" : "import-result error"}>{importResult}</div>}
-        </section>
-      </div>}
-      {qualityOpen && <div className="modal-backdrop" role="presentation" onMouseDown={() => setQualityOpen(false)}>
-        <section className="import-modal" role="dialog" aria-modal="true" aria-labelledby="quality-title" onMouseDown={e => e.stopPropagation()}>
-          <button className="modal-close" aria-label="关闭" onClick={() => setQualityOpen(false)}>×</button>
-          <span className="modal-icon">检</span>
-          <h2 id="quality-title">设置 SKU 合格率标准</h2>
-          <p>未设置专属标准时，系统暂用物料类型默认值并持续提醒供应链同事。</p>
-          <div className="quality-form">
-            <label>SKU<input defaultValue="SL-CM-09" /></label>
-            <label>物料类型<select defaultValue="component"><option value="finished">成品</option><option value="auxiliary">辅料</option><option value="component">配件</option></select></label>
-            <label>来料质检合格率<input type="number" min="0" max="100" step=".1" defaultValue="95.0" /><b>%</b></label>
-            <label>成品质检合格率<input type="number" min="0" max="100" step=".1" defaultValue="95.0" /><b>%</b></label>
-          </div>
-          <button className="save-rule" onClick={() => { setQualityOpen(false); toast("SL-CM-09 的专属合格率标准已保存"); }}>保存标准并关闭提醒</button>
         </section>
       </div>}
       {notice && <div className="toast">{notice}</div>}
