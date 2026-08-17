@@ -279,6 +279,263 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
   assert.equal(roleCounts.roles, 1);
   assert.equal(roleCounts.approvals, 1);
 
+  const managedEmail = `managed-${suffix}@example.com`;
+  const managedInitialPassword = "InitialUser!234";
+  const managedResetPassword = "ReplacementUser!567";
+  const managedDeviceId = `managed-device-${suffix}`;
+  const createAccountKey = `create-account-${suffix}`;
+  const createAccountPayload = {
+    email: managedEmail,
+    initialPassword: managedInitialPassword,
+    mobile: "13900139001",
+    name: "Managed Receiver",
+    organizationName: "Topology Receiver",
+    roleCode: "receiver",
+  };
+  const createdAccount = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/accounts",
+    headers: authenticated(createAccountKey),
+    payload: createAccountPayload,
+  });
+  assert.equal(createdAccount.statusCode, 201, createdAccount.body);
+  assert.equal(createdAccount.json().result.roleCode, "receiver");
+  const managedUserId = createdAccount.json().result.userId;
+  assert.ok(managedUserId);
+  const createdAccountReplay = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/accounts",
+    headers: authenticated(createAccountKey),
+    payload: createAccountPayload,
+  });
+  assert.equal(createdAccountReplay.statusCode, 201);
+  assert.equal(createdAccountReplay.json().command.replayed, true);
+  assert.equal(createdAccountReplay.json().result.userId, managedUserId);
+
+  const [createdState] = await db.query(
+    `SELECT users.role, users.account_status AS accountStatus,
+            credentials.password_hash AS passwordHash,
+            credentials.password_salt AS passwordSalt,
+            (SELECT COUNT(*) FROM user_roles WHERE user_id = users.id) AS delegatedRoles
+     FROM users
+     INNER JOIN auth_credentials AS credentials ON credentials.user_id = users.id
+     WHERE users.id = ?`,
+    [managedUserId],
+  );
+  assert.equal(createdState.role, "receiver");
+  assert.equal(createdState.accountStatus, "active");
+  assert.equal(createdState.delegatedRoles, 0);
+  assert.match(createdState.passwordHash, /^[a-f\d]{64}$/u);
+  assert.match(createdState.passwordSalt, /^[a-f\d]{32}$/u);
+  assert.notEqual(createdState.passwordHash, managedInitialPassword);
+
+  const managedLoginKey = `managed-login-${suffix}`;
+  const managedLogin = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    headers: platformHeaders(managedLoginKey),
+    payload: {
+      account: managedEmail,
+      password: managedInitialPassword,
+      deviceId: managedDeviceId,
+      deviceName: "managed integration",
+    },
+  });
+  assert.equal(managedLogin.statusCode, 200);
+  assert.equal(managedLogin.json().result.authenticated, false);
+  const managedChallengeNo = managedLogin.json().result.challengeNo;
+  const managedVerify = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/verify",
+    headers: platformHeaders(`managed-verify-${suffix}`),
+    payload: {
+      challengeNo: managedChallengeNo,
+      code: otp("auth.login", `user:${managedUserId}`, managedLoginKey),
+      deviceName: "managed integration",
+    },
+  });
+  assert.equal(managedVerify.statusCode, 200);
+  assert.equal(managedVerify.json().result.authenticated, true);
+  const managedCookies = cookiePair(managedVerify.headers["set-cookie"]);
+  const managedAuthenticated = (key, extras = {}) => platformHeaders(key, {
+    cookie: managedCookies.cookie,
+    "x-csrf-token": managedCookies.csrf,
+    ...extras,
+  });
+
+  const managedSession = await app.inject({
+    method: "GET",
+    url: "/api/v1/session",
+    headers: { host: "scm.topologygz.com", cookie: managedCookies.cookie },
+  });
+  assert.equal(managedSession.statusCode, 200);
+  assert.deepEqual(managedSession.json().user.roles, ["receiver"]);
+
+  const nonAdminRejected = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/disable",
+    headers: managedAuthenticated(`managed-forbidden-${suffix}`),
+    payload: { userId: adminId },
+  });
+  assert.equal(nonAdminRejected.statusCode, 403);
+  assert.equal(nonAdminRejected.json().code, "FORBIDDEN");
+
+  const disableKey = `disable-managed-${suffix}`;
+  const disabled = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/disable",
+    headers: authenticated(disableKey),
+    payload: { userId: managedUserId },
+  });
+  assert.equal(disabled.statusCode, 200);
+  assert.equal(disabled.json().result.accountStatus, "disabled");
+  assert.equal(disabled.json().result.activeSessionsRevoked, true);
+  const disabledReplay = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/disable",
+    headers: authenticated(disableKey),
+    payload: { userId: managedUserId },
+  });
+  assert.equal(disabledReplay.statusCode, 200);
+  assert.equal(disabledReplay.json().command.replayed, true);
+
+  const disabledSession = await app.inject({
+    method: "GET",
+    url: "/api/v1/session",
+    headers: { host: "scm.topologygz.com", cookie: managedCookies.cookie },
+  });
+  assert.equal(disabledSession.statusCode, 401);
+  const disabledLogin = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    headers: platformHeaders(`disabled-login-${suffix}`),
+    payload: {
+      account: managedEmail,
+      password: managedInitialPassword,
+      deviceId: managedDeviceId,
+    },
+  });
+  assert.equal(disabledLogin.statusCode, 409);
+
+  const restored = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/restore",
+    headers: authenticated(`restore-managed-${suffix}`),
+    payload: { userId: managedUserId },
+  });
+  assert.equal(restored.statusCode, 200);
+  assert.equal(restored.json().result.accountStatus, "active");
+  const restoredLogin = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    headers: platformHeaders(`restored-login-${suffix}`),
+    payload: {
+      account: managedEmail,
+      password: managedInitialPassword,
+      deviceId: managedDeviceId,
+    },
+  });
+  assert.equal(restoredLogin.statusCode, 200);
+  assert.equal(restoredLogin.json().result.authenticated, true);
+  const restoredCookies = cookiePair(restoredLogin.headers["set-cookie"]);
+
+  const resetKey = `reset-managed-${suffix}`;
+  const reset = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/password-reset",
+    headers: authenticated(resetKey),
+    payload: { userId: managedUserId, newPassword: managedResetPassword },
+  });
+  assert.equal(reset.statusCode, 200);
+  assert.equal(reset.json().result.activeSessionsRevoked, true);
+  const resetReplay = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/password-reset",
+    headers: authenticated(resetKey),
+    payload: { userId: managedUserId, newPassword: managedResetPassword },
+  });
+  assert.equal(resetReplay.statusCode, 200);
+  assert.equal(resetReplay.json().command.replayed, true);
+
+  const resetRevokedSession = await app.inject({
+    method: "GET",
+    url: "/api/v1/session",
+    headers: { host: "scm.topologygz.com", cookie: restoredCookies.cookie },
+  });
+  assert.equal(resetRevokedSession.statusCode, 401);
+  const oldPasswordRejected = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    headers: platformHeaders(`old-password-${suffix}`),
+    payload: {
+      account: managedEmail,
+      password: managedInitialPassword,
+      deviceId: managedDeviceId,
+    },
+  });
+  assert.equal(oldPasswordRejected.statusCode, 401);
+  const newPasswordLogin = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/login",
+    headers: platformHeaders(`new-password-${suffix}`),
+    payload: {
+      account: managedEmail,
+      password: managedResetPassword,
+      deviceId: managedDeviceId,
+    },
+  });
+  assert.equal(newPasswordLogin.statusCode, 200);
+  assert.equal(newPasswordLogin.json().result.authenticated, true);
+  const finalManagedCookies = cookiePair(newPasswordLogin.headers["set-cookie"]);
+  const managedLogout = await app.inject({
+    method: "POST",
+    url: "/api/v1/auth/logout",
+    headers: platformHeaders(`managed-logout-${suffix}`, {
+      cookie: finalManagedCookies.cookie,
+      "x-csrf-token": finalManagedCookies.csrf,
+    }),
+  });
+  assert.equal(managedLogout.statusCode, 200);
+  const managedAfterLogout = await app.inject({
+    method: "GET",
+    url: "/api/v1/session",
+    headers: { host: "scm.topologygz.com", cookie: finalManagedCookies.cookie },
+  });
+  assert.equal(managedAfterLogout.statusCode, 401);
+
+  const lifecycleAudit = await db.query(
+    `SELECT action, before_json AS beforeJson, after_json AS afterJson
+     FROM audit_logs
+     WHERE actor_user_id = ? AND entity_type = 'user' AND entity_id = ?
+       AND action IN ('create_account','disable_account','restore_account','reset_password')
+     ORDER BY id`,
+    [adminId, String(managedUserId)],
+  );
+  assert.deepEqual(lifecycleAudit.map((row) => row.action), [
+    "create_account",
+    "disable_account",
+    "restore_account",
+    "reset_password",
+  ]);
+  assert.doesNotMatch(JSON.stringify(lifecycleAudit),
+    new RegExp(`${managedInitialPassword}|${managedResetPassword}`, "u"));
+  const lifecycleCommands = await db.query(
+    `SELECT command_name AS commandName, response_json AS responseJson
+     FROM command_idempotency
+     WHERE actor_scope = ?
+       AND command_name IN ('users.create','users.disable','users.restore','users.reset-password')
+     ORDER BY id`,
+    [`user:${adminId}`],
+  );
+  assert.deepEqual(lifecycleCommands.map((row) => row.commandName), [
+    "users.create",
+    "users.disable",
+    "users.restore",
+    "users.reset-password",
+  ]);
+  assert.doesNotMatch(JSON.stringify(lifecycleCommands),
+    new RegExp(`${managedInitialPassword}|${managedResetPassword}`, "u"));
+
   const notificationInsert = await db.execute(
     `INSERT INTO notification_messages (
        recipient_user_id, channel, type, severity, title, message,

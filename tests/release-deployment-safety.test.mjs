@@ -58,10 +58,10 @@ test("release manifest is complete, canonical, and deterministic", async () => {
   assert.equal(RELEASE_MANIFEST.schema.migrations.length, 6);
   assert.equal(RELEASE_MANIFEST.writer.generation, 2);
   assert.equal(RELEASE_MANIFEST.writer.legacyWriterCompatible, false);
-  assert.equal(RELEASE_MANIFEST.writer.commands.length, 36);
+  assert.equal(RELEASE_MANIFEST.writer.commands.length, 40);
   assert.equal(RELEASE_MANIFEST.writer.resources.length, 30);
   assert.deepEqual(RELEASE_MANIFEST.runtimeServices, ["app", "backend"]);
-  assert.equal(new Set(RELEASE_MANIFEST.writer.commands.map(({ command }) => command)).size, 36);
+  assert.equal(new Set(RELEASE_MANIFEST.writer.commands.map(({ command }) => command)).size, 40);
   assert.equal(new Set(RELEASE_MANIFEST.writer.resources.map(({ resource }) => resource)).size, 30);
 });
 

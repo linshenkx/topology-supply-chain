@@ -47,6 +47,8 @@ type ManagedUser = {
   roleAssignments: Array<{ id: number; roleCode: string; effectiveFrom: string; effectiveTo?: string | null; status: string }>;
 };
 
+type InitialAccountRole = "supply_chain" | "finance" | "company_qc" | "receiver";
+
 type ApprovalItem = {
   id: number; requestNo: string; workflowType: string; summary: string;
   highRisk: boolean; status: string; requestedAt: string;
@@ -60,16 +62,42 @@ const roleLabels: Record<string, string> = {
   factory: "组装工厂", supplier_qc: "供应商质检", company_qc: "公司质检", receiver: "收货方",
 };
 
+const initialAccountRoles: Array<{ code: InitialAccountRole; label: string }> = [
+  { code: "supply_chain", label: "供应链" },
+  { code: "finance", label: "财务" },
+  { code: "company_qc", label: "公司质检" },
+  { code: "receiver", label: "收货方" },
+];
+
+const accountStatusLabels: Record<string, string> = {
+  active: "正常",
+  disabled: "已停用",
+  locked: "已锁定",
+  pending: "待启用",
+};
+
 async function apiJson(url: string, init?: RequestInit) {
   const response = await fetch(url, init);
   const data = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(data.error || `请求失败（${response.status}）`);
+  if (!response.ok) throw new Error(data.message || data.error || `请求失败（${response.status}）`);
   return data;
 }
 
 function SystemManagementPanel({ toast }: { toast: (message: string) => void }) {
   const [users, setUsers] = useState<ManagedUser[]>([]);
   const [loading, setLoading] = useState(true);
+  const [creating, setCreating] = useState(false);
+  const [pendingUserId, setPendingUserId] = useState<number | null>(null);
+  const [resetTarget, setResetTarget] = useState<ManagedUser | null>(null);
+  const [resetPassword, setResetPassword] = useState("");
+  const [createForm, setCreateForm] = useState({
+    email: "",
+    initialPassword: "",
+    mobile: "",
+    name: "",
+    organizationName: "",
+    roleCode: "supply_chain" as InitialAccountRole,
+  });
   const [selectedUser, setSelectedUser] = useState("");
   const [roleCode, setRoleCode] = useState("supply_chain");
   const [effectiveFrom, setEffectiveFrom] = useState(new Date().toISOString().slice(0, 10));
@@ -96,6 +124,64 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
       .finally(() => { if (!controller.signal.aborted) setLoading(false); });
     return () => controller.abort();
   }, []);
+
+  const createAccount = async () => {
+    setCreating(true);
+    try {
+      await mutateJson("/api/v1/users/accounts", "POST", createForm);
+      toast("账号已创建");
+      setCreateForm({
+        email: "",
+        initialPassword: "",
+        mobile: "",
+        name: "",
+        organizationName: "",
+        roleCode: "supply_chain",
+      });
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "账号创建失败");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  const resetManagedPassword = async () => {
+    if (resetTarget === null) return;
+    setPendingUserId(resetTarget.id);
+    try {
+      await mutateJson("/api/v1/users/password-reset", "POST", {
+        userId: resetTarget.id,
+        newPassword: resetPassword,
+      });
+      toast("密码已重置，现有会话已撤销");
+      setResetPassword("");
+      setResetTarget(null);
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "密码重置失败");
+    } finally {
+      setPendingUserId(null);
+    }
+  };
+
+  const changeAccountStatus = async (user: ManagedUser, action: "disable" | "restore") => {
+    if (action === "disable" && !window.confirm(`确认停用 ${user.name}？`)) return;
+    setPendingUserId(user.id);
+    try {
+      await mutateJson(
+        action === "disable" ? "/api/v1/users/disable" : "/api/v1/users/restore",
+        "POST",
+        { userId: user.id },
+      );
+      toast(action === "disable" ? "账号已停用，现有会话已撤销" : "账号已恢复");
+      await refresh();
+    } catch (error) {
+      toast(error instanceof Error ? error.message : action === "disable" ? "账号停用失败" : "账号恢复失败");
+    } finally {
+      setPendingUserId(null);
+    }
+  };
 
   const grantRole = async () => {
     try {
@@ -128,8 +214,20 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
       <article><span>账号总数</span><strong>{users.length}</strong><small>实时数据库</small></article>
       <article><span>正常账号</span><strong>{users.filter(x => x.accountStatus === "active").length}</strong><small>可正常登录</small></article>
       <article><span>锁定账号</span><strong>{users.filter(x => x.accountStatus === "locked").length}</strong><small>需管理员解锁</small></article>
-      <article><span>待审角色</span><strong>{users.flatMap(x => x.roleAssignments).filter(x => x.status === "pending").length}</strong><small>职责分离审批</small></article>
+      <article><span>停用账号</span><strong>{users.filter(x => x.accountStatus === "disabled").length}</strong><small>禁止登录</small></article>
     </div>
+    <article className="panel account-create-panel">
+      <div className="panel-head"><div><h3>新建内部账号</h3></div></div>
+      <form className="account-create-form" onSubmit={event => { event.preventDefault(); void createAccount(); }}>
+        <label><span>姓名</span><input required maxLength={100} value={createForm.name} onChange={event => setCreateForm(current => ({ ...current, name: event.target.value }))} /></label>
+        <label><span>公司邮箱</span><input required type="email" autoComplete="off" maxLength={191} value={createForm.email} onChange={event => setCreateForm(current => ({ ...current, email: event.target.value }))} /></label>
+        <label><span>手机号码</span><input required inputMode="numeric" pattern="1[0-9]{10}" maxLength={11} value={createForm.mobile} onChange={event => setCreateForm(current => ({ ...current, mobile: event.target.value.replace(/\D/g, "") }))} /></label>
+        <label><span>组织名称</span><input required maxLength={200} value={createForm.organizationName} onChange={event => setCreateForm(current => ({ ...current, organizationName: event.target.value }))} /></label>
+        <label><span>初始角色</span><select value={createForm.roleCode} onChange={event => setCreateForm(current => ({ ...current, roleCode: event.target.value as InitialAccountRole }))}>{initialAccountRoles.map(role => <option key={role.code} value={role.code}>{role.label}</option>)}</select></label>
+        <label><span>初始密码</span><input required type="password" autoComplete="new-password" minLength={12} maxLength={128} title="至少12位，包含大小写字母、数字和特殊字符" value={createForm.initialPassword} onChange={event => setCreateForm(current => ({ ...current, initialPassword: event.target.value }))} /></label>
+        <button className="primary" type="submit" disabled={creating}>{creating ? "正在创建" : "新建账号"}</button>
+      </form>
+    </article>
     <article className="panel admin-form">
       <div className="panel-head"><div><h3>申请新增角色</h3><p>生效后用户可同时拥有多个岗位权限</p></div></div>
       <div className="admin-fields">
@@ -149,11 +247,26 @@ function SystemManagementPanel({ toast }: { toast: (message: string) => void }) 
           <span><strong>{user.name}</strong><small>{user.email} · {user.mobile}</small></span>
           <span>{user.organizationName || "公司内部"}</span>
           <span className="role-chips">{user.roles.map(role => <b key={role}>{roleLabels[role] || role}</b>)}{user.roleAssignments.filter(x => x.status === "active").map(item => <button key={item.id} onClick={() => void revoke(item.id)} title="申请撤销该附加角色">撤销 {roleLabels[item.roleCode] || item.roleCode}</button>)}</span>
-          <span><mark>{user.accountStatus}</mark></span>
-          <span>{user.accountStatus === "locked" ? <button onClick={() => void unlock(user.id)}>管理员解锁</button> : "—"}</span>
+          <span><mark className={`account-status ${user.accountStatus}`}>{accountStatusLabels[user.accountStatus] || user.accountStatus}</mark></span>
+          <span className="account-actions">
+            <button disabled={pendingUserId === user.id} onClick={() => { setResetPassword(""); setResetTarget(user); }}>重置密码</button>
+            {user.accountStatus === "locked" && <button disabled={pendingUserId === user.id} onClick={() => void unlock(user.id)}>解锁</button>}
+            {user.accountStatus === "disabled"
+              ? <button disabled={pendingUserId === user.id} onClick={() => void changeAccountStatus(user, "restore")}>恢复</button>
+              : <button className="danger-action" disabled={pendingUserId === user.id} onClick={() => void changeAccountStatus(user, "disable")}>停用</button>}
+          </span>
         </div>)}
       </div>
     </article>
+    {resetTarget && <div className="approval-overlay">
+      <section className="approval-dialog account-password-dialog" role="dialog" aria-modal="true" aria-labelledby="reset-password-title">
+        <header><div><span>{resetTarget.email}</span><h3 id="reset-password-title">重置密码</h3></div><button aria-label="关闭" onClick={() => setResetTarget(null)}>×</button></header>
+        <form onSubmit={event => { event.preventDefault(); void resetManagedPassword(); }}>
+          <label><span>新密码</span><input autoFocus required type="password" autoComplete="new-password" minLength={12} maxLength={128} title="至少12位，包含大小写字母、数字和特殊字符" value={resetPassword} onChange={event => setResetPassword(event.target.value)} /></label>
+          <footer><button type="button" onClick={() => setResetTarget(null)}>取消</button><button className="primary" type="submit" disabled={pendingUserId === resetTarget.id}>{pendingUserId === resetTarget.id ? "正在重置" : "确认重置"}</button></footer>
+        </form>
+      </section>
+    </div>}
     <AuditWorkspace toast={toast} />
   </section>;
 }
@@ -298,6 +411,16 @@ export default function Home() {
   const [sessionRole, setSessionRole] = useState("供应链管理员");
   const [sessionRoles, setSessionRoles] = useState<string[]>([]);
   const toast = (message: string) => { setNotice(message); window.setTimeout(() => setNotice(""), 2400); };
+  const logout = async () => {
+    try {
+      await mutateJson("/api/v1/auth/logout", "POST", {});
+      setSessionRoles([]);
+      setSessionUserId(0);
+      setSessionState("login");
+    } catch (error) {
+      toast(error instanceof Error ? error.message : "退出登录失败");
+    }
+  };
   useEffect(() => {
     fetch("/api/v1/session")
       .then(response => response.ok ? response.json() : Promise.reject(new Error("unauthenticated")))
@@ -366,7 +489,7 @@ export default function Home() {
       <aside className="sidebar">
         <div className="brand"><span className="brandmark">拓</span><div><strong>拓扑供应链</strong><small>进销存协同系统</small></div></div>
         <nav>{nav.map((item, i) => <button key={item} className={active === item ? "active" : ""} onClick={() => { setActive(item); }}><span>{["⌂","▤","♙","◫","◇","◎","↗","▦","♧","¥","✓","⚙"][i]}</span>{item}</button>)}</nav>
-        <div className="profile"><i>{sessionName.slice(0,1)}</i><div><strong>{sessionName}</strong><small>{sessionRole}</small></div><span>•••</span></div>
+        <div className="profile"><i>{sessionName.slice(0,1)}</i><div><strong>{sessionName}</strong><small>{sessionRole}</small></div><button className="profile-logout" title="退出登录" onClick={() => void logout()}>退出</button></div>
       </aside>
 
       <section className="content">

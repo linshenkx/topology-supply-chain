@@ -5,7 +5,9 @@ import { buildApp } from "../dist/app.js";
 import { registerUsersModule } from "../dist/modules/users/index.js";
 
 const fixedNow = () => new Date("2026-08-11T12:00:00.000Z");
+const csrf = "ab".repeat(32);
 const adminContext = {
+  sessionId: 77,
   userId: 9,
   email: "admin@example.com",
   name: "Admin",
@@ -14,6 +16,26 @@ const adminContext = {
   supplierId: null,
   organizationName: "Topology",
   localPreview: false,
+};
+
+function writeHeaders(idempotencyKey) {
+  return {
+    host: "localhost",
+    origin: "http://localhost",
+    "x-forwarded-proto": "http",
+    cookie: `topology_csrf=${csrf}`,
+    "x-csrf-token": csrf,
+    "idempotency-key": idempotencyKey,
+  };
+}
+
+const validCreatePayload = {
+  email: "new-user@example.com",
+  initialPassword: "InitialPass!234",
+  mobile: "13800138009",
+  name: "New User",
+  organizationName: "Topology",
+  roleCode: "supply_chain",
 };
 
 function userRow(id, overrides = {}) {
@@ -224,4 +246,108 @@ test("expiry write failures and malformed rows fail through the sanitized bounda
       await app.close();
     }
   }
+});
+
+test("account lifecycle OpenAPI exposes only the frozen creation roles", async (t) => {
+  const app = await createUsersApp();
+  t.after(() => app.close());
+
+  await app.ready();
+  const openapi = app.swagger();
+  for (const path of [
+    "/api/v1/users/accounts",
+    "/api/v1/users/password-reset",
+    "/api/v1/users/disable",
+    "/api/v1/users/restore",
+  ]) {
+    assert.ok(openapi.paths[path]?.post, `${path} must be registered`);
+  }
+  const createSchema = openapi.paths["/api/v1/users/accounts"].post
+    .requestBody.content["application/json"].schema;
+  assert.deepEqual(createSchema.properties.roleCode.enum, [
+    "supply_chain",
+    "finance",
+    "company_qc",
+    "receiver",
+  ]);
+  assert.equal(createSchema.properties.initialPassword.minLength, 12);
+  assert.equal(createSchema.additionalProperties, false);
+});
+
+test("non-admin and local preview cannot execute account lifecycle commands", async () => {
+  const cases = [
+    { context: { ...adminContext, roles: ["supply_chain"] }, label: "non-admin" },
+    { context: { ...adminContext, localPreview: true, sessionId: null, userId: 0 }, label: "preview" },
+  ];
+  const routes = [
+    ["/api/v1/users/accounts", validCreatePayload],
+    ["/api/v1/users/password-reset", { userId: 10, newPassword: "Replacement!234" }],
+    ["/api/v1/users/disable", { userId: 10 }],
+    ["/api/v1/users/restore", { userId: 10 }],
+  ];
+
+  for (const fixture of cases) {
+    const database = fakeDatabase();
+    const app = await createUsersApp({ context: fixture.context, database });
+    try {
+      for (const [index, [url, payload]] of routes.entries()) {
+        const response = await app.inject({
+          method: "POST",
+          url,
+          headers: writeHeaders(`${fixture.label}-lifecycle-${index}-0001`),
+          payload,
+        });
+        assert.equal(response.statusCode, 403, `${fixture.label} ${url}`);
+        assert.equal(response.json().code, "FORBIDDEN");
+      }
+      assert.equal(database.executions.length, 0);
+      assert.equal(database.queries.length, 0);
+    } finally {
+      await app.close();
+    }
+  }
+});
+
+test("account creation rejects governed and externally-bound roles before database work", async (t) => {
+  const database = fakeDatabase();
+  const app = await createUsersApp({ database });
+  t.after(() => app.close());
+
+  for (const [index, roleCode] of ["admin", "factory", "supplier_qc"].entries()) {
+    const response = await app.inject({
+      method: "POST",
+      url: "/api/v1/users/accounts",
+      headers: writeHeaders(`invalid-create-role-${index}-0001`),
+      payload: { ...validCreatePayload, roleCode },
+    });
+    assert.equal(response.statusCode, 400, roleCode);
+  }
+  assert.equal(database.executions.length, 0);
+  assert.equal(database.queries.length, 0);
+});
+
+test("create and reset reject weak passwords before database work", async (t) => {
+  const database = fakeDatabase();
+  const app = await createUsersApp({ database });
+  t.after(() => app.close());
+
+  const create = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/accounts",
+    headers: writeHeaders("weak-create-password-0001"),
+    payload: { ...validCreatePayload, initialPassword: "weakpassword1" },
+  });
+  const reset = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/password-reset",
+    headers: writeHeaders("weak-reset-password-0001"),
+    payload: { userId: 10, newPassword: "weakpassword1" },
+  });
+
+  assert.equal(create.statusCode, 400);
+  assert.equal(reset.statusCode, 400);
+  assert.equal(create.json().code, "BAD_REQUEST");
+  assert.equal(reset.json().code, "BAD_REQUEST");
+  assert.equal(database.executions.length, 0);
+  assert.equal(database.queries.length, 0);
 });

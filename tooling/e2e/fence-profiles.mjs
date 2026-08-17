@@ -4,6 +4,7 @@ import { createHash } from "node:crypto";
 // this module intentionally has no "all resources" option.
 export const E2E_FENCE_PROFILES = Object.freeze({
   "foundation-auth-worker": Object.freeze(["auth.commands", "outbox.worker"]),
+  "t2-account-lifecycle": Object.freeze(["auth.commands", "users.commands", "outbox.worker"]),
   "t2-supply-master-data": Object.freeze(["auth.commands", "outbox.worker", "r2.master-data.write"]),
   "t2-supply-suppliers": Object.freeze(["auth.commands", "outbox.worker", "r2.suppliers.write", "r2.supplier-skus.write"]),
   "t2-supply-purchase-plan": Object.freeze(["auth.commands", "outbox.worker", "r2.purchase-plans.create", "r2.purchase-plans.update"]),

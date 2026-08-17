@@ -8,6 +8,10 @@ export type PlatformCommandName =
   | "auth.logout"
   | "step-up.request"
   | "step-up.verify"
+  | "users.create"
+  | "users.reset-password"
+  | "users.disable"
+  | "users.restore"
   | "users.assign-role"
   | "users.revoke-role"
   | "users.unlock"
@@ -95,6 +99,53 @@ export const stepUpVerifyCommandSchema = {
     challengeNo: { type: "string", minLength: 8, maxLength: 191 },
     code: { type: "string", pattern: "^\\d{6}$" },
   },
+} as const;
+
+const managedPasswordSchema = {
+  type: "string",
+  minLength: 12,
+  maxLength: 128,
+} as const;
+
+export const createUserCommandSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["email", "mobile", "name", "organizationName", "roleCode", "initialPassword"],
+  properties: {
+    email: { type: "string", minLength: 3, maxLength: 191 },
+    mobile: { type: "string", pattern: "^1\\d{10}$" },
+    name: { type: "string", minLength: 1, maxLength: 100 },
+    organizationName: { type: "string", minLength: 1, maxLength: 200 },
+    roleCode: {
+      type: "string",
+      enum: ["supply_chain", "finance", "company_qc", "receiver"],
+    },
+    initialPassword: managedPasswordSchema,
+  },
+} as const;
+
+export const resetUserPasswordCommandSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["userId", "newPassword"],
+  properties: {
+    userId: { type: "integer", minimum: 1 },
+    newPassword: managedPasswordSchema,
+  },
+} as const;
+
+export const disableUserCommandSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["userId"],
+  properties: { userId: { type: "integer", minimum: 1 } },
+} as const;
+
+export const restoreUserCommandSchema = {
+  type: "object",
+  additionalProperties: false,
+  required: ["userId"],
+  properties: { userId: { type: "integer", minimum: 1 } },
 } as const;
 
 export const assignUserRoleCommandSchema = {

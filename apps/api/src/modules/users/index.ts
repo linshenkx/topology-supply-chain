@@ -1,8 +1,15 @@
+import { pbkdf2 as pbkdf2Callback, randomBytes } from "node:crypto";
+import { promisify } from "node:util";
+
 import {
   assignUserRoleCommandSchema,
   apiErrorSchemaId,
   commandHeadersSchema,
   commandResponseSchema,
+  createUserCommandSchema,
+  disableUserCommandSchema,
+  resetUserPasswordCommandSchema,
+  restoreUserCommandSchema,
   revokeUserRoleCommandSchema,
   unlockUserCommandSchema,
   usersResponseSchema,
@@ -28,6 +35,15 @@ import type { AccessContext } from "../auth/index.js";
 
 const USER_LIMIT = 1_000;
 const ROLE_ASSIGNMENT_LIMIT = 5_000;
+const pbkdf2 = promisify(pbkdf2Callback);
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
+const MOBILE_PATTERN = /^1\d{10}$/u;
+const INTERNAL_ROLE_CODES = new Set([
+  "supply_chain",
+  "finance",
+  "company_qc",
+  "receiver",
+]);
 
 const USER_COLUMNS = `SELECT
   id,
@@ -331,6 +347,74 @@ function requireWriteAccess(access: UsersAccessContext): void {
   }
 }
 
+function requireManagedPassword(password: string): void {
+  if (
+    password.length < 12 ||
+    password.length > 128 ||
+    !/[A-Z]/u.test(password) ||
+    !/[a-z]/u.test(password) ||
+    !/\d/u.test(password) ||
+    !/[^A-Za-z0-9]/u.test(password)
+  ) {
+    throw new PlatformError(400, "BAD_REQUEST", "Password does not meet the password policy");
+  }
+}
+
+async function passwordCredential(password: string): Promise<{ hash: string; salt: string }> {
+  requireManagedPassword(password);
+  const salt = randomBytes(16).toString("hex");
+  const derived = await pbkdf2(password, Buffer.from(salt, "hex"), 210_000, 32, "sha256");
+  return { hash: derived.toString("hex"), salt };
+}
+
+function managedEmail(value: string): string {
+  const email = value.trim().toLowerCase();
+  if (!EMAIL_PATTERN.test(email)) {
+    throw new PlatformError(400, "BAD_REQUEST", "Email is invalid");
+  }
+  return email;
+}
+
+function managedMobile(value: string): string {
+  const mobile = value.trim();
+  if (!MOBILE_PATTERN.test(mobile)) {
+    throw new PlatformError(400, "BAD_REQUEST", "Mobile is invalid");
+  }
+  return mobile;
+}
+
+function managedName(value: string): string {
+  const name = value.trim();
+  if (name.length === 0) throw new PlatformError(400, "BAD_REQUEST", "Name is required");
+  return name;
+}
+
+function managedOrganization(value: string): string {
+  const organization = value.trim();
+  if (organization.length === 0) {
+    throw new PlatformError(400, "BAD_REQUEST", "Organization is required");
+  }
+  return organization;
+}
+
+function managedInitialRole(value: string): string {
+  const roleCode = value.trim();
+  if (!INTERNAL_ROLE_CODES.has(roleCode)) {
+    throw new PlatformError(400, "BAD_REQUEST", "Role is not available for internal account creation");
+  }
+  return roleCode;
+}
+
+async function incrementUserVersion(transaction: QueryExecutor, userId: number): Promise<void> {
+  await transaction.execute(
+    `INSERT INTO resource_versions (resource_type, resource_id, version, updated_at)
+     VALUES ('user', ?, 1, CURRENT_TIMESTAMP(3))
+     ON DUPLICATE KEY UPDATE version = version + 1,
+       updated_at = CURRENT_TIMESTAMP(3)`,
+    [String(userId)],
+  );
+}
+
 function writeUser(row: UserWriteRow | undefined): UserWriteRow {
   if (row === undefined) throw new PlatformError(404, "NOT_FOUND", "User not found");
   return {
@@ -409,6 +493,275 @@ async function writeAudit(
     ...(event.before === undefined ? {} : { before: event.before }),
     ...(event.after === undefined ? {} : { after: event.after }),
   });
+}
+
+async function registerAccountLifecycleRoutes(
+  app: FastifyInstance,
+  options: UsersModuleOptions,
+): Promise<void> {
+  app.post<{
+    Body: {
+      email: string;
+      initialPassword: string;
+      mobile: string;
+      name: string;
+      organizationName: string;
+      roleCode: string;
+    };
+  }>(
+    "/api/v1/users/accounts",
+    {
+      schema: {
+        tags: ["users"],
+        summary: "Create an active internal account with an initial role",
+        headers: commandHeadersSchema,
+        body: createUserCommandSchema,
+        response: { 201: commandResponseSchema, "4xx": { $ref: `${apiErrorSchemaId}#` }, 503: { $ref: `${apiErrorSchemaId}#` }, "5xx": { $ref: `${apiErrorSchemaId}#` } },
+      },
+    },
+    async (request, reply) => {
+      requireSameOrigin(request);
+      requireCsrf(request);
+      const access = await options.authenticate(request);
+      requireWriteAccess(access);
+      const email = managedEmail(request.body.email);
+      const mobile = managedMobile(request.body.mobile);
+      const name = managedName(request.body.name);
+      const organizationName = managedOrganization(request.body.organizationName);
+      const roleCode = managedInitialRole(request.body.roleCode);
+      requireManagedPassword(request.body.initialPassword);
+      const payload = {
+        email,
+        initialPassword: request.body.initialPassword,
+        mobile,
+        name,
+        organizationName,
+        roleCode,
+      };
+      const at = options.now?.() ?? new Date();
+      const response = await executeCommand({
+        actorScope: `user:${access.userId}`,
+        command: "users.create",
+        database: writeDatabase(options),
+        payload,
+        request,
+        responseStatus: 201,
+        run: async ({ transaction }) => {
+          const existing = await transaction.query<Record<string, unknown>>(
+            "SELECT id FROM users WHERE email = ? LIMIT 1 FOR UPDATE",
+            [email],
+          );
+          if (existing.length > 0) {
+            throw new PlatformError(409, "CONFLICT", "An account with this email already exists");
+          }
+          const credential = await passwordCredential(request.body.initialPassword);
+          const inserted = await transaction.execute(
+            `INSERT INTO users (
+               email, mobile, name, role, organization_name, account_status,
+               created_at, updated_at
+             ) VALUES (?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+            [email, mobile, name, roleCode, organizationName],
+          );
+          const userId = inserted.insertId;
+          if (userId === undefined || userId <= 0) throw new UsersUnavailableError();
+          const insertedCredential = await transaction.execute(
+            `INSERT INTO auth_credentials (
+               user_id, password_hash, password_salt, failed_attempts,
+               password_changed_at, created_at, updated_at
+             ) VALUES (?, ?, ?, 0, CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+            [userId, credential.hash, credential.salt],
+          );
+          if (insertedCredential.affectedRows !== 1) throw new UsersUnavailableError();
+          await incrementUserVersion(transaction, userId);
+          await writeAudit(transaction, access, request, {
+            action: "create_account",
+            entityType: "user",
+            entityId: userId,
+            businessNo: email,
+            after: { accountStatus: "active", roleCode, name, organizationName },
+          }, at);
+          return { success: true, userId, accountStatus: "active", roleCode };
+        },
+      });
+      return reply.status(response.statusCode).send(response.body);
+    },
+  );
+
+  app.post<{ Body: { userId: number; newPassword: string } }>(
+    "/api/v1/users/password-reset",
+    {
+      schema: {
+        tags: ["users"],
+        summary: "Reset a managed user password and revoke existing sessions",
+        headers: commandHeadersSchema,
+        body: resetUserPasswordCommandSchema,
+        response: { 200: commandResponseSchema, "4xx": { $ref: `${apiErrorSchemaId}#` }, 503: { $ref: `${apiErrorSchemaId}#` }, "5xx": { $ref: `${apiErrorSchemaId}#` } },
+      },
+    },
+    async (request, reply) => {
+      requireSameOrigin(request);
+      requireCsrf(request);
+      const access = await options.authenticate(request);
+      requireWriteAccess(access);
+      requireManagedPassword(request.body.newPassword);
+      const at = options.now?.() ?? new Date();
+      const response = await executeCommand({
+        actorScope: `user:${access.userId}`,
+        command: "users.reset-password",
+        database: writeDatabase(options),
+        payload: request.body,
+        request,
+        run: async ({ transaction }) => {
+          const target = await lockedUser(transaction, request.body.userId);
+          const credential = await passwordCredential(request.body.newPassword);
+          const changed = await transaction.execute(
+            `UPDATE auth_credentials
+             SET password_hash = ?, password_salt = ?, failed_attempts = 0,
+                 locked_at = NULL, password_changed_at = CURRENT_TIMESTAMP(3),
+                 updated_at = CURRENT_TIMESTAMP(3)
+             WHERE user_id = ?`,
+            [credential.hash, credential.salt, target.id],
+          );
+          if (changed.affectedRows !== 1) throw new UsersUnavailableError();
+          await transaction.execute(
+            `UPDATE auth_sessions SET revoked_at = ?
+             WHERE user_id = ? AND revoked_at IS NULL`,
+            [at.toISOString(), target.id],
+          );
+          await incrementUserVersion(transaction, target.id);
+          await writeAudit(transaction, access, request, {
+            action: "reset_password",
+            entityType: "user",
+            entityId: target.id,
+            businessNo: target.email,
+            before: { accountStatus: target.accountStatus },
+            after: { accountStatus: target.accountStatus, activeSessionsRevoked: true },
+          }, at);
+          return {
+            success: true,
+            userId: target.id,
+            accountStatus: target.accountStatus,
+            activeSessionsRevoked: true,
+          };
+        },
+      });
+      return reply.status(response.statusCode).send(response.body);
+    },
+  );
+
+  app.post<{ Body: { userId: number } }>(
+    "/api/v1/users/disable",
+    {
+      schema: {
+        tags: ["users"],
+        summary: "Disable a managed user and revoke existing sessions",
+        headers: commandHeadersSchema,
+        body: disableUserCommandSchema,
+        response: { 200: commandResponseSchema, "4xx": { $ref: `${apiErrorSchemaId}#` }, 503: { $ref: `${apiErrorSchemaId}#` }, "5xx": { $ref: `${apiErrorSchemaId}#` } },
+      },
+    },
+    async (request, reply) => {
+      requireSameOrigin(request);
+      requireCsrf(request);
+      const access = await options.authenticate(request);
+      requireWriteAccess(access);
+      const at = options.now?.() ?? new Date();
+      const response = await executeCommand({
+        actorScope: `user:${access.userId}`,
+        command: "users.disable",
+        database: writeDatabase(options),
+        payload: request.body,
+        request,
+        run: async ({ transaction }) => {
+          const target = await lockedUser(transaction, request.body.userId);
+          if (target.accountStatus === "disabled") {
+            throw new PlatformError(409, "VERSION_CONFLICT", "User is already disabled");
+          }
+          const changed = await transaction.execute(
+            `UPDATE users SET account_status = 'disabled', updated_at = CURRENT_TIMESTAMP(3)
+             WHERE id = ? AND account_status <> 'disabled'`,
+            [target.id],
+          );
+          if (changed.affectedRows !== 1) {
+            throw new PlatformError(409, "VERSION_CONFLICT", "User state changed");
+          }
+          await transaction.execute(
+            `UPDATE auth_sessions SET revoked_at = ?
+             WHERE user_id = ? AND revoked_at IS NULL`,
+            [at.toISOString(), target.id],
+          );
+          await incrementUserVersion(transaction, target.id);
+          await writeAudit(transaction, access, request, {
+            action: "disable_account",
+            entityType: "user",
+            entityId: target.id,
+            businessNo: target.email,
+            before: { accountStatus: target.accountStatus },
+            after: { accountStatus: "disabled", activeSessionsRevoked: true },
+          }, at);
+          return {
+            success: true,
+            userId: target.id,
+            accountStatus: "disabled",
+            activeSessionsRevoked: true,
+          };
+        },
+      });
+      return reply.status(response.statusCode).send(response.body);
+    },
+  );
+
+  app.post<{ Body: { userId: number } }>(
+    "/api/v1/users/restore",
+    {
+      schema: {
+        tags: ["users"],
+        summary: "Restore a disabled managed user",
+        headers: commandHeadersSchema,
+        body: restoreUserCommandSchema,
+        response: { 200: commandResponseSchema, "4xx": { $ref: `${apiErrorSchemaId}#` }, 503: { $ref: `${apiErrorSchemaId}#` }, "5xx": { $ref: `${apiErrorSchemaId}#` } },
+      },
+    },
+    async (request, reply) => {
+      requireSameOrigin(request);
+      requireCsrf(request);
+      const access = await options.authenticate(request);
+      requireWriteAccess(access);
+      const at = options.now?.() ?? new Date();
+      const response = await executeCommand({
+        actorScope: `user:${access.userId}`,
+        command: "users.restore",
+        database: writeDatabase(options),
+        payload: request.body,
+        request,
+        run: async ({ transaction }) => {
+          const target = await lockedUser(transaction, request.body.userId);
+          if (target.accountStatus !== "disabled") {
+            throw new PlatformError(409, "VERSION_CONFLICT", "Only disabled users can be restored");
+          }
+          const changed = await transaction.execute(
+            `UPDATE users SET account_status = 'active', updated_at = CURRENT_TIMESTAMP(3)
+             WHERE id = ? AND account_status = 'disabled'`,
+            [target.id],
+          );
+          if (changed.affectedRows !== 1) {
+            throw new PlatformError(409, "VERSION_CONFLICT", "User state changed");
+          }
+          await incrementUserVersion(transaction, target.id);
+          await writeAudit(transaction, access, request, {
+            action: "restore_account",
+            entityType: "user",
+            entityId: target.id,
+            businessNo: target.email,
+            before: { accountStatus: "disabled" },
+            after: { accountStatus: "active", sessionCreated: false },
+          }, at);
+          return { success: true, userId: target.id, accountStatus: "active" };
+        },
+      });
+      return reply.status(response.statusCode).send(response.body);
+    },
+  );
 }
 
 async function registerUserWriteRoutes(
@@ -715,5 +1068,6 @@ export async function registerUsersModule(
       return response;
     },
   );
+  await registerAccountLifecycleRoutes(app, options);
   await registerUserWriteRoutes(app, options);
 }

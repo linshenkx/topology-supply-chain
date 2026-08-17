@@ -12,6 +12,10 @@ type CorePlatformMutationPath =
   | "/api/v1/auth/step-up/request"
   | "/api/v1/auth/step-up/verify"
   | "/api/v1/users"
+  | "/api/v1/users/accounts"
+  | "/api/v1/users/password-reset"
+  | "/api/v1/users/disable"
+  | "/api/v1/users/restore"
   | "/api/v1/files"
   | "/api/v1/notifications/read"
   | "/api/v1/approvals"
@@ -61,6 +65,10 @@ const COMMAND_BY_PATH: Readonly<Record<CorePlatformMutationPath, string>> = {
   "/api/v1/auth/step-up/request": "step-up.request",
   "/api/v1/auth/step-up/verify": "step-up.verify",
   "/api/v1/users": "users.assign-role",
+  "/api/v1/users/accounts": "users.create",
+  "/api/v1/users/password-reset": "users.reset-password",
+  "/api/v1/users/disable": "users.disable",
+  "/api/v1/users/restore": "users.restore",
   "/api/v1/files": "files.upload",
   "/api/v1/notifications/read": "notifications.mark-read",
   "/api/v1/approvals": "approvals.decide",
