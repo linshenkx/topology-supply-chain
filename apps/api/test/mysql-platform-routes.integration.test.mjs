@@ -16,6 +16,13 @@ function otp(command, principal, idempotencyKey) {
   return Array.from({ length: 6 }, (_, index) => String((digest[index] ?? 0) % 10)).join("");
 }
 
+function passwordIdempotencyProof(password, command, idempotencyKey) {
+  const salt = createHash("sha256")
+    .update(`topology:${command}:password-idempotency:${idempotencyKey}`, "utf8")
+    .digest();
+  return pbkdf2Sync(password, salt, 210_000, 32, "sha256").toString("hex");
+}
+
 function platformHeaders(idempotencyKey, extras = {}) {
   return {
     host: "scm.topologygz.com",
@@ -555,13 +562,42 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
     new RegExp(`${managedInitialPassword}|${managedResetPassword}`, "u"));
   const createCommand = lifecycleCommands.find((row) => row.commandName === "users.create");
   const resetCommand = lifecycleCommands.find((row) => row.commandName === "users.reset-password");
-  assert.notEqual(createCommand.requestDigest,
-    canonicalRequestDigest("users.create", createAccountPayload));
-  assert.notEqual(resetCommand.requestDigest,
-    canonicalRequestDigest("users.reset-password", {
+  const expectedCreateDigest = canonicalRequestDigest("users.create", {
+    email: managedEmail,
+    mobile: createAccountPayload.mobile,
+    name: createAccountPayload.name,
+    organizationName: createAccountPayload.organizationName,
+    passwordProof: passwordIdempotencyProof(managedInitialPassword, "users.create", createAccountKey),
+    roleCode: createAccountPayload.roleCode,
+  });
+  const expectedResetDigest = canonicalRequestDigest("users.reset-password", {
+    passwordProof: passwordIdempotencyProof(managedResetPassword, "users.reset-password", resetKey),
+    userId: managedUserId,
+  });
+  assert.equal(createCommand.requestDigest, expectedCreateDigest);
+  assert.equal(resetCommand.requestDigest, expectedResetDigest);
+  assert.notEqual(createCommand.requestDigest, canonicalRequestDigest("users.create", createAccountPayload));
+  assert.notEqual(resetCommand.requestDigest, canonicalRequestDigest("users.reset-password", {
       userId: managedUserId,
       newPassword: managedResetPassword,
-    }));
+  }));
+  const sensitiveValues = [
+    managedInitialPassword,
+    managedResetPassword,
+    passwordIdempotencyProof(managedInitialPassword, "users.create", createAccountKey),
+    passwordIdempotencyProof(managedResetPassword, "users.reset-password", resetKey),
+  ];
+  const sensitivePattern = new RegExp(sensitiveValues.join("|"), "u");
+  assert.doesNotMatch(JSON.stringify(lifecycleAudit), sensitivePattern);
+  assert.doesNotMatch(JSON.stringify(lifecycleCommands), sensitivePattern);
+  assert.doesNotMatch(JSON.stringify([
+    createdAccount.json(),
+    createdAccountReplay.json(),
+    createdAccountConflict.json(),
+    reset.json(),
+    resetReplay.json(),
+    resetConflict.json(),
+  ]), sensitivePattern);
 
   const notificationInsert = await db.execute(
     `INSERT INTO notification_messages (

@@ -36,6 +36,8 @@ import type { AccessContext } from "../auth/index.js";
 const USER_LIMIT = 1_000;
 const ROLE_ASSIGNMENT_LIMIT = 5_000;
 const pbkdf2 = promisify(pbkdf2Callback);
+const PASSWORD_KDF_ITERATIONS = 210_000;
+const PASSWORD_KDF_BYTES = 32;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/u;
 const MOBILE_PATTERN = /^1\d{10}$/u;
 const INTERNAL_ROLE_CODES = new Set([
@@ -363,15 +365,31 @@ function requireManagedPassword(password: string): void {
 async function passwordCredential(password: string): Promise<{ hash: string; salt: string }> {
   requireManagedPassword(password);
   const salt = randomBytes(16).toString("hex");
-  const derived = await pbkdf2(password, Buffer.from(salt, "hex"), 210_000, 32, "sha256");
+  const derived = await pbkdf2(
+    password,
+    Buffer.from(salt, "hex"),
+    PASSWORD_KDF_ITERATIONS,
+    PASSWORD_KDF_BYTES,
+    "sha256",
+  );
   return { hash: derived.toString("hex"), salt };
 }
 
-async function passwordIdempotencyProof(password: string, idempotencyKey: string): Promise<string> {
+async function passwordIdempotencyProof(
+  password: string,
+  command: "users.create" | "users.reset-password",
+  idempotencyKey: string,
+): Promise<string> {
   const salt = createHash("sha256")
-    .update(`topology:users:password-idempotency:${idempotencyKey}`, "utf8")
+    .update(`topology:${command}:password-idempotency:${idempotencyKey}`, "utf8")
     .digest();
-  const derived = await pbkdf2(password, salt, 210_000, 32, "sha256");
+  const derived = await pbkdf2(
+    password,
+    salt,
+    PASSWORD_KDF_ITERATIONS,
+    PASSWORD_KDF_BYTES,
+    "sha256",
+  );
   return derived.toString("hex");
 }
 
@@ -544,7 +562,11 @@ async function registerAccountLifecycleRoutes(
         mobile,
         name,
         organizationName,
-        passwordProof: await passwordIdempotencyProof(request.body.initialPassword, idempotencyKey),
+        passwordProof: await passwordIdempotencyProof(
+          request.body.initialPassword,
+          "users.create",
+          idempotencyKey,
+        ),
         roleCode,
       };
       const at = options.now?.() ?? new Date();
@@ -620,7 +642,11 @@ async function registerAccountLifecycleRoutes(
         command: "users.reset-password",
         database: writeDatabase(options),
         payload: {
-          passwordProof: await passwordIdempotencyProof(request.body.newPassword, idempotencyKey),
+          passwordProof: await passwordIdempotencyProof(
+            request.body.newPassword,
+            "users.reset-password",
+            idempotencyKey,
+          ),
           userId: request.body.userId,
         },
         request,

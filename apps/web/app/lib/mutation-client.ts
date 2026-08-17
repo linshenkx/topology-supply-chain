@@ -113,10 +113,14 @@ function sensitivePendingBody(path: PlatformMutationPath, body: unknown): unknow
   if (body === null || typeof body !== "object" || Array.isArray(body)) return body;
   const record = body as Record<string, unknown>;
   if (path === "/api/v1/users/accounts") {
-    return { ...record, initialPassword: "[sensitive]" };
+    const pendingBody = { ...record };
+    delete pendingBody.initialPassword;
+    return pendingBody;
   }
   if (path === "/api/v1/users/password-reset") {
-    return { ...record, newPassword: "[sensitive]" };
+    const pendingBody = { ...record };
+    delete pendingBody.newPassword;
+    return pendingBody;
   }
   return body;
 }
