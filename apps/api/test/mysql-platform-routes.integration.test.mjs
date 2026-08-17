@@ -3,6 +3,7 @@ import { createHash, createHmac, pbkdf2Sync, randomBytes } from "node:crypto";
 import test from "node:test";
 
 import { createDatabaseClient } from "../dist/infrastructure/database.js";
+import { canonicalRequestDigest } from "../dist/platform/commands.js";
 import { buildRuntimeApp } from "../dist/runtime.js";
 
 const databaseUrl = process.env.MYSQL_WRITE_TEST_URL?.trim();
@@ -311,6 +312,14 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
   assert.equal(createdAccountReplay.statusCode, 201);
   assert.equal(createdAccountReplay.json().command.replayed, true);
   assert.equal(createdAccountReplay.json().result.userId, managedUserId);
+  const createdAccountConflict = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/accounts",
+    headers: authenticated(createAccountKey),
+    payload: { ...createAccountPayload, initialPassword: "DifferentInitial!567" },
+  });
+  assert.equal(createdAccountConflict.statusCode, 409);
+  assert.equal(createdAccountConflict.json().code, "IDEMPOTENCY_KEY_REUSED");
 
   const [createdState] = await db.query(
     `SELECT users.role, users.account_status AS accountStatus,
@@ -456,6 +465,14 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
   });
   assert.equal(resetReplay.statusCode, 200);
   assert.equal(resetReplay.json().command.replayed, true);
+  const resetConflict = await app.inject({
+    method: "POST",
+    url: "/api/v1/users/password-reset",
+    headers: authenticated(resetKey),
+    payload: { userId: managedUserId, newPassword: "DifferentReset!890" },
+  });
+  assert.equal(resetConflict.statusCode, 409);
+  assert.equal(resetConflict.json().code, "IDEMPOTENCY_KEY_REUSED");
 
   const resetRevokedSession = await app.inject({
     method: "GET",
@@ -520,7 +537,8 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
   assert.doesNotMatch(JSON.stringify(lifecycleAudit),
     new RegExp(`${managedInitialPassword}|${managedResetPassword}`, "u"));
   const lifecycleCommands = await db.query(
-    `SELECT command_name AS commandName, response_json AS responseJson
+    `SELECT command_name AS commandName, request_digest AS requestDigest,
+            response_json AS responseJson
      FROM command_idempotency
      WHERE actor_scope = ?
        AND command_name IN ('users.create','users.disable','users.restore','users.reset-password')
@@ -535,6 +553,15 @@ test("MySQL-backed v1 platform routes enforce auth, OTP, CSRF, idempotency, scop
   ]);
   assert.doesNotMatch(JSON.stringify(lifecycleCommands),
     new RegExp(`${managedInitialPassword}|${managedResetPassword}`, "u"));
+  const createCommand = lifecycleCommands.find((row) => row.commandName === "users.create");
+  const resetCommand = lifecycleCommands.find((row) => row.commandName === "users.reset-password");
+  assert.notEqual(createCommand.requestDigest,
+    canonicalRequestDigest("users.create", createAccountPayload));
+  assert.notEqual(resetCommand.requestDigest,
+    canonicalRequestDigest("users.reset-password", {
+      userId: managedUserId,
+      newPassword: managedResetPassword,
+    }));
 
   const notificationInsert = await db.execute(
     `INSERT INTO notification_messages (

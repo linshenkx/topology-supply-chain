@@ -86,7 +86,7 @@ test("proxy 502 preserves the pending mutation key for an outcome-unknown replay
   assert.equal(body.remaining, 0);
 });
 
-test("account lifecycle paths emit their distinct public command digests", () => {
+test("password account lifecycle paths leave request digests to the server", () => {
   const cases = [
     ["/api/v1/users/accounts", "users.create", {
       email: "user@example.com", initialPassword: "InitialPass!234", mobile: "13800138009",
@@ -100,7 +100,8 @@ test("account lifecycle paths emit their distinct public command digests", () =>
   ];
   const result = spawnSync(process.execPath, ["--import", "tsx", "--input-type=module", "--eval", `
     const values = new Map();
-    globalThis.sessionStorage = { getItem:key=>values.get(key) ?? null, setItem:(key,value)=>values.set(key,value), removeItem:key=>values.delete(key) };
+    const pendingIds = [];
+    globalThis.sessionStorage = { getItem:key=>values.get(key) ?? null, setItem:(key,value)=>{ pendingIds.push(key); values.set(key,value); }, removeItem:key=>values.delete(key) };
     globalThis.document = { cookie:"topology_csrf="+"b".repeat(64) };
     const calls = [];
     const commands = new Map(${JSON.stringify(cases.map(([path, command]) => [path, command]))});
@@ -111,15 +112,20 @@ test("account lifecycle paths emit their distinct public command digests", () =>
     };
     const { mutateJson } = await import(${JSON.stringify(clientUrl.href)});
     for (const [path, _command, payload] of ${JSON.stringify(cases)}) await mutateJson(path, "POST", payload);
-    process.stdout.write(JSON.stringify({ calls, remaining:values.size }));
+    await mutateJson("/api/v1/users/accounts", "POST", { ...${JSON.stringify(cases[0][2])}, initialPassword:"DifferentPass!567" });
+    process.stdout.write(JSON.stringify({ calls, pendingIds, remaining:values.size }));
   `], { cwd: repositoryRoot, encoding:"utf8", env:{ ...process.env } });
 
   assert.equal(result.status, 0, result.stderr);
   const body = JSON.parse(result.stdout);
   assert.equal(body.remaining, 0);
-  assert.deepEqual(body.calls.map(({ url, command }) => [url, command]),
+  assert.deepEqual(body.calls.slice(0, cases.length).map(({ url, command }) => [url, command]),
     cases.map(([url, command]) => [url, command]));
+  assert.equal(body.calls[0].digest, undefined);
+  assert.equal(body.calls[1].digest, undefined);
+  assert.equal(body.pendingIds[0], body.pendingIds.at(-1), "password changes must not create a fast-hash pending key");
   for (const [index, [, command, payload]] of cases.entries()) {
+    if (index < 2) continue;
     const expected = createHash("sha256")
       .update(JSON.stringify({ command, payload }), "utf8")
       .digest("hex");

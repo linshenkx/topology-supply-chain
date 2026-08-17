@@ -1,4 +1,4 @@
-import { pbkdf2 as pbkdf2Callback, randomBytes } from "node:crypto";
+import { createHash, pbkdf2 as pbkdf2Callback, randomBytes } from "node:crypto";
 import { promisify } from "node:util";
 
 import {
@@ -367,6 +367,14 @@ async function passwordCredential(password: string): Promise<{ hash: string; sal
   return { hash: derived.toString("hex"), salt };
 }
 
+async function passwordIdempotencyProof(password: string, idempotencyKey: string): Promise<string> {
+  const salt = createHash("sha256")
+    .update(`topology:users:password-idempotency:${idempotencyKey}`, "utf8")
+    .digest();
+  const derived = await pbkdf2(password, salt, 210_000, 32, "sha256");
+  return derived.toString("hex");
+}
+
 function managedEmail(value: string): string {
   const email = value.trim().toLowerCase();
   if (!EMAIL_PATTERN.test(email)) {
@@ -530,12 +538,13 @@ async function registerAccountLifecycleRoutes(
       const organizationName = managedOrganization(request.body.organizationName);
       const roleCode = managedInitialRole(request.body.roleCode);
       requireManagedPassword(request.body.initialPassword);
+      const idempotencyKey = readIdempotencyKey(request);
       const payload = {
         email,
-        initialPassword: request.body.initialPassword,
         mobile,
         name,
         organizationName,
+        passwordProof: await passwordIdempotencyProof(request.body.initialPassword, idempotencyKey),
         roleCode,
       };
       const at = options.now?.() ?? new Date();
@@ -604,12 +613,16 @@ async function registerAccountLifecycleRoutes(
       const access = await options.authenticate(request);
       requireWriteAccess(access);
       requireManagedPassword(request.body.newPassword);
+      const idempotencyKey = readIdempotencyKey(request);
       const at = options.now?.() ?? new Date();
       const response = await executeCommand({
         actorScope: `user:${access.userId}`,
         command: "users.reset-password",
         database: writeDatabase(options),
-        payload: request.body,
+        payload: {
+          passwordProof: await passwordIdempotencyProof(request.body.newPassword, idempotencyKey),
+          userId: request.body.userId,
+        },
         request,
         run: async ({ transaction }) => {
           const target = await lockedUser(transaction, request.body.userId);

@@ -109,6 +109,22 @@ async function sha256(value: string): Promise<string> {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
+function sensitivePendingBody(path: PlatformMutationPath, body: unknown): unknown {
+  if (body === null || typeof body !== "object" || Array.isArray(body)) return body;
+  const record = body as Record<string, unknown>;
+  if (path === "/api/v1/users/accounts") {
+    return { ...record, initialPassword: "[sensitive]" };
+  }
+  if (path === "/api/v1/users/password-reset") {
+    return { ...record, newPassword: "[sensitive]" };
+  }
+  return body;
+}
+
+function serverOwnedDigest(path: PlatformMutationPath): boolean {
+  return path === "/api/v1/users/accounts" || path === "/api/v1/users/password-reset";
+}
+
 export async function finalRequestDigest(payload: Record<string, unknown>): Promise<string> {
   return sha256(canonical(payload));
 }
@@ -210,18 +226,20 @@ export async function mutateJson<Result, Body extends Record<string, unknown>>(
   body: Body,
   options: { csrf?: boolean; digestBody?: Record<string, unknown>; idempotencyKey?: string } = {},
 ): Promise<Result> {
-  const pending = await pendingKey(path, method, body);
+  const pending = await pendingKey(path, method, sensitivePendingBody(path, body));
   const idempotencyKey = options.idempotencyKey ?? pending.key;
   if (options.idempotencyKey !== undefined) sessionStorage.setItem(pending.id, idempotencyKey);
-  const requestDigest = await sha256(canonical({ command: commandName(path, method), payload: options.digestBody ?? body }));
+  const requestDigest = serverOwnedDigest(path) ? undefined
+    : await sha256(canonical({ command: commandName(path, method), payload: options.digestBody ?? body }));
+  const requestHeaders = {
+    ...headers(idempotencyKey, options.csrf !== false),
+    "content-type": "application/json",
+    ...(requestDigest === undefined ? {} : { "x-request-digest": requestDigest }),
+  };
   try {
     const response = await fetch(path, {
       method,
-      headers: {
-        ...headers(idempotencyKey, options.csrf !== false),
-        "content-type": "application/json",
-        "x-request-digest": requestDigest,
-      },
+      headers: requestHeaders,
       body: JSON.stringify(body),
     });
     const result = await decode<Result>(response, idempotencyKey);
