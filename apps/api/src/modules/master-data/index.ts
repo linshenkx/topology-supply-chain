@@ -429,7 +429,10 @@ async function readMasterData(
   const [skuRows, bomRows] = await Promise.all([skuQuery, bomQuery]);
   const boundedSkuRows = ensureBoundedRows(skuRows, SKU_LIMIT);
   const skuIds = boundedSkuRows.map((row) => integer(row.id));
-  const approvals = await readLatestSkuApprovals(database, skuIds);
+  const approvals =
+    scope === "full"
+      ? await readLatestSkuApprovals(database, skuIds)
+      : new Map<number, MasterDataApprovalSummary>();
   const skus = boundedSkuRows.map((row) =>
     sku(row, approvals.get(integer(row.id)) ?? null),
   );

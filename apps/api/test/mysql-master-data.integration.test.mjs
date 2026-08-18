@@ -302,6 +302,155 @@ test("master-data writes resubmit rejected SKUs and gate duplicate BOM versions 
   assert.equal(reused.statusCode, 409, reused.body);
   assert.equal(reused.json().code, "IDEMPOTENCY_KEY_REUSED");
 
+  const secondApprovalId = approvalRows[0].id;
+  await db.transaction((transaction) =>
+    approvalEffect.execute({
+      transaction,
+      claim: claim(secondApprovalId, reviewerId, "reject", suffix),
+    }),
+  );
+  await db.execute(
+    `UPDATE approval_requests
+     SET status = 'rejected', reviewed_by = ?, reviewed_at = CURRENT_TIMESTAMP(3),
+         review_comment = '清空采购单位重提前拒绝', updated_at = CURRENT_TIMESTAMP(3)
+     WHERE id = ?`,
+    [reviewerId, secondApprovalId],
+  );
+
+  const clearKey = nextKey("sku-clear-conversion");
+  const clearHeaders = headers(clearKey);
+  const clearPayload = {
+    action: "resubmit_sku",
+    id: skuId,
+    name: "Rejected SKU Without Purchase Unit",
+    itemType: "component",
+    stockUnit: "box",
+    purchaseUnit: "",
+    purchaseUnitQuantity: 3,
+    stockUnitQuantity: 12,
+    effectiveFrom: "",
+    overproductionTolerance: 4,
+    purchaseOverTolerance: 5,
+    purchaseUnderTolerance: 6,
+  };
+  const clearResubmit = await app.inject({
+    method: "POST",
+    url: "/api/v1/master-data",
+    headers: clearHeaders,
+    payload: clearPayload,
+  });
+  assert.equal(clearResubmit.statusCode, 201, clearResubmit.body);
+  assert.equal(clearResubmit.json().result.sku.id, skuId);
+  assert.equal(clearResubmit.json().result.sku.code, `MD-SKU-${suffix}`);
+  assert.equal(clearResubmit.json().result.sku.verificationStatus, "pending");
+
+  rows = await db.query(
+    `SELECT purchase_unit AS purchaseUnit, stock_unit AS stockUnit,
+            purchase_unit_quantity AS purchaseUnitQuantity,
+            stock_unit_quantity AS stockUnitQuantity,
+            effective_from AS effectiveFrom, status
+     FROM sku_unit_conversions WHERE sku_id = ? ORDER BY id DESC`,
+    [skuId],
+  );
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].purchaseUnit, "carton");
+  assert.equal(rows[0].status, "inactive");
+  assert.equal(rows.filter((row) => row.status === "active").length, 0);
+
+  const clearApprovalRows = await db.query(
+    "SELECT id, payload_json AS payloadJson FROM approval_requests WHERE entity_type = 'sku' AND entity_id = ? ORDER BY id DESC",
+    [skuId],
+  );
+  assert.equal(clearApprovalRows.length, 3);
+  const clearApprovalPayload = JSON.parse(clearApprovalRows[0].payloadJson);
+  assert.equal(clearApprovalPayload.action, "resubmit_sku");
+  assert.equal(clearApprovalPayload.purchaseUnit, "");
+
+  const auditRows = await db.query(
+    `SELECT before_json AS beforeJson, after_json AS afterJson
+     FROM audit_logs
+     WHERE module = 'master_data' AND entity_type = 'sku' AND entity_id = ? AND action = 'resubmit'
+     ORDER BY id DESC LIMIT 1`,
+    [skuId],
+  );
+  const auditBefore = JSON.parse(auditRows[0].beforeJson);
+  const auditAfter = JSON.parse(auditRows[0].afterJson);
+  assert.equal(auditBefore.conversion.purchaseUnit, "carton");
+  assert.equal(auditBefore.conversion.status, "active");
+  assert.equal(auditAfter.conversion.purchaseUnit, "carton");
+  assert.equal(auditAfter.conversion.status, "inactive");
+  assert.equal(auditAfter.approvalId, clearApprovalRows[0].id);
+
+  const clearReplay = await app.inject({
+    method: "POST",
+    url: "/api/v1/master-data",
+    headers: clearHeaders,
+    payload: clearPayload,
+  });
+  assert.equal(clearReplay.statusCode, 201, clearReplay.body);
+  assert.equal(clearReplay.json().command.replayed, true);
+
+  const clearReused = await app.inject({
+    method: "POST",
+    url: "/api/v1/master-data",
+    headers: clearHeaders,
+    payload: { ...clearPayload, name: "Different cleared SKU" },
+  });
+  assert.equal(clearReused.statusCode, 409, clearReused.body);
+  assert.equal(clearReused.json().code, "IDEMPOTENCY_KEY_REUSED");
+
+  const multiActiveSkuId = await insert(
+    `INSERT INTO skus (
+       code, name, item_type, stock_unit, overproduction_tolerance_bps,
+       purchase_over_tolerance_bps, purchase_under_tolerance_bps,
+       verification_status, status, created_at, updated_at
+     ) VALUES (?, ?, 'component', 'pcs', 0, 0, 0, 'rejected', 'draft',
+               CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [`MD-MULTI-ACTIVE-${suffix}`, "Multi active SKU"],
+  );
+  await db.execute(
+    `INSERT INTO sku_unit_conversions (
+       sku_id, purchase_unit, stock_unit, purchase_unit_quantity, stock_unit_quantity,
+       effective_from, status, created_at, updated_at
+     ) VALUES
+       (?, 'box', 'pcs', 1, 10, '2099-01-01', 'active', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3)),
+       (?, 'carton', 'pcs', 2, 20, '2099-02-01', 'active', CURRENT_TIMESTAMP(3), CURRENT_TIMESTAMP(3))`,
+    [multiActiveSkuId, multiActiveSkuId],
+  );
+  const multiActive = await app.inject({
+    method: "POST",
+    url: "/api/v1/master-data",
+    headers: headers(nextKey("sku-multi-active-resubmit")),
+    payload: {
+      action: "resubmit_sku",
+      id: multiActiveSkuId,
+      name: "Multi active SKU fixed",
+      itemType: "component",
+      stockUnit: "pcs",
+      purchaseUnit: "",
+      overproductionTolerance: 1,
+      purchaseOverTolerance: 1,
+      purchaseUnderTolerance: 1,
+    },
+  });
+  assert.equal(multiActive.statusCode, 409, multiActive.body);
+  rows = await db.query(
+    `SELECT verification_status AS verificationStatus, status
+     FROM skus WHERE id = ?`,
+    [multiActiveSkuId],
+  );
+  assert.deepEqual(rows[0], { verificationStatus: "rejected", status: "draft" });
+  rows = await db.query(
+    "SELECT COUNT(*) AS activeCount FROM sku_unit_conversions WHERE sku_id = ? AND status = 'active'",
+    [multiActiveSkuId],
+  );
+  assert.equal(rows[0].activeCount, 2);
+  rows = await db.query(
+    "SELECT COUNT(*) AS approvals FROM approval_requests WHERE entity_type = 'sku' AND entity_id = ?",
+    [multiActiveSkuId],
+  );
+  assert.equal(rows[0].approvals, 0);
+
   const pendingSku = await app.inject({
     method: "POST",
     url: "/api/v1/master-data",

@@ -254,6 +254,12 @@ function writeTransaction({
         return { affectedRows: 1 };
       }
       if (sql.startsWith("UPDATE sku_unit_conversions")) {
+        if (sql.includes("SET status = 'inactive'")) {
+          const row = state.conversions.find((conversion) => conversion.id === params[0] && conversion.skuId === params[1] && conversion.status === "active");
+          if (row === undefined) return { affectedRows: 0 };
+          row.status = "inactive";
+          return { affectedRows: 1 };
+        }
         const row = state.conversions.find((conversion) => conversion.id === params[5] && conversion.skuId === params[6]);
         if (row === undefined) return { affectedRows: 0 };
         Object.assign(row, {
@@ -425,6 +431,7 @@ test("a factory with a valid factory id sees only active global company standard
   assert.deepEqual(response.json().conversions.map((row) => row.skuId), [1]);
   assert.deepEqual(response.json().skus[0].latestApproval, null);
   assert.deepEqual(response.json().components.map((row) => row.bomId), [24]);
+  assert.equal(database.queries.some(({ sql }) => sql.includes("FROM approval_requests")), false);
   assert.match(
     database.queries[0].sql,
     /WHERE status = \?\s+ORDER BY updated_at DESC, id DESC\s+LIMIT 500$/u,
@@ -435,6 +442,7 @@ test("a factory with a valid factory id sees only active global company standard
     /WHERE approval_status = \? AND active = \?\s+ORDER BY updated_at DESC, id DESC\s+LIMIT 500$/u,
   );
   assert.deepEqual(database.queries[1].params, ["approved", 1]);
+  assert.equal(database.queries.length, 4);
 });
 
 test("finance, scoped non-factory roles, and invalid factories are forbidden before database access", async () => {
@@ -682,6 +690,114 @@ test("master-data.write resubmits rejected SKUs without changing id or code", as
   );
 });
 
+test("master-data.write clears active conversion when purchase unit is removed and records conversion audit", async () => {
+  const transaction = writeTransaction({
+    conversions: [{
+      id: 77,
+      skuId: 42,
+      purchaseUnit: "box",
+      stockUnit: "pcs",
+      purchaseUnitQuantity: 1,
+      stockUnitQuantity: 10,
+      effectiveFrom: "2026-01-01",
+      status: "active",
+    }],
+  });
+  const payload = {
+    action: "resubmit_sku",
+    id: 42,
+    name: "SKU Resubmitted",
+    itemType: "component",
+    stockUnit: "box",
+    purchaseUnit: "",
+    purchaseUnitQuantity: 3,
+    stockUnitQuantity: 12,
+    effectiveFrom: "",
+    overproductionTolerance: 4,
+    purchaseOverTolerance: 5,
+    purchaseUnderTolerance: 6,
+  };
+
+  const response = await writeMasterData(
+    writeContext(transaction),
+    writeRequest("master-data-resubmit-clear-key-0001"),
+    writeAccess(),
+    payload,
+  );
+  assert.equal(response.statusCode, 201);
+  assert.equal(transaction.state.conversions[0].status, "inactive");
+  assert.equal(transaction.state.conversions[0].purchaseUnit, "box");
+  assert.equal(transaction.state.approvals.length, 1);
+  const auditInsert = transaction.businessExecutes.find(({ sql }) => sql.startsWith("INSERT INTO audit_logs"));
+  const before = JSON.parse(auditInsert.params[6]);
+  const after = JSON.parse(auditInsert.params[7]);
+  assert.deepEqual(before.conversion, {
+    id: 77,
+    skuId: 42,
+    purchaseUnit: "box",
+    stockUnit: "pcs",
+    purchaseUnitQuantity: 1,
+    stockUnitQuantity: 10,
+    effectiveFrom: "2026-01-01",
+    status: "active",
+  });
+  assert.equal(after.conversion.status, "inactive");
+  assert.equal(after.conversion.purchaseUnit, "box");
+  assert.equal(after.sku.verificationStatus, "pending");
+  assert.equal(after.approvalId, transaction.state.approvals[0].id);
+});
+
+test("master-data.write fail-closes when more than one active conversion exists", async () => {
+  const transaction = writeTransaction({
+    conversions: [
+      {
+        id: 77,
+        skuId: 42,
+        purchaseUnit: "box",
+        stockUnit: "pcs",
+        purchaseUnitQuantity: 1,
+        stockUnitQuantity: 10,
+        effectiveFrom: "2026-01-01",
+        status: "active",
+      },
+      {
+        id: 78,
+        skuId: 42,
+        purchaseUnit: "carton",
+        stockUnit: "pcs",
+        purchaseUnitQuantity: 2,
+        stockUnitQuantity: 20,
+        effectiveFrom: "2026-02-01",
+        status: "active",
+      },
+    ],
+  });
+
+  await assert.rejects(
+    writeMasterData(
+      writeContext(transaction),
+      writeRequest("master-data-resubmit-multi-active-key-0001"),
+      writeAccess(),
+      {
+        action: "resubmit_sku",
+        id: 42,
+        name: "SKU Resubmitted",
+        itemType: "component",
+        stockUnit: "box",
+        purchaseUnit: "",
+        overproductionTolerance: 4,
+        purchaseOverTolerance: 5,
+        purchaseUnderTolerance: 6,
+      },
+    ),
+    (error) => error.statusCode === 409,
+  );
+  assert.equal(transaction.state.conversions[0].status, "active");
+  assert.equal(transaction.state.conversions[1].status, "active");
+  assert.equal(transaction.state.approvals.length, 0);
+  assert.equal(transaction.businessExecutes.filter(({ sql }) => sql.startsWith("UPDATE sku_unit_conversions")).length, 0);
+});
+
 test("master-data.write resubmit fail-closes forbidden and non-rejected states", async () => {
   const payload = {
     action: "resubmit_sku",
@@ -799,5 +915,13 @@ test("frontend uses the v1 master-data mutation adapter and reports read failure
   assert.match(source, /修改并重新提交/u);
   assert.match(source, /conversions/u);
   assert.match(source, /writeMasterData/u);
+  const copyBomStart = source.indexOf("const copyBom");
+  const copyBomSource = source.slice(
+    copyBomStart,
+    source.indexOf("const toggleCompare", copyBomStart),
+  );
+  assert.match(copyBomSource, /version: "",\s+effectiveFrom: "",/u);
+  assert.match(source, /请先填写新版本号和生效日期/u);
+  assert.match(source, /className="master-mask detail-mask"/u);
   assert.doesNotMatch(source, /fetch\("\/api\/master-data", \{ method: "POST"/u);
 });

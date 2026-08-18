@@ -49,7 +49,30 @@ interface SkuRow extends DataRow {
   verificationStatus: string;
 }
 interface ConversionRow extends DataRow {
+  effectiveFrom: string;
   id: number;
+  purchaseUnit: string;
+  purchaseUnitQuantity: number;
+  skuId: number;
+  stockUnit: string;
+  stockUnitQuantity: number;
+  status: string;
+}
+
+interface ConversionSnapshot {
+  effectiveFrom: string;
+  id: number;
+  purchaseUnit: string;
+  purchaseUnitQuantity: number;
+  skuId: number;
+  stockUnit: string;
+  stockUnitQuantity: number;
+  status: "active" | "inactive";
+}
+
+interface ConversionChange {
+  after: ConversionSnapshot | null;
+  before: ConversionSnapshot | null;
 }
 interface BomRow extends DataRow {
   active: number | boolean;
@@ -82,21 +105,56 @@ function skuInput(body: Record<string, unknown>): SkuInput {
   };
 }
 
+function conversionSnapshot(row: ConversionRow): ConversionSnapshot {
+  return {
+    effectiveFrom: row.effectiveFrom,
+    id: row.id,
+    purchaseUnit: row.purchaseUnit,
+    purchaseUnitQuantity: row.purchaseUnitQuantity,
+    skuId: row.skuId,
+    stockUnit: row.stockUnit,
+    stockUnitQuantity: row.stockUnitQuantity,
+    status: row.status === "active" ? "active" : "inactive",
+  };
+}
+
 async function upsertResubmittedConversion(
   transaction: QueryExecutor,
   skuId: number,
   input: SkuInput,
-): Promise<void> {
-  if (input.purchaseUnit === null || input.effectiveFrom === null) return;
+): Promise<ConversionChange> {
   const conversions = await transaction.query<ConversionRow>(
-    `SELECT id FROM sku_unit_conversions
+    `SELECT id, sku_id AS skuId, purchase_unit AS purchaseUnit,
+            stock_unit AS stockUnit, purchase_unit_quantity AS purchaseUnitQuantity,
+            stock_unit_quantity AS stockUnitQuantity, effective_from AS effectiveFrom,
+            status
+     FROM sku_unit_conversions
      WHERE sku_id = ?
      ORDER BY status = 'active' DESC, effective_from DESC, id DESC
-     LIMIT 1 FOR UPDATE`,
+     FOR UPDATE`,
     [skuId],
   );
-  const existing = conversions[0];
-  if (existing === undefined) {
+  const activeConversions = conversions.filter((row) => row.status === "active");
+  if (activeConversions.length > 1) return conflict("Multiple active SKU conversions");
+  const current = conversions[0];
+
+  if (input.purchaseUnit === null) {
+    const activeConversion = activeConversions[0];
+    if (activeConversion === undefined) return { before: null, after: null };
+    const before = conversionSnapshot(activeConversion);
+    const changed = await transaction.execute(
+      `UPDATE sku_unit_conversions
+       SET status = 'inactive', updated_at = CURRENT_TIMESTAMP(3)
+       WHERE id = ? AND sku_id = ? AND status = 'active'`,
+      [before.id, skuId],
+    );
+    if (changed.affectedRows !== 1) return conflict("SKU conversion changed concurrently");
+    return { before, after: { ...before, status: "inactive" } };
+  }
+
+  if (input.effectiveFrom === null) return conflict("SKU conversion effective date required");
+
+  if (current === undefined) {
     const result = await transaction.execute(
       `INSERT INTO sku_unit_conversions (
          sku_id, purchase_unit, stock_unit, purchase_unit_quantity, stock_unit_quantity,
@@ -112,8 +170,22 @@ async function upsertResubmittedConversion(
       ],
     );
     if (result.affectedRows !== 1) throw new Error("SKU conversion write failed");
-    return;
+    return {
+      before: null,
+      after: {
+        id: result.insertId ?? 0,
+        skuId,
+        purchaseUnit: input.purchaseUnit,
+        stockUnit: input.stockUnit,
+        purchaseUnitQuantity: input.purchaseQuantity,
+        stockUnitQuantity: input.stockQuantity,
+        effectiveFrom: input.effectiveFrom,
+        status: "active",
+      },
+    };
   }
+
+  const before = conversionSnapshot(current);
   const changed = await transaction.execute(
     `UPDATE sku_unit_conversions
      SET purchase_unit = ?, stock_unit = ?, purchase_unit_quantity = ?,
@@ -126,11 +198,23 @@ async function upsertResubmittedConversion(
       input.purchaseQuantity,
       input.stockQuantity,
       input.effectiveFrom,
-      existing.id,
+      current.id,
       skuId,
     ],
   );
   if (changed.affectedRows !== 1) return conflict("SKU conversion changed concurrently");
+  return {
+    before,
+    after: {
+      ...before,
+      purchaseUnit: input.purchaseUnit,
+      stockUnit: input.stockUnit,
+      purchaseUnitQuantity: input.purchaseQuantity,
+      stockUnitQuantity: input.stockQuantity,
+      effectiveFrom: input.effectiveFrom,
+      status: "active",
+    },
+  };
 }
 
 export async function writeMasterData(
@@ -229,10 +313,10 @@ export async function writeMasterData(
           ],
         );
         if (changed.affectedRows !== 1) return conflict("SKU changed concurrently");
-        await upsertResubmittedConversion(transaction, skuId, input);
+        const conversionChange = await upsertResubmittedConversion(transaction, skuId, input);
         const approvalId = await createApproval(transaction, { entityId: skuId, entityType: "sku", idempotencyKey, payload: body, requestedBy: access.userId, summary: `Resubmitted SKU: ${current.code} ${input.name}`, workflowType: "sku_verification" });
         const sku = { id: skuId, code: current.code, name: input.name, itemType: input.itemType, stockUnit: input.stockUnit, verificationStatus: "pending", status: "draft" };
-        await audit(transaction, request, access, { action: "resubmit", module: "master_data", entityType: "sku", entityId: skuId, businessNo: current.code, before: current, after: { sku, approvalId } });
+        await audit(transaction, request, access, { action: "resubmit", module: "master_data", entityType: "sku", entityId: skuId, businessNo: current.code, before: { sku: current, conversion: conversionChange.before }, after: { sku, conversion: conversionChange.after, approvalId } });
         await approvalNotification(context, transaction, { approvalId, idempotencyKey, targetEntityId: skuId, targetEntityType: "sku", workflowType: "sku_verification" });
         return { sku, approvalRequired: true, resubmitted: true };
       }
