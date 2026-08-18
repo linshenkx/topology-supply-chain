@@ -1,11 +1,12 @@
 # 文档索引
 
-README 是当前工程唯一入口；本索引只按证据属性路由材料，不把某次验收、实施记录或历史快照当成当前运行状态。功能代码锚点 254e3a0 的 Stage 12 业务闭环，本 docs 是其 docs-only 后代；实际 repositorySha 以执行时 git rev-parse HEAD 为准并等于 e2e:status.repositorySha。
+README 是当前工程唯一入口；本索引只按证据属性路由材料，不把某次验收、实施记录或历史快照当成当前运行状态。当前功能、部署和待办先查交接说明；实际 repositorySha 始终以执行时 `git rev-parse HEAD` 为准。
 
 ## 当前规范与能力
 
 | 文档 | 用途 |
 | --- | --- |
+| [当前开发交接说明](./current-handoff.md) | 当前代码锚点、已完成功能、验证/部署状态、接手入口和后续边界。 |
 | [仓库 README](../README.md) | 当前运行拓扑、工程边界、支持矩阵、脚本与部署入口。 |
 | [Scope A E2E 与 UAT 手册](./e2e/README.md) | 自动化基线、受控环境、业务场景、证据要求与真人验收入口。 |
 | [覆盖矩阵](./e2e/coverage-matrix.md) | 角色、模块、页面、场景及当前自动化/人工检查边界。 |
