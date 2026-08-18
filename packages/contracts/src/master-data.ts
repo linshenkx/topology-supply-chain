@@ -6,14 +6,32 @@ export type MasterDataSkuItemType =
   | "component"
   | null;
 
+export type MasterDataApprovalRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "cancelled";
+
+export interface MasterDataApprovalSummary {
+  requestNo: string;
+  status: MasterDataApprovalRequestStatus;
+  requestedAt: string;
+  reviewedAt: string | null;
+  reviewComment: string | null;
+}
+
 export interface MasterDataSku {
   id: number;
   code: string;
   name: string;
   itemType: MasterDataSkuItemType;
   stockUnit: string | null;
+  overproductionToleranceBps: number;
+  purchaseOverToleranceBps: number;
+  purchaseUnderToleranceBps: number;
   status: "draft" | "active" | "inactive";
   verificationStatus: "pending" | "approved" | "rejected";
+  latestApproval: MasterDataApprovalSummary | null;
 }
 
 export interface MasterDataUnitConversion {
@@ -80,6 +98,33 @@ const nullableStringSchema = {
 const positiveIntegerSchema = { type: "integer", minimum: 1 } as const;
 const nonNegativeIntegerSchema = { type: "integer", minimum: 0 } as const;
 
+const approvalSummarySchema = {
+  anyOf: [
+    { type: "null" },
+    {
+      type: "object",
+      additionalProperties: false,
+      required: [
+        "requestNo",
+        "status",
+        "requestedAt",
+        "reviewedAt",
+        "reviewComment",
+      ],
+      properties: {
+        requestNo: { type: "string", minLength: 1 },
+        status: {
+          type: "string",
+          enum: ["pending", "approved", "rejected", "cancelled"],
+        },
+        requestedAt: { type: "string", minLength: 1 },
+        reviewedAt: nullableStringSchema,
+        reviewComment: nullableStringSchema,
+      },
+    },
+  ],
+} as const;
+
 export const masterDataResponseSchema = {
   $id: masterDataSchemaId,
   type: "object",
@@ -98,8 +143,12 @@ export const masterDataResponseSchema = {
           "name",
           "itemType",
           "stockUnit",
+          "overproductionToleranceBps",
+          "purchaseOverToleranceBps",
+          "purchaseUnderToleranceBps",
           "status",
           "verificationStatus",
+          "latestApproval",
         ],
         properties: {
           id: positiveIntegerSchema,
@@ -115,6 +164,9 @@ export const masterDataResponseSchema = {
             ],
           },
           stockUnit: nullableStringSchema,
+          overproductionToleranceBps: nonNegativeIntegerSchema,
+          purchaseOverToleranceBps: nonNegativeIntegerSchema,
+          purchaseUnderToleranceBps: nonNegativeIntegerSchema,
           status: {
             type: "string",
             enum: ["draft", "active", "inactive"],
@@ -123,6 +175,7 @@ export const masterDataResponseSchema = {
             type: "string",
             enum: ["pending", "approved", "rejected"],
           },
+          latestApproval: approvalSummarySchema,
         },
       },
     },

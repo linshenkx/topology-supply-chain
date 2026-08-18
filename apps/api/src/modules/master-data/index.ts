@@ -30,6 +30,9 @@ const SKU_COLUMNS = `SELECT
   name,
   item_type AS itemType,
   stock_unit AS stockUnit,
+  overproduction_tolerance_bps AS overproductionToleranceBps,
+  purchase_over_tolerance_bps AS purchaseOverToleranceBps,
+  purchase_under_tolerance_bps AS purchaseUnderToleranceBps,
   status,
   verification_status AS verificationStatus
 FROM skus`;
@@ -75,6 +78,26 @@ type MasterDataAccessContext = Pick<
 >;
 type DataScope = "factory" | "full";
 type DataRow = Record<string, unknown>;
+type MasterDataApprovalRequestStatus =
+  | "pending"
+  | "approved"
+  | "rejected"
+  | "cancelled";
+interface MasterDataApprovalSummary {
+  requestNo: string;
+  status: MasterDataApprovalRequestStatus;
+  requestedAt: string;
+  reviewedAt: string | null;
+  reviewComment: string | null;
+}
+interface SkuApprovalRow extends DataRow {
+  requestNo: string;
+  requestedAt: string;
+  reviewComment: string | null;
+  reviewedAt: string | null;
+  skuId: number;
+  status: string;
+}
 
 export interface MasterDataModuleOptions {
   authenticate: (
@@ -151,7 +174,25 @@ function enumeration<const Value extends string>(
   return value as Value;
 }
 
-function sku(row: DataRow): MasterDataSku {
+function approvalSummary(row: SkuApprovalRow): MasterDataApprovalSummary {
+  return {
+    requestNo: string(row.requestNo),
+    status: enumeration<MasterDataApprovalRequestStatus>(row.status, [
+      "pending",
+      "approved",
+      "rejected",
+      "cancelled",
+    ]),
+    requestedAt: string(row.requestedAt),
+    reviewedAt: nullableString(row.reviewedAt),
+    reviewComment: nullableString(row.reviewComment),
+  };
+}
+
+function sku(
+  row: DataRow,
+  latestApproval: MasterDataApprovalSummary | null,
+): MasterDataSku {
   return {
     id: integer(row.id),
     code: string(row.code),
@@ -165,12 +206,22 @@ function sku(row: DataRow): MasterDataSku {
             "component",
           ]),
     stockUnit: nullableString(row.stockUnit),
+    overproductionToleranceBps: integer(row.overproductionToleranceBps, {
+      allowZero: true,
+    }),
+    purchaseOverToleranceBps: integer(row.purchaseOverToleranceBps, {
+      allowZero: true,
+    }),
+    purchaseUnderToleranceBps: integer(row.purchaseUnderToleranceBps, {
+      allowZero: true,
+    }),
     status: enumeration(row.status, ["draft", "active", "inactive"]),
     verificationStatus: enumeration(row.verificationStatus, [
       "pending",
       "approved",
       "rejected",
     ]),
+    latestApproval,
   };
 }
 
@@ -304,6 +355,34 @@ LIMIT ${CONVERSION_LIMIT + 1}`,
   ];
 }
 
+async function readLatestSkuApprovals(
+  database: QueryExecutor,
+  skuIds: readonly number[],
+): Promise<Map<number, MasterDataApprovalSummary>> {
+  if (skuIds.length === 0) return new Map();
+
+  const rows = await database.query<SkuApprovalRow>(
+    `SELECT approvals.entity_id AS skuId,
+            approvals.request_no AS requestNo,
+            approvals.status,
+            approvals.requested_at AS requestedAt,
+            approvals.reviewed_at AS reviewedAt,
+            approvals.review_comment AS reviewComment
+     FROM approval_requests AS approvals
+     JOIN (
+       SELECT entity_id, MAX(id) AS id
+       FROM approval_requests
+       WHERE workflow_type = ? AND entity_type = ? AND entity_id IN (${placeholders(skuIds.length)})
+       GROUP BY entity_id
+     ) AS latest ON latest.id = approvals.id
+     ORDER BY approvals.entity_id ASC`,
+    ["sku_verification", "sku", ...skuIds],
+  );
+  return new Map(
+    rows.map((row) => [integer(row.skuId), approvalSummary(row)]),
+  );
+}
+
 async function readComponents(
   database: QueryExecutor,
   bomIds: readonly number[],
@@ -348,7 +427,12 @@ async function readMasterData(
         );
 
   const [skuRows, bomRows] = await Promise.all([skuQuery, bomQuery]);
-  const skus = ensureBoundedRows(skuRows, SKU_LIMIT).map(sku);
+  const boundedSkuRows = ensureBoundedRows(skuRows, SKU_LIMIT);
+  const skuIds = boundedSkuRows.map((row) => integer(row.id));
+  const approvals = await readLatestSkuApprovals(database, skuIds);
+  const skus = boundedSkuRows.map((row) =>
+    sku(row, approvals.get(integer(row.id)) ?? null),
+  );
   const boms = ensureBoundedRows(bomRows, BOM_LIMIT).map((row) =>
     bom(row, today),
   );
